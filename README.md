@@ -20,9 +20,15 @@ npm run dev -- --port 3001
 
 Open [http://localhost:3001](http://localhost:3001).
 
+`127.0.0.1` works too. If you want the app to live on `http://127.0.0.1:3001`, either leave `APP_ORIGIN` empty so the request origin is used automatically, or set:
+
+```bash
+APP_ORIGIN=http://127.0.0.1:3001
+```
+
 ## Required Env
 
-- `APP_ORIGIN`: app public origin, for example `https://clawlodge.com`
+- `APP_ORIGIN`: optional public origin override. Leave empty for local self-hosting so the current request origin is used. Set it explicitly for production, for example `https://clawlodge.com`
 - `GITHUB_CLIENT_ID`: GitHub OAuth app client id
 - `GITHUB_CLIENT_SECRET`: GitHub OAuth app client secret
 - `ALLOW_DEV_AUTH`: keep `false` in production; only set `true` for local preview auth
@@ -37,32 +43,19 @@ npm run build
 PORT=3001 npm run start
 ```
 
-## Deploy On Your VPS
+## Self-Hosting Notes
 
-Fast path:
+This repository does not ship a VPS one-click installer.
 
-```bash
-cd /tmp
-git clone https://github.com/2shou-clone/clawlodge.git
-cd clawlodge
-APP_DOMAIN=clawlodge.com APP_WWW_DOMAIN=www.clawlodge.com APP_USER=$USER bash deploy/install-vps.sh
-```
+The intended open source path is:
 
-Optional TLS in the same script:
+1. Clone the repo.
+2. Create `.env.local` or `.env.production`.
+3. Run `npm ci`.
+4. Run `npm run build`.
+5. Start with `npm run start`.
 
-```bash
-APP_DOMAIN=clawlodge.com APP_WWW_DOMAIN=www.clawlodge.com APP_USER=$USER SETUP_TLS=true EMAIL=you@example.com bash deploy/install-vps.sh
-```
-
-What the script does:
-
-1. Installs Node.js, Nginx, and build tools.
-2. Clones or updates the repo in `/var/www/clawlodge`.
-3. Creates `.env.production` from the example if it does not exist.
-4. Runs `npm ci` and `npm run build`.
-5. Writes the `systemd` service and Nginx site config.
-6. Enables and restarts the app.
-7. Optionally requests TLS with Certbot.
+You can front it with Nginx or another reverse proxy if you want a domain, TLS, uploads, and process supervision.
 
 ## Auth Flow
 
