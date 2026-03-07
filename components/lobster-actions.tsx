@@ -3,16 +3,37 @@
 import { FormEvent, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 
-import { addComment, addFavorite, apiOrigin, removeFavorite, reportLobster } from "@/lib/api";
+import { addComment, addFavorite, addShare, apiOrigin, removeFavorite, reportLobster } from "@/lib/api";
 import { CommentItem } from "@/lib/types";
 
-export function LobsterActions({ slug, initialComments }: { slug: string; initialComments: CommentItem[] }) {
+function formatCommentTime(value: string) {
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+export function LobsterActions({
+  slug,
+  initialComments,
+  initialFavoriteCount,
+  initialShareCount = 0,
+}: {
+  slug: string;
+  initialComments: CommentItem[];
+  initialFavoriteCount: number;
+  initialShareCount?: number;
+}) {
   const pathname = usePathname();
   const [favorited, setFavorited] = useState(false);
   const [busy, setBusy] = useState(false);
   const [commentDraft, setCommentDraft] = useState("");
   const [comments, setComments] = useState<CommentItem[]>(initialComments);
-  const [reportReason, setReportReason] = useState("Spam or unsafe content");
+  const [favoriteCount, setFavoriteCount] = useState(initialFavoriteCount);
+  const [shareCount, setShareCount] = useState(initialShareCount);
   const [message, setMessage] = useState("");
   const [showLoginModal, setShowLoginModal] = useState(false);
 
@@ -28,14 +49,36 @@ export function LobsterActions({ slug, initialComments }: { slug: string; initia
       if (favorited) {
         await removeFavorite(slug);
         setFavorited(false);
+        setFavoriteCount((prev) => Math.max(0, prev - 1));
       } else {
         await addFavorite(slug);
         setFavorited(true);
+        setFavoriteCount((prev) => prev + 1);
       }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Operation failed");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function onShare() {
+    const shareUrl = typeof window === "undefined" ? nextPath : window.location.href;
+    setMessage("");
+    try {
+      if (navigator.share) {
+        await navigator.share({ url: shareUrl });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        setMessage("Link copied");
+      }
+      const result = await addShare(slug);
+      setShareCount(result.share_count);
+    } catch (error) {
+      const messageText = error instanceof Error ? error.message : "";
+      if (messageText !== "Share canceled") {
+        setMessage("Share failed");
+      }
     }
   }
 
@@ -57,11 +100,10 @@ export function LobsterActions({ slug, initialComments }: { slug: string; initia
     }
   }
 
-  async function onReportSubmit(event: FormEvent) {
-    event.preventDefault();
+  async function onReport() {
     setMessage("");
     try {
-      const result = await reportLobster(slug, reportReason);
+      const result = await reportLobster(slug, "Spam or unsafe content");
       setMessage(result.message);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Report failed");
@@ -70,15 +112,33 @@ export function LobsterActions({ slug, initialComments }: { slug: string; initia
 
   return (
     <>
-      <section className="grid gap-4 md:grid-cols-2">
-        <div className="shell page-panel p-4">
-        <h3 className="panel-title">Community</h3>
-        <button className={`btn mt-3 ${favorited ? "btn-primary" : ""}`} onClick={onToggleFavorite}>
-          {favorited ? "Unfavorite" : "Favorite"}
-        </button>
+      <section className="shell page-panel p-4 md:p-5">
+        <div className="community-header">
+          <h3 className="panel-title">Community</h3>
+          <div className="community-actions">
+            <button
+              className={`icon-action ${favorited ? "is-active" : ""}`}
+              type="button"
+              onClick={onToggleFavorite}
+              aria-label={favorited ? "Unfavorite" : "Favorite"}
+              title={favorited ? "Unfavorite" : "Favorite"}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 21 10.55 19.68C5.4 15 2 11.92 2 8.15 2 5.07 4.42 2.75 7.3 2.75c1.63 0 3.2.8 4.2 2.07 1-1.27 2.57-2.07 4.2-2.07C18.58 2.75 21 5.07 21 8.15c0 3.77-3.4 6.85-8.55 11.53z" />
+              </svg>
+              <span className="icon-action-count">{favoriteCount}</span>
+            </button>
+            <button className="icon-action" type="button" onClick={onShare} aria-label="Share" title="Share">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7a2.6 2.6 0 0 0 0-1.39l7-4.11A2.99 2.99 0 1 0 15 5a3 3 0 0 0 .04.48l-7 4.12a3 3 0 1 0 0 4.8l7.05 4.14A3 3 0 1 0 18 16.08Z" />
+              </svg>
+              <span className="icon-action-count">{shareCount}</span>
+            </button>
+          </div>
+        </div>
 
         <form className="mt-4 space-y-2" onSubmit={onCommentSubmit}>
-          <label className="text-sm">Comment</label>
+          <label className="text-sm community-label">Comment</label>
           <textarea
             className="textarea min-h-24"
             value={commentDraft}
@@ -90,36 +150,28 @@ export function LobsterActions({ slug, initialComments }: { slug: string; initia
           </button>
         </form>
 
-        <div className="mt-4 space-y-2 text-sm">
+        <div className="comment-list mt-5">
           {hasComments ? (
             comments.map((comment) => (
-              <div key={comment.id} className="subcard">
-                <div className="font-medium">@{comment.user_handle}</div>
+              <article key={comment.id} className="comment-row">
+                <div className="comment-row-header">
+                  <div className="font-medium">@{comment.user_handle}</div>
+                  <time className="comment-time" dateTime={comment.created_at}>
+                    {formatCommentTime(comment.created_at)}
+                  </time>
+                </div>
                 <div className="muted">{comment.content}</div>
-              </div>
+              </article>
             ))
           ) : (
             <p className="muted">No comments yet.</p>
           )}
         </div>
-        </div>
 
-        <div className="shell page-panel p-4">
-          <h3 className="panel-title">Safety</h3>
-          <form className="mt-3 space-y-2" onSubmit={onReportSubmit}>
-            <label className="text-sm">Report reason</label>
-            <textarea
-              className="textarea min-h-24"
-              value={reportReason}
-              onChange={(event) => setReportReason(event.target.value)}
-            />
-            <button className="btn" type="submit">
-              Submit Report
-            </button>
-          </form>
-        </div>
-
-        {message ? <p className="text-sm text-[var(--brand)] md:col-span-2">{message}</p> : null}
+        <button className="report-link mt-4" type="button" onClick={onReport}>
+          Spam or unsafe content? Report now
+        </button>
+        {message ? <p className="mt-3 text-sm text-[var(--brand)]">{message}</p> : null}
       </section>
 
       {showLoginModal ? (

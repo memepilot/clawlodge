@@ -17,55 +17,86 @@ export default async function Home({
   const result = await listLobsters({ sort, tag: params.tag, q: params.q });
   const sessionUser = await getSessionUser();
   const githubLoginUrl = `${apiOrigin}/api/v1/auth/github/start?next=/publish`;
+  const isTagResults = Boolean(params.tag);
 
   return (
     <div>
-      <section className="hero">
-        <div className="hero-inner">
-          <div className="hero-copy">
-            <span className="hero-badge">OpenClaw, shared.</span>
-            <h1 className="hero-title">ClawLodge, the config dock for sharp agents.</h1>
-            <p className="hero-subtitle">
-              Publish OpenClaw setups, AGENTS rules, MCP upload bundles, and reusable workflows in one searchable hub.
-            </p>
-            <div className="hero-actions">
-              <Link className="btn btn-primary" href="/publish">
-                Publish a lobster
-              </Link>
-              {!sessionUser ? (
-                <a className="btn" href={githubLoginUrl}>
-                  Login with GitHub
-                </a>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="hero-card hero-search-card">
-            <div className="stat">Search lobsters. Versioned, rollback-ready.</div>
-            <form className="search-stack" method="get">
+      {isTagResults ? (
+        <section className="section section-tight">
+          <div className="tag-results-bar hero-card">
+            <form className="tag-results-form" method="get">
               <div className="search-bar">
                 <span className="mono">/</span>
-                <input className="search-input" name="q" defaultValue={params.q ?? ""} placeholder="Search name, tags, README..." />
+                <input
+                  className="search-input"
+                  name="q"
+                  defaultValue={params.q ?? ""}
+                  placeholder="Search name, tags, README..."
+                />
               </div>
-              <div className="filters-row">
-                <select className="select" defaultValue={sort} name="sort">
-                  <option value="hot">Hot</option>
-                  <option value="new">New</option>
-                </select>
-                <input className="input" name="tag" defaultValue={params.tag ?? ""} placeholder="Tag filter" />
-                <button className="btn btn-primary" type="submit">
-                  Search
-                </button>
-              </div>
+              <select className="select" defaultValue={sort} name="sort">
+                <option value="hot">Hot</option>
+                <option value="new">New</option>
+              </select>
+              <input className="input" name="tag" defaultValue={params.tag ?? ""} placeholder="Tag filter" />
+              <button className="btn btn-primary" type="submit">
+                Search
+              </button>
             </form>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : (
+        <section className="hero">
+          <div className="hero-inner">
+            <div className="hero-copy">
+              <span className="hero-badge">OpenClaw, shared.</span>
+            <h1 className="hero-title">ClawLodge, the config dock for sharp agents.</h1>
+            <p className="hero-subtitle">
+                Share OpenClaw configs, AGENTS rules, plugin upload bundles, and reusable workflows in one searchable hub.
+            </p>
+              <div className="hero-actions">
+                <Link className="btn btn-primary" href="/publish">
+                  Publish a lobster
+                </Link>
+                {!sessionUser ? (
+                  <a className="btn" href={githubLoginUrl}>
+                    Login with GitHub
+                  </a>
+                ) : null}
+              </div>
+            </div>
 
-      <section className="section">
-        <h2 className="section-title">Seeded examples and community uploads</h2>
+            <div className="hero-card hero-search-card">
+              <div className="stat">Search lobsters. Versioned, rollback-ready.</div>
+              <form className="search-stack" method="get">
+                <div className="search-bar">
+                  <span className="mono">/</span>
+                  <input className="search-input" name="q" defaultValue={params.q ?? ""} placeholder="Search name, tags, README..." />
+                </div>
+                <div className="filters-row">
+                  <select className="select" defaultValue={sort} name="sort">
+                    <option value="hot">Hot</option>
+                    <option value="new">New</option>
+                  </select>
+                  <input className="input" name="tag" defaultValue={params.tag ?? ""} placeholder="Tag filter" />
+                  <button className="btn btn-primary" type="submit">
+                    Search
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section className={`section ${isTagResults ? "section-tight section-topless" : ""}`}>
+        <h2 className="section-title">
+          {params.tag ? `Results for #${params.tag}` : "Seeded examples and community uploads"}
+        </h2>
         <p className="section-subtitle">
-          A marketplace for starter configs, curated imports, and production-ready OpenClaw bundles.
+          {params.tag
+            ? "Related lobsters grouped by the selected hashtag."
+            : "A marketplace for starter configs, curated imports, and production-ready OpenClaw bundles."}
         </p>
         <div className="grid">
           {result.items.length ? (

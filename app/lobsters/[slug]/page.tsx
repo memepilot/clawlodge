@@ -26,7 +26,6 @@ export default async function LobsterDetailPage({ params }: { params: Promise<{ 
           </div>
           <div className="lobster-card-side">
             <div>{lobster.license}</div>
-            <div>{lobster.is_hireable ? "Hireable" : "Not hireable"}</div>
           </div>
         </div>
 
@@ -34,9 +33,9 @@ export default async function LobsterDetailPage({ params }: { params: Promise<{ 
 
         <div className="lobster-card-tags">
           {lobster.tags.map((tag) => (
-            <span key={tag} className="tag">
+            <Link key={tag} className="tag" href={`/?tag=${encodeURIComponent(tag)}`}>
               #{tag}
-            </span>
+            </Link>
           ))}
         </div>
       </section>
@@ -108,7 +107,12 @@ export default async function LobsterDetailPage({ params }: { params: Promise<{ 
         </section>
       ) : null}
 
-      <LobsterActions slug={slug} initialComments={comments} />
+      <LobsterActions
+        slug={slug}
+        initialComments={comments}
+        initialFavoriteCount={lobster.favorite_count}
+        initialShareCount={lobster.share_count}
+      />
     </div>
   );
 }

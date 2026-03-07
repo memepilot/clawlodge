@@ -30,7 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Link>
             <nav className="nav-links">
               <Link href="/publish">Publish</Link>
-              <Link href="/mcp">MCP Upload</Link>
+              <Link href="/mcp">Plugin Upload</Link>
               <Link href="/settings">Settings</Link>
             </nav>
             <div className="nav-actions">

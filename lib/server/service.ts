@@ -35,9 +35,9 @@ function toSummary(item: DbLobster, owner: DbUser): LobsterSummary {
     tags: item.tags,
     latest_version: null,
     favorite_count: item.favoriteCount,
+    share_count: item.shareCount,
     comment_count: item.commentCount,
     hot_score: computeHotScore(item.favoriteCount, item.commentCount, new Date(item.createdAt), item.reportPenalty),
-    is_hireable: item.isHireable,
     status: item.status,
     created_at: item.createdAt,
   };
@@ -144,7 +144,6 @@ export async function createLobster(
     summary: string;
     license: string;
     tags: string[];
-    is_hireable: boolean;
   },
 ) {
   if (!payload.name.trim() || !payload.summary.trim()) throw new ApiError(400, "Invalid payload");
@@ -174,12 +173,12 @@ export async function createLobster(
       verified: false,
       curationNote: null,
       seededAt: null,
-      isHireable: payload.is_hireable,
       status: "active",
       reportPenalty: 0,
       searchDocument: [payload.name.trim(), payload.summary.trim(), tags.join(" ")].join("\n"),
       tags,
       favoriteCount: 0,
+      shareCount: 0,
       commentCount: 0,
       createdAt: now,
       updatedAt: now,
@@ -375,6 +374,15 @@ export async function removeFavorite(userId: number, slug: string) {
       lobster.favoriteCount = Math.max(0, lobster.favoriteCount - 1);
     }
     return { lobster_slug: slug, favorited: false };
+  });
+}
+
+export async function addShare(slug: string) {
+  return mutateDb((db) => {
+    const lobster = db.lobsters.find((item) => item.slug === slug && item.status === "active");
+    if (!lobster) throw new ApiError(404, "Lobster not found");
+    lobster.shareCount += 1;
+    return { lobster_slug: slug, share_count: lobster.shareCount };
   });
 }
 
@@ -659,7 +667,6 @@ export async function uploadViaMcp(
         verified: false,
         curationNote: "Imported via MCP upload.",
         seededAt: null,
-        isHireable: false,
         status: "active",
         reportPenalty: 0,
         searchDocument: `${manifest.name}\n${manifest.summary}`,
@@ -739,7 +746,6 @@ export async function publishWorkspace(userId: number, payload: WorkspacePublish
       summary: payload.summary,
       license: payload.license,
       tags: payload.tags,
-      is_hireable: false,
     });
     slug = created.slug;
   } else {

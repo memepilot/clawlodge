@@ -55,12 +55,12 @@ export type DbLobster = {
   verified: boolean;
   curationNote: string | null;
   seededAt: string | null;
-  isHireable: boolean;
   status: "active" | "hidden";
   reportPenalty: number;
   searchDocument: string;
   tags: string[];
   favoriteCount: number;
+  shareCount: number;
   commentCount: number;
   createdAt: string;
   updatedAt: string;

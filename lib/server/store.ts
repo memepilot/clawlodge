@@ -22,6 +22,10 @@ export async function readDb(): Promise<DbState> {
   await ensureDbFile();
   const raw = await fs.readFile(dbPath, "utf8");
   const parsed = JSON.parse(raw) as DbState;
+  parsed.lobsters = parsed.lobsters.map((lobster) => ({
+    ...lobster,
+    shareCount: lobster.shareCount ?? 0,
+  }));
   parsed.lobsterVersions = parsed.lobsterVersions.map((version) => ({
     ...version,
     workspaceFiles: (version.workspaceFiles ?? []).map((file) => ({

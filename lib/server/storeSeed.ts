@@ -136,12 +136,12 @@ export function seededState(): DbState {
             ? "Curated import adapted into hub-ready upload contract."
             : "Demo workspace showing a research-oriented OpenClaw package.",
       seededAt: now,
-      isHireable: item!.is_hireable,
       status: "active",
       reportPenalty: 0,
       searchDocument: item!.search_document,
       tags: item!.tags,
       favoriteCount: item!.favorite_count,
+      shareCount: item!.share_count,
       commentCount: item!.comment_count,
       createdAt: item!.created_at,
       updatedAt: item!.created_at,

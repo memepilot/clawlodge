@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 
 import { apiOrigin, createLobster, createVersion, getMe } from "@/lib/api";
 
-const LICENSES = ["MIT", "Apache-2.0", "CC-BY-4.0", "BSD-3-Clause", "GPL-3.0-only"];
 const TEXT_FILE_EXTENSIONS = [
   ".md",
   ".mdx",
@@ -50,9 +49,7 @@ function sanitizeWorkspaceContent(input: string) {
     .replace(/([A-Za-z]:\\Users\\)[^\\\s]+/g, "$1user");
 }
 
-function deriveSummary(name: string, summary: string, readme: string) {
-  if (summary.trim()) return summary.trim();
-
+function deriveSummary(name: string, readme: string, workspaceFiles: WorkspaceDraftFile[]) {
   const compact = readme
     .replace(/^#+\s*/gm, "")
     .replace(/`/g, "")
@@ -60,11 +57,35 @@ function deriveSummary(name: string, summary: string, readme: string) {
     .replace(/\s+/g, " ")
     .trim();
 
-  if (!compact) {
+  if (!compact && !workspaceFiles.length) {
     return `${name} for OpenClaw.`;
   }
 
+  if (!compact) {
+    const fileSummary = workspaceFiles
+      .slice(0, 6)
+      .map((file) => file.path)
+      .join(", ");
+    return fileSummary ? `${name} workspace with ${fileSummary}.` : `${name} for OpenClaw.`;
+  }
+
   return compact.slice(0, 140);
+}
+
+function buildReadme(name: string, readme: string, workspaceFiles: WorkspaceDraftFile[]) {
+  if (readme.trim()) return readme.trim();
+
+  const sharedFiles = workspaceFiles.slice(0, 12).map((file) => `- \`${file.path}\``);
+
+  return [
+    `# ${name}`,
+    "",
+    "This README was generated from the uploaded workspace files.",
+    "",
+    "## Shared files",
+    "",
+    ...(sharedFiles.length ? sharedFiles : ["- No workspace files uploaded"]),
+  ].join("\n");
 }
 
 function deriveSkillId(name: string) {
@@ -143,19 +164,13 @@ export default function PublishPage() {
     const formData = new FormData(event.currentTarget);
 
     const name = String(formData.get("name") || "").trim();
-    const readme = String(formData.get("readme_markdown") || "").trim();
-    const summary = deriveSummary(name, String(formData.get("summary") || ""), readme);
-    const license = String(formData.get("license") || "MIT");
-    const tags = String(formData.get("tags") || "")
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean);
-    const isHireable = formData.get("is_hireable") === "on";
+    const readme = buildReadme(name, String(formData.get("readme_markdown") || ""), workspaceFiles);
+    const summary = deriveSummary(name, readme, workspaceFiles);
     const sourceRepo = String(formData.get("source_repo") || "").trim() || undefined;
     const skillId = deriveSkillId(name);
 
-    if (!name || !readme) {
-      setMessage("Name and README are required.");
+    if (!name) {
+      setMessage("Name is required.");
       return;
     }
 
@@ -166,9 +181,8 @@ export default function PublishPage() {
       const created = await createLobster({
         name,
         summary,
-        license,
-        tags,
-        is_hireable: isHireable,
+        license: "MIT",
+        tags: [],
       });
 
       await createVersion(created.slug, {
@@ -186,7 +200,6 @@ export default function PublishPage() {
           },
         ],
         settings: [
-          { key: "tags", value: tags },
           {
             key: "workspace_files",
             value: workspaceFiles.map((file) => ({
@@ -245,7 +258,7 @@ export default function PublishPage() {
         </div>
         <div className="publish-mini-note">
           <span className="publish-mini-kicker">Tiny checklist</span>
-          <span>Name + README gets you live.</span>
+          <span>Name gets you live. README can be generated from uploaded files.</span>
         </div>
       </section>
 
@@ -263,49 +276,18 @@ export default function PublishPage() {
             </label>
 
             <label className="field-stack">
-              <span className="field-label">Short pitch</span>
-              <textarea
-                className="textarea publish-input publish-summary"
-                name="summary"
-                placeholder="Optional. Leave blank and we will derive a short summary from your README."
-              />
-            </label>
-
-            <div className="publish-inline-grid">
-              <label className="field-stack">
-                <span className="field-label">Tags</span>
-                <input className="input publish-input" name="tags" placeholder="pixel, automation, research" />
-              </label>
-
-              <label className="field-stack">
-                <span className="field-label">License</span>
-                <select className="select publish-input" name="license" defaultValue="MIT">
-                  {LICENSES.map((license) => (
-                    <option key={license} value={license}>
-                      {license}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-
-            <label className="field-stack">
-              <span className="field-label">README</span>
+              <span className="field-label">README Optional</span>
               <textarea
                 className="textarea publish-input publish-readme"
                 name="readme_markdown"
-                placeholder={"# What this lobster does\n\nDescribe the vibe, workflow, tools, and the sharp edges it handles best."}
-                required
+                placeholder={"Leave blank and we will organize a README from the uploaded workspace files."}
               />
             </label>
           </div>
-        </section>
 
-        <aside className="publish-side">
-          <section className="shell page-panel publish-side-card">
-            <div className="publish-panel-head">
-              <h2 className="panel-title">Workspace drop</h2>
-              <p className="page-subtitle">Share the files that make this lobster useful.</p>
+          <section className="publish-subpanel publish-workspace-panel">
+            <div className="field-stack">
+              <span className="field-label">Workspace drop</span>
             </div>
 
             <div className="publish-upload-box">
@@ -362,47 +344,54 @@ export default function PublishPage() {
             </div>
           </section>
 
-          <section className="shell page-panel publish-side-card">
-            <div className="publish-panel-head">
-              <h2 className="panel-title">Release defaults</h2>
-              <p className="page-subtitle">The first publish is intentionally boring.</p>
-            </div>
+          <div className="publish-secondary-grid">
+            <section className="publish-subpanel">
+              <div className="field-stack">
+                <span className="field-label">Release defaults</span>
+              </div>
 
-            <div className="publish-defaults">
-              <div className="subcard">
-                <div className="field-label">Version</div>
-                <div className="publish-static">1.0.0</div>
+              <div className="publish-defaults">
+                <div className="subcard">
+                  <div className="field-label">Version</div>
+                  <div className="publish-static">1.0.0</div>
+                </div>
+                <div className="subcard">
+                  <div className="field-label">Changelog</div>
+                  <div className="publish-static">Initial release</div>
+                </div>
+                <div className="subcard">
+                  <div className="field-label">Starter skill path</div>
+                  <div className="publish-static mono">skills/main.py</div>
+                </div>
               </div>
-              <div className="subcard">
-                <div className="field-label">Changelog</div>
-                <div className="publish-static">Initial release</div>
+            </section>
+
+            <section className="publish-subpanel">
+              <div className="field-stack">
+                <span className="field-label">Optional extras</span>
               </div>
-              <div className="subcard">
-                <div className="field-label">Starter skill path</div>
-                <div className="publish-static mono">skills/main.py</div>
+
+              <div className="form-grid">
+                <label className="field-stack">
+                  <span className="field-label">Source repo Optional</span>
+                  <input className="input publish-input" name="source_repo" placeholder="https://github.com/you/project" />
+                </label>
               </div>
+            </section>
+          </div>
+
+          <section className="publish-footer publish-footer-inline">
+            <div>
+              <h2 className="panel-title">Ready to ship</h2>
+              <p className="page-subtitle">This creates the lobster and its first version in one go.</p>
             </div>
+            <button className="btn btn-primary publish-submit" type="submit" disabled={loading}>
+              {loading ? "Publishing..." : "Publish lobster"}
+            </button>
           </section>
+        </section>
 
-          <section className="shell page-panel publish-side-card">
-            <div className="publish-panel-head">
-              <h2 className="panel-title">Optional extras</h2>
-              <p className="page-subtitle">Only if you want them on day one.</p>
-            </div>
-
-            <div className="form-grid">
-              <label className="field-stack">
-                <span className="field-label">Source repo</span>
-                <input className="input publish-input" name="source_repo" placeholder="https://github.com/you/project" />
-              </label>
-
-              <label className="publish-toggle">
-                <input type="checkbox" name="is_hireable" />
-                <span>Mark this lobster as hireable</span>
-              </label>
-            </div>
-          </section>
-
+        <aside className="publish-side">
           <section className="shell page-panel publish-side-card">
             <div className="publish-panel-head">
               <h2 className="panel-title">OpenClaw CLI</h2>
@@ -415,7 +404,7 @@ export default function PublishPage() {
               </div>
               <div className="subcard">
                 <div className="field-label">Publish to ClawLodge</div>
-                <div className="publish-static mono">npm run openclaw:lodge:publish -- --workspace ~/my-workspace --origin {apiOrigin || "http://localhost:3002"}</div>
+                <div className="publish-static mono">npm run openclaw:lodge:publish -- --workspace ~/my-workspace --origin http://localhost:3001</div>
               </div>
             </div>
           </section>
@@ -426,21 +415,11 @@ export default function PublishPage() {
             </div>
             <div className="publish-validation">
               <p>Name is required.</p>
-              <p>README is required.</p>
-              <p>Everything else can be edited later.</p>
+              <p>README is optional.</p>
+              <p>Tags and summary can be generated later.</p>
             </div>
           </section>
         </aside>
-
-        <section className="shell page-panel publish-footer">
-          <div>
-            <h2 className="panel-title">Ready to ship</h2>
-            <p className="page-subtitle">This creates the lobster and its first version in one go.</p>
-          </div>
-          <button className="btn btn-primary publish-submit" type="submit" disabled={loading}>
-            {loading ? "Publishing..." : "Publish lobster"}
-          </button>
-        </section>
       </form>
 
       {message ? <p className="publish-error">{message}</p> : null}

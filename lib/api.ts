@@ -49,6 +49,12 @@ export function removeFavorite(slug: string) {
   return request(`/lobsters/${slug}/favorite`, { method: "DELETE" });
 }
 
+export function addShare(slug: string) {
+  return request<{ lobster_slug: string; share_count: number }>(`/lobsters/${slug}/share`, {
+    method: "POST",
+  });
+}
+
 export function addComment(slug: string, content: string) {
   return request<CommentItem>(`/lobsters/${slug}/comments`, {
     method: "POST",
@@ -68,7 +74,6 @@ export function createLobster(payload: {
   summary: string;
   license: string;
   tags: string[];
-  is_hireable: boolean;
 }) {
   return request<LobsterDetail>("/lobsters", {
     method: "POST",

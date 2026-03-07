@@ -25,16 +25,16 @@ export function LobsterCard({ item }: { item: LobsterSummary }) {
       {item.curation_note ? <p className="lobster-card-note">{item.curation_note}</p> : null}
       <div className="lobster-card-tags">
         {item.tags.map((tag) => (
-          <span key={tag} className="tag">
+          <Link key={tag} className="tag" href={`/?tag=${encodeURIComponent(tag)}`}>
             #{tag}
-          </span>
+          </Link>
         ))}
       </div>
       <div className="lobster-card-footer">
         <span className="stat">Hot {item.hot_score.toFixed(2)}</span>
         <span className="stat">Fav {item.favorite_count}</span>
+        <span className="stat">Share {item.share_count}</span>
         <span className="stat">Comments {item.comment_count}</span>
-        {item.is_hireable ? <span className="stat accent">Hireable</span> : null}
       </div>
     </article>
   );

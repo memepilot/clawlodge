@@ -14,9 +14,9 @@ export type LobsterSummary = {
   tags: string[];
   latest_version?: string | null;
   favorite_count: number;
+  share_count: number;
   comment_count: number;
   hot_score: number;
-  is_hireable: boolean;
   status: string;
   created_at: string;
 };
