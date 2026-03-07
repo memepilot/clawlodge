@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { apiOrigin } from "@/lib/api";
 
@@ -12,6 +13,10 @@ export default async function LoginPage({
   const params = await searchParams;
   const next = params.next && params.next.startsWith("/") ? params.next : "/";
   const githubLoginUrl = `${apiOrigin}/api/v1/auth/github/start?next=${encodeURIComponent(next)}`;
+
+  if (!params.error) {
+    redirect(githubLoginUrl);
+  }
 
   return (
     <div className="page-shell">

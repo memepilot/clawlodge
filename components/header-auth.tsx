@@ -1,11 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { getMe, logout } from "@/lib/api";
+import Link from "next/link";
+
+import { apiOrigin, getMe, logout } from "@/lib/api";
 import { MeProfile } from "@/lib/types";
 
 export function HeaderAuth() {
@@ -28,10 +29,11 @@ export function HeaderAuth() {
   }
 
   if (!profile) {
+    const githubLoginUrl = `${apiOrigin}/api/v1/auth/github/start?next=${encodeURIComponent(nextPath)}`;
     return (
-      <Link className="btn" href={`/login?next=${encodeURIComponent(nextPath)}`}>
+      <a className="btn" href={githubLoginUrl}>
         Login with GitHub
-      </Link>
+      </a>
     );
   }
 

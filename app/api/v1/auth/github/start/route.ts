@@ -5,15 +5,23 @@ import {
   encodeGithubOauthState,
   GITHUB_OAUTH_COOKIE,
 } from "@/lib/server/auth";
-import { buildGithubAuthorizeUrl, createGithubOauthState, getGithubOauthConfig } from "@/lib/server/github-oauth";
+import {
+  buildGithubAuthorizeUrl,
+  createGithubOauthState,
+  getGithubOauthConfig,
+  getPublicAppOrigin,
+} from "@/lib/server/github-oauth";
 
 export async function GET(request: NextRequest) {
   const next = request.nextUrl.searchParams.get("next");
   const safeNext = next && next.startsWith("/") ? next : "/";
   const config = getGithubOauthConfig(request.nextUrl.origin);
+  const appOrigin = getPublicAppOrigin(request.nextUrl.origin);
 
   if (!config) {
-    return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent("GitHub OAuth not configured")}&next=${encodeURIComponent(safeNext)}`, request.url));
+    return NextResponse.redirect(
+      new URL(`/login?error=${encodeURIComponent("GitHub OAuth not configured")}&next=${encodeURIComponent(safeNext)}`, appOrigin),
+    );
   }
 
   const state = createGithubOauthState();

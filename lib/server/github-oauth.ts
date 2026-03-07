@@ -23,7 +23,7 @@ type GithubEmailRecord = {
 export function getGithubOauthConfig(requestOrigin?: string) {
   const clientId = process.env.GITHUB_CLIENT_ID?.trim();
   const clientSecret = process.env.GITHUB_CLIENT_SECRET?.trim();
-  const appOrigin = process.env.APP_ORIGIN?.trim() || requestOrigin?.trim();
+  const appOrigin = getPublicAppOrigin(requestOrigin);
 
   if (!clientId || !clientSecret || !appOrigin) {
     return null;
@@ -34,6 +34,15 @@ export function getGithubOauthConfig(requestOrigin?: string) {
     clientSecret,
     appOrigin: appOrigin.replace(/\/$/, ""),
   };
+}
+
+export function getPublicAppOrigin(requestOrigin?: string) {
+  return (
+    process.env.APP_ORIGIN?.trim() ||
+    process.env.NEXT_PUBLIC_API_ORIGIN?.trim() ||
+    requestOrigin?.trim() ||
+    ""
+  ).replace(/\/$/, "");
 }
 
 export function buildGithubAuthorizeUrl(config: { clientId: string; appOrigin: string }, state: string) {

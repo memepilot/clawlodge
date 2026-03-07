@@ -39,14 +39,30 @@ PORT=3001 npm run start
 
 ## Deploy On Your VPS
 
-1. Point `clawlodge.com` and `www.clawlodge.com` to the server IP.
-2. Install Node.js 22, Nginx, and Certbot.
-3. Clone the repo into `/var/www/clawlodge`.
-4. Fill `.env.production` from `.env.production.example`.
-5. Run `npm ci && npm run build`.
-6. Install `deploy/clawlodge.service` into `/etc/systemd/system/clawlodge.service` and set the correct `User`.
-7. Install `deploy/nginx.clawlodge.conf` into `/etc/nginx/sites-available/clawlodge.com` and enable it.
-8. Run Certbot for TLS.
+Fast path:
+
+```bash
+cd /tmp
+git clone https://github.com/2shou-clone/clawlodge.git
+cd clawlodge
+APP_DOMAIN=clawlodge.com APP_WWW_DOMAIN=www.clawlodge.com APP_USER=$USER bash deploy/install-vps.sh
+```
+
+Optional TLS in the same script:
+
+```bash
+APP_DOMAIN=clawlodge.com APP_WWW_DOMAIN=www.clawlodge.com APP_USER=$USER SETUP_TLS=true EMAIL=you@example.com bash deploy/install-vps.sh
+```
+
+What the script does:
+
+1. Installs Node.js, Nginx, and build tools.
+2. Clones or updates the repo in `/var/www/clawlodge`.
+3. Creates `.env.production` from the example if it does not exist.
+4. Runs `npm ci` and `npm run build`.
+5. Writes the `systemd` service and Nginx site config.
+6. Enables and restarts the app.
+7. Optionally requests TLS with Certbot.
 
 ## Auth Flow
 

@@ -9,12 +9,18 @@ import {
   SESSION_COOKIE,
 } from "@/lib/server/auth";
 import { ApiError } from "@/lib/server/errors";
-import { exchangeGithubCode, fetchGithubUserProfile, getGithubOauthConfig } from "@/lib/server/github-oauth";
+import {
+  exchangeGithubCode,
+  fetchGithubUserProfile,
+  getGithubOauthConfig,
+  getPublicAppOrigin,
+} from "@/lib/server/github-oauth";
 import { findOrCreateGithubUser } from "@/lib/server/service";
 
 function errorRedirect(request: NextRequest, message: string, nextPath: string) {
+  const appOrigin = getPublicAppOrigin(request.nextUrl.origin);
   return NextResponse.redirect(
-    new URL(`/login?error=${encodeURIComponent(message)}&next=${encodeURIComponent(nextPath)}`, request.url),
+    new URL(`/login?error=${encodeURIComponent(message)}&next=${encodeURIComponent(nextPath)}`, appOrigin),
   );
 }
 
@@ -51,7 +57,7 @@ export async function GET(request: NextRequest) {
     });
     const session = await createSessionForUser(user.id);
 
-    const response = NextResponse.redirect(new URL(nextPath, request.url));
+    const response = NextResponse.redirect(new URL(nextPath, getPublicAppOrigin(request.nextUrl.origin)));
     response.cookies.set(SESSION_COOKIE, session.token, buildCookieOptions(session.expiresAt));
     response.cookies.set(GITHUB_OAUTH_COOKIE, "", buildExpiredCookieOptions());
     return response;
