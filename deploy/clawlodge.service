@@ -1,0 +1,17 @@
+[Unit]
+Description=ClawLodge Next.js App
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/var/www/clawlodge
+Environment=NODE_ENV=production
+Environment=PORT=3001
+EnvironmentFile=/var/www/clawlodge/.env.production
+ExecStart=/usr/bin/npm run start
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
