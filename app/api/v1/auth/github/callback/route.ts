@@ -18,10 +18,9 @@ import {
 import { findOrCreateGithubUser } from "@/lib/server/service";
 
 function errorRedirect(request: NextRequest, message: string, nextPath: string) {
-  const appOrigin = getPublicAppOrigin(request.nextUrl.origin);
-  return NextResponse.redirect(
-    new URL(`/login?error=${encodeURIComponent(message)}&next=${encodeURIComponent(nextPath)}`, appOrigin),
-  );
+  const url = new URL(nextPath, getPublicAppOrigin(request.nextUrl.origin) || request.nextUrl.origin);
+  url.searchParams.set("auth_error", message);
+  return NextResponse.redirect(url);
 }
 
 export async function GET(request: NextRequest) {

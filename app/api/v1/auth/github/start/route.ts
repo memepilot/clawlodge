@@ -9,19 +9,21 @@ import {
   buildGithubAuthorizeUrl,
   createGithubOauthState,
   getGithubOauthConfig,
-  getPublicAppOrigin,
 } from "@/lib/server/github-oauth";
+
+function appendAuthError(pathname: string, message: string) {
+  const url = new URL(pathname, "http://local");
+  url.searchParams.set("auth_error", message);
+  return `${url.pathname}${url.search}`;
+}
 
 export async function GET(request: NextRequest) {
   const next = request.nextUrl.searchParams.get("next");
   const safeNext = next && next.startsWith("/") ? next : "/";
   const config = getGithubOauthConfig(request.nextUrl.origin);
-  const appOrigin = getPublicAppOrigin(request.nextUrl.origin);
 
   if (!config) {
-    return NextResponse.redirect(
-      new URL(`/login?error=${encodeURIComponent("GitHub OAuth not configured")}&next=${encodeURIComponent(safeNext)}`, appOrigin),
-    );
+    return NextResponse.redirect(new URL(appendAuthError(safeNext, "GitHub OAuth not configured"), request.url));
   }
 
   const state = createGithubOauthState();
