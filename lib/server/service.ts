@@ -672,6 +672,7 @@ export async function uploadViaMcp(
         searchDocument: `${manifest.name}\n${manifest.summary}`,
         tags: [],
         favoriteCount: 0,
+        shareCount: 0,
         commentCount: 0,
         createdAt: now,
         updatedAt: now,
