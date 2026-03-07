@@ -1,19 +1,24 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
 
-import { addComment, addFavorite, removeFavorite, reportLobster } from "@/lib/api";
+import { addComment, addFavorite, apiOrigin, removeFavorite, reportLobster } from "@/lib/api";
 import { CommentItem } from "@/lib/types";
 
 export function LobsterActions({ slug, initialComments }: { slug: string; initialComments: CommentItem[] }) {
+  const pathname = usePathname();
   const [favorited, setFavorited] = useState(false);
   const [busy, setBusy] = useState(false);
   const [commentDraft, setCommentDraft] = useState("");
   const [comments, setComments] = useState<CommentItem[]>(initialComments);
   const [reportReason, setReportReason] = useState("Spam or unsafe content");
   const [message, setMessage] = useState("");
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const hasComments = useMemo(() => comments.length > 0, [comments]);
+  const nextPath = pathname || `/lobsters/${slug}`;
+  const githubLoginUrl = `${apiOrigin}/api/v1/auth/github/start?next=${encodeURIComponent(nextPath)}`;
 
   async function onToggleFavorite() {
     if (busy) return;
@@ -43,7 +48,12 @@ export function LobsterActions({ slug, initialComments }: { slug: string; initia
       setComments((prev) => [...prev, created]);
       setCommentDraft("");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Comment failed");
+      const errorMessage = error instanceof Error ? error.message : "Comment failed";
+      if (errorMessage.includes("Authentication required")) {
+        setShowLoginModal(true);
+        return;
+      }
+      setMessage(errorMessage);
     }
   }
 
@@ -59,8 +69,9 @@ export function LobsterActions({ slug, initialComments }: { slug: string; initia
   }
 
   return (
-    <section className="grid gap-4 md:grid-cols-2">
-      <div className="shell page-panel p-4">
+    <>
+      <section className="grid gap-4 md:grid-cols-2">
+        <div className="shell page-panel p-4">
         <h3 className="panel-title">Community</h3>
         <button className={`btn mt-3 ${favorited ? "btn-primary" : ""}`} onClick={onToggleFavorite}>
           {favorited ? "Unfavorite" : "Favorite"}
@@ -91,24 +102,52 @@ export function LobsterActions({ slug, initialComments }: { slug: string; initia
             <p className="muted">No comments yet.</p>
           )}
         </div>
-      </div>
+        </div>
 
-      <div className="shell page-panel p-4">
-        <h3 className="panel-title">Safety</h3>
-        <form className="mt-3 space-y-2" onSubmit={onReportSubmit}>
-          <label className="text-sm">Report reason</label>
-          <textarea
-            className="textarea min-h-24"
-            value={reportReason}
-            onChange={(event) => setReportReason(event.target.value)}
-          />
-          <button className="btn" type="submit">
-            Submit Report
-          </button>
-        </form>
-      </div>
+        <div className="shell page-panel p-4">
+          <h3 className="panel-title">Safety</h3>
+          <form className="mt-3 space-y-2" onSubmit={onReportSubmit}>
+            <label className="text-sm">Report reason</label>
+            <textarea
+              className="textarea min-h-24"
+              value={reportReason}
+              onChange={(event) => setReportReason(event.target.value)}
+            />
+            <button className="btn" type="submit">
+              Submit Report
+            </button>
+          </form>
+        </div>
 
-      {message ? <p className="text-sm text-[var(--brand)] md:col-span-2">{message}</p> : null}
-    </section>
+        {message ? <p className="text-sm text-[var(--brand)] md:col-span-2">{message}</p> : null}
+      </section>
+
+      {showLoginModal ? (
+        <div className="modal-backdrop" role="presentation" onClick={() => setShowLoginModal(false)}>
+          <div
+            className="modal-card shell"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="comment-login-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3 id="comment-login-title" className="panel-title">
+              Login required
+            </h3>
+            <p className="page-subtitle">
+              You need to log in with GitHub before posting a comment.
+            </p>
+            <div className="modal-actions">
+              <a className="btn btn-primary" href={githubLoginUrl}>
+                Login with GitHub
+              </a>
+              <button className="btn btn-quiet" type="button" onClick={() => setShowLoginModal(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }

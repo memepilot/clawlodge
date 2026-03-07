@@ -467,6 +467,29 @@ main {
   padding: 12px 14px;
 }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(42, 31, 25, 0.38);
+  backdrop-filter: blur(8px);
+}
+
+.modal-card {
+  width: min(100%, 420px);
+  padding: 24px;
+}
+
+.modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+}
+
 .code-block {
   overflow: auto;
   border: 1px solid rgba(255, 107, 74, 0.2);
