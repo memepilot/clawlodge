@@ -287,96 +287,28 @@ function truncateSummary(value: string, maxLength = MAX_SUMMARY_LENGTH) {
   const normalized = value.replace(/\s+/g, " ").trim();
   if (!normalized) return "";
   if (normalized.length <= maxLength) return normalized;
-
-  const sentenceMatch = normalized.slice(0, maxLength + 1).match(/^(.+?[.!?。！？])(?:\s|$)/);
-  if (sentenceMatch?.[1] && sentenceMatch[1].length >= Math.min(80, maxLength)) {
-    return sentenceMatch[1].trim();
-  }
-
-  const window = normalized.slice(0, maxLength + 1);
-  const lastBoundary = Math.max(window.lastIndexOf(". "), window.lastIndexOf("! "), window.lastIndexOf("? "), window.lastIndexOf("。"), window.lastIndexOf("！"), window.lastIndexOf("？"));
-  if (lastBoundary >= 70) {
-    return window.slice(0, lastBoundary + 1).trim();
-  }
-
-  const lastSpace = window.lastIndexOf(" ");
-  if (lastSpace >= 70) {
-    return `${window.slice(0, lastSpace).trim()}...`;
-  }
-
-  return `${window.slice(0, maxLength - 3).trim()}...`;
+  return `${normalized.slice(0, maxLength - 3).trim()}...`;
 }
 
-function extractSummaryCandidate(name: string, readmeMarkdown: string) {
-  const escapedName = name.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const withoutFrontmatter = readmeMarkdown.replace(/^---\s*\n[\s\S]*?\n---\s*\n?/, "");
-  const withoutCodeBlocks = withoutFrontmatter.replace(/```[\s\S]*?```/g, " ");
-  const paragraphs = withoutCodeBlocks
-    .split(/\n\s*\n/)
-    .map((part) =>
-      part
-        .replace(/<img\b[^>]*>/gi, " ")
-        .replace(/<br\s*\/?>/gi, " ")
-        .replace(/<[^>]+>/g, " ")
-        .replace(/!\[[^\]]*]\([^)]+\)/g, " ")
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-        .replace(/^#+\s*/gm, "")
-        .replace(/^>\s*/gm, "")
-        .replace(/`+/g, "")
-        .replace(/\*+/g, "")
-        .replace(/\|/g, " ")
-        .replace(/\s+/g, " ")
-        .trim(),
-    )
-    .filter(Boolean);
-
-  const blacklist = [
-    /^version\b/i,
-    /^license\b/i,
-    /^stars\b/i,
-    /^prs?\b/i,
-    /^skills?\b/i,
-    /^workflows?\b/i,
-    /^openclaw[-\s\w]*config$/i,
-    /^openclaw[-\s\w]*workspace$/i,
-  ];
-
-  for (const paragraph of paragraphs) {
-    const withoutNamePrefix = paragraph
-      .replace(new RegExp(`^[^\\p{L}\\p{N}]*${escapedName}(?:\\s*[—:：-]\\s*|\\s+)`, "iu"), "")
-      .trim();
-    const candidate = withoutNamePrefix || paragraph;
-    if (candidate.length < 20) continue;
-    if (blacklist.some((pattern) => pattern.test(candidate))) continue;
-    if (candidate.toLowerCase() === name.trim().toLowerCase()) continue;
-    return candidate;
-  }
-
-  return "";
-}
-
-function normalizeSummary(name: string, rawSummary: string, readmeMarkdown: string) {
-  const candidate = rawSummary
+function sanitizeSummarySource(value: string) {
+  return value
     .replace(/<[^>]+>/g, " ")
     .replace(/\[(.*?)\]\((.*?)\)/g, "$1")
     .replace(/`/g, "")
+    .replace(/^---\s*\n[\s\S]*?\n---\s*\n?/g, " ")
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/!\[[^\]]*]\([^)]+\)/g, " ")
+    .replace(/^#+\s*/gm, "")
+    .replace(/^>\s*/gm, "")
+    .replace(/\*+/g, "")
+    .replace(/\|/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-
-  if (candidate && candidate.length <= MAX_SUMMARY_LENGTH && /[.!?。！？]$/.test(candidate)) {
-    return candidate;
-  }
-
-  const extracted = extractSummaryCandidate(name, readmeMarkdown);
-  if (extracted) return truncateSummary(extracted);
-
-  if (candidate) return truncateSummary(candidate);
-  return `${name} OpenClaw config workspace.`;
 }
 
 function buildSummaryFallback(name: string, readmeMarkdown: string) {
-  const extracted = extractSummaryCandidate(name, readmeMarkdown);
-  return extracted ? truncateSummary(extracted) : `${name} OpenClaw config workspace.`;
+  const normalized = sanitizeSummarySource(readmeMarkdown);
+  return normalized ? truncateSummary(normalized) : `${name} OpenClaw config workspace.`;
 }
 
 async function generateWorkspaceSummary(name: string, readmeMarkdown: string) {
@@ -418,7 +350,7 @@ async function generateWorkspaceSummary(name: string, readmeMarkdown: string) {
     ? body.choices[0].message.content.replace(/\s+/g, " ").trim()
     : "";
 
-  return normalizeSummary(name, summary, readmeMarkdown);
+  return summary ? truncateSummary(summary) : buildSummaryFallback(name, readmeMarkdown);
 }
 
 function toSummary(item: DbLobster, owner: DbUser): LobsterSummary {
