@@ -284,10 +284,21 @@ async function generateWorkspaceReadme(payload: WorkspacePublishPayload) {
 }
 
 function truncateSummary(value: string, maxLength = MAX_SUMMARY_LENGTH) {
-  const normalized = value.replace(/\s+/g, " ").trim();
+  const normalized = value
+    .replace(
+      /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]|\uFFFD/g,
+      "",
+    )
+    .replace(/\s+/g, " ")
+    .trim();
   if (!normalized) return "";
-  if (normalized.length <= maxLength) return normalized;
-  return `${normalized.slice(0, maxLength - 3).trim()}...`;
+  const chars = Array.from(normalized);
+  if (chars.length <= maxLength) return normalized;
+  return `${chars.slice(0, maxLength - 3).join("").trim()}...`;
+}
+
+function normalizeStoredSummary(value: string) {
+  return truncateSummary(value, MAX_SUMMARY_LENGTH);
 }
 
 function sanitizeSummarySource(value: string) {
@@ -357,7 +368,7 @@ function toSummary(item: DbLobster, owner: DbUser): LobsterSummary {
   return {
     slug: item.slug,
     name: item.name,
-    summary: item.summary,
+    summary: normalizeStoredSummary(item.summary),
     license: item.license,
     source_type: item.sourceType,
     source_url: item.sourceUrl,
