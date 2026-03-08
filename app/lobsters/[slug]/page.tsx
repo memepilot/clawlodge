@@ -76,6 +76,7 @@ export default async function LobsterDetailPage({
             publishClient={latest.publish_client}
             maskedSecretsCount={latest.masked_secrets_count}
             blockedFilesCount={latest.blocked_files_count}
+            downloadHref={`/api/v1/lobsters/${encodeURIComponent(slug)}/versions/${encodeURIComponent(latest.version)}/download`}
           />
         </section>
       ) : null}

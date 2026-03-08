@@ -47,6 +47,21 @@ function formatWorkspaceSize(size: number) {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function formatPublishedAt(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+    timeZone: "UTC",
+  }).format(date).replace(",", "");
+}
+
 function findPreviewFile(files: WorkspaceFile[], currentDir: string) {
   const entries = listWorkspaceEntries(files, currentDir);
   const firstTextFile = entries.find((entry) => entry.type === "file" && entry.file.kind === "text");
@@ -59,12 +74,14 @@ export function WorkspaceBrowser({
   publishClient,
   maskedSecretsCount,
   blockedFilesCount,
+  downloadHref,
 }: {
   files: WorkspaceFile[];
   publishedAt: string;
   publishClient?: string | null;
   maskedSecretsCount?: number;
   blockedFilesCount?: number;
+  downloadHref: string;
 }) {
   const [currentDir, setCurrentDir] = useState("");
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
@@ -83,11 +100,16 @@ export function WorkspaceBrowser({
           <h2 className="panel-title">Workspace</h2>
           <p className="page-subtitle mt-2">Current published snapshot. New publishes overwrite this view.</p>
         </div>
-        <div className="workspace-browser-meta muted text-xs">
-          <span>{files.length} files</span>
-          <span>Updated {new Date(publishedAt).toLocaleString()}</span>
-          {maskedSecretsCount ? <span>{maskedSecretsCount} redactions</span> : null}
-          {blockedFilesCount ? <span>{blockedFilesCount} blocked</span> : null}
+        <div className="workspace-browser-aside">
+          <a className="btn" href={downloadHref}>
+            Download .zip
+          </a>
+          <div className="workspace-browser-meta muted text-xs">
+            <span>{files.length} files</span>
+            <span>Updated {formatPublishedAt(publishedAt)} UTC</span>
+            {maskedSecretsCount ? <span>{maskedSecretsCount} redactions</span> : null}
+            {blockedFilesCount ? <span>{blockedFilesCount} blocked</span> : null}
+          </div>
         </div>
       </div>
 
