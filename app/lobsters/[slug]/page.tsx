@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
 
 import { LobsterActions } from "@/components/lobster-actions";
 import { WorkspaceBrowser } from "@/components/workspace-browser";
+import { ApiError } from "@/lib/server/errors";
 import { getComments, getLobsterBySlug } from "@/lib/server/service";
 
 export default async function LobsterDetailPage({
@@ -13,7 +15,15 @@ export default async function LobsterDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const lobster = await getLobsterBySlug(slug);
+  let lobster;
+  try {
+    lobster = await getLobsterBySlug(slug);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      notFound();
+    }
+    throw error;
+  }
   const comments = await getComments(slug);
   const latest = lobster.versions[0];
 
