@@ -10,6 +10,7 @@ Thumbs.db
 node_modules/
 .next/
 out/
+output/
 dist/
 coverage/
 .clawlodge/
@@ -24,11 +25,7 @@ __pycache__/
 .mypy_cache/
 
 # Local runtime data and uploads
-data/app-db.json
-data/storage/
-data/*.db
-data/*.sqlite
-data/*.sqlite3
+data/
 
 # Logs
 *.log
