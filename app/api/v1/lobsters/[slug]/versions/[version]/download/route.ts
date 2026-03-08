@@ -10,7 +10,7 @@ export async function GET(
   try {
     const { slug, version } = await params;
     const archive = await buildLobsterVersionZip(slug, version);
-    return new NextResponse(archive.body, {
+    return new NextResponse(Buffer.from(archive.body), {
       status: 200,
       headers: {
         "Content-Type": "application/zip",

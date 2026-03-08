@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REMOTE_HOST="${REMOTE_HOST:-openclaw}"
-REMOTE_DIR="${REMOTE_DIR:-/var/www}"
+REMOTE_DIR="${REMOTE_DIR:-/var/www/clawlodge}"
 REMOTE_SERVICE="${REMOTE_SERVICE:-clawlodge}"
 REMOTE_DATA_DIR="${REMOTE_DATA_DIR:-/var/lib/clawlodge}"
 REMOTE_BRANCH="${REMOTE_BRANCH:-$(cd "${ROOT_DIR}" && git rev-parse --abbrev-ref HEAD)}"
