@@ -91,6 +91,27 @@ export default async function LobsterDetailPage({
         </section>
       ) : null}
 
+      {lobster.source_url ? (
+        <section className="shell page-panel p-5 md:p-6">
+          <div className="stack-sm">
+            <h2 className="panel-title">Source Repository</h2>
+            <p className="muted text-sm">
+              Original GitHub repository for this workspace.
+            </p>
+            <div>
+              <a
+                className="inline-link"
+                href={lobster.source_url}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {lobster.source_url}
+              </a>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       <LobsterActions
         slug={slug}
         initialComments={comments}
