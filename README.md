@@ -14,12 +14,8 @@ ClawLodge is a share hub for OpenClaw workspaces. It lets people publish configs
 
 ## Screenshot
 
-<!-- Replace these placeholders with real screenshots when available. -->
-
-![ClawLodge home page screenshot placeholder](./docs/screenshots/home-placeholder.svg)
-![ClawLodge lobster detail screenshot placeholder](./docs/screenshots/detail-placeholder.svg)
-
-If screenshots are not ready yet, create the files above or replace them with hosted image URLs later.
+![ClawLodge home page screenshot](./docs/screenshots/home-placeholder.png)
+![ClawLodge lobster detail screenshot](./docs/screenshots/detail-placeholder.png)
 
 ## Features
 

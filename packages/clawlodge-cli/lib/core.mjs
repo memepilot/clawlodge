@@ -316,7 +316,7 @@ async function buildPayload(options) {
       readme_markdown: readme || undefined,
       source_repo: options.source_repo?.trim() || undefined,
       source_commit: options.source_commit?.trim() || undefined,
-      publish_client: "clawlodge-cli/0.1.2",
+      publish_client: "clawlodge-cli/0.1.4",
       workspace_files: shared,
       blocked_files: blocked,
       skills: Array.from(skills.values()),
