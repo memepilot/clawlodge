@@ -4,7 +4,17 @@ import path from "node:path";
 import { allowedLicenses, semverRe, slugify } from "./utils";
 
 const ALLOWED_ROOT_FILES = new Set(["AGENTS.md", "SOUL.md", "TOOLS.md", "README.md"]);
-const ALLOWED_PREFIXES = ["skills/", "examples/", "templates/", "prompts/", "memory/", ".openclaw/"];
+const ALLOWED_PREFIXES = [
+  "skills/",
+  "examples/",
+  "templates/",
+  "prompts/",
+  "memory/",
+  "workflows/",
+  "devops/",
+  "docs/",
+  ".openclaw/",
+];
 const BLOCKED_DIRS = new Set([
   ".git",
   ".next",

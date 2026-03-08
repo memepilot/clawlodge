@@ -5,7 +5,17 @@ import readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 
 const ALLOWED_ROOT_FILES = new Set(["AGENTS.md", "SOUL.md", "TOOLS.md", "README.md"]);
-const ALLOWED_PREFIXES = ["skills/", "examples/", "templates/", "prompts/", "memory/", ".openclaw/"];
+const ALLOWED_PREFIXES = [
+  "skills/",
+  "examples/",
+  "templates/",
+  "prompts/",
+  "memory/",
+  "workflows/",
+  "devops/",
+  "docs/",
+  ".openclaw/",
+];
 const BLOCKED_DIRS = new Set([".git", ".next", "node_modules", "dist", "build", "coverage", ".idea", ".vscode", "tmp", "temp", "logs", "data"]);
 const BLOCKED_FILE_NAMES = [/^\.env(\..+)?$/i, /^id_(rsa|dsa|ecdsa|ed25519)(\.pub)?$/i];
 const BLOCKED_FILE_EXTENSIONS = new Set([".pem", ".key", ".p12", ".pfx", ".db", ".sqlite", ".sqlite3", ".log"]);
