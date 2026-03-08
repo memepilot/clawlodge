@@ -1094,7 +1094,8 @@ main {
 .markdown p,
 .markdown ul,
 .markdown ol,
-.markdown blockquote {
+.markdown blockquote,
+.markdown table {
   margin: 0.85em 0;
 }
 
@@ -1123,6 +1124,54 @@ main {
 
 .markdown a {
   color: var(--accent-deep);
+}
+
+.markdown table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  border: 1px solid rgba(22, 42, 59, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.markdown thead {
+  background: rgba(244, 238, 233, 0.88);
+}
+
+.markdown th,
+.markdown td {
+  padding: 14px 18px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid rgba(22, 42, 59, 0.08);
+}
+
+.markdown th {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.markdown tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.markdown tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.markdown td > :first-child,
+.markdown th > :first-child {
+  margin-top: 0;
+}
+
+.markdown td > :last-child,
+.markdown th > :last-child {
+  margin-bottom: 0;
 }
 
 .markdown pre {
