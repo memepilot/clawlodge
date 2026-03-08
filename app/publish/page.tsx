@@ -394,17 +394,17 @@ export default function PublishPage() {
         <aside className="publish-side">
           <section className="shell page-panel publish-side-card">
             <div className="publish-panel-head">
-              <h2 className="panel-title">OpenClaw CLI</h2>
+              <h2 className="panel-title">ClawLodge CLI</h2>
               <p className="page-subtitle">Publish straight from your workspace with PAT auth and automatic redaction.</p>
             </div>
             <div className="publish-defaults">
               <div className="subcard">
                 <div className="field-label">Pack locally</div>
-                <div className="publish-static mono">npm run openclaw:lodge:pack -- --workspace ~/my-workspace</div>
+                <div className="publish-static mono">clawlodge pack --workspace ~/my-workspace</div>
               </div>
               <div className="subcard">
                 <div className="field-label">Publish to ClawLodge</div>
-                <div className="publish-static mono">npm run openclaw:lodge:publish -- --workspace ~/my-workspace --origin http://localhost:3001</div>
+                <div className="publish-static mono">clawlodge publish --workspace ~/my-workspace --origin http://localhost:3001</div>
               </div>
             </div>
           </section>

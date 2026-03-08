@@ -17,8 +17,8 @@ export default function MCPPage() {
 2. Pack a workspace locally
 3. Publish the generated bundle to ClawLodge
 
-npm run openclaw:lodge:pack -- --workspace ~/my-workspace
-npm run openclaw:lodge:publish -- --workspace ~/my-workspace --origin http://localhost:3001`}
+clawlodge pack --workspace ~/my-workspace
+clawlodge publish --workspace ~/my-workspace --origin http://localhost:3001`}
         </pre>
       </section>
 

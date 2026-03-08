@@ -3,8 +3,9 @@ import path from "node:path";
 
 import { ApiError } from "./errors";
 
-const storageDir = path.resolve(process.cwd(), "data", "storage");
-const storageMarker = `${path.sep}data${path.sep}storage${path.sep}`;
+const dataDir = path.resolve(process.env.CLAWLODGE_DATA_DIR || path.join(process.cwd(), "data"));
+const storageDir = path.join(dataDir, "storage");
+const storageMarker = `${storageDir}${path.sep}`;
 
 function normalizeKey(key: string) {
   const normalized = key.replace(/\\/g, "/").replace(/^\/+/, "");

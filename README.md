@@ -6,8 +6,8 @@ Single-service OpenClaw lobster sharing hub built with Next.js App Router. UI an
 
 - Next.js App Router + React
 - Route handlers under `app/api/v1`
-- Local JSON store in `data/app-db.json`
-- Local file storage in `data/storage`
+- Local JSON store in `CLAWLODGE_DATA_DIR/app-db.json` (defaults to `data/app-db.json`)
+- Local file storage in `CLAWLODGE_DATA_DIR/storage` (defaults to `data/storage`)
 
 ## Local Run
 
@@ -29,6 +29,7 @@ APP_ORIGIN=http://127.0.0.1:3001
 ## Required Env
 
 - `APP_ORIGIN`: optional public origin override. Leave empty for local self-hosting so the current request origin is used. Set it explicitly for production, for example `https://clawlodge.com`
+- `CLAWLODGE_DATA_DIR`: optional data directory override. Leave empty locally to use `./data`; set it in production to a persistent path such as `/var/lib/clawlodge`
 - `GITHUB_CLIENT_ID`: GitHub OAuth app client id
 - `GITHUB_CLIENT_SECRET`: GitHub OAuth app client secret
 - `ALLOW_DEV_AUTH`: keep `false` in production; only set `true` for local preview auth
@@ -38,6 +39,7 @@ APP_ORIGIN=http://127.0.0.1:3001
 ```bash
 cd /var/www/clawlodge
 cp .env.production.example .env.production
+mkdir -p /var/lib/clawlodge/storage
 npm ci
 npm run build
 PORT=3001 npm run start
@@ -56,6 +58,7 @@ The intended open source path is:
 5. Start with `npm run start`.
 
 You can front it with Nginx or another reverse proxy if you want a domain, TLS, uploads, and process supervision.
+For production, store data outside the repo checkout by setting `CLAWLODGE_DATA_DIR=/var/lib/clawlodge`.
 
 ## Auth Flow
 
@@ -69,4 +72,4 @@ You can front it with Nginx or another reverse proxy if you want a domain, TLS, 
 
 - Uploaded asset URLs now resolve through `/api/v1/storage/...` and do not expose server filesystem paths.
 - Seed asset URLs resolve through `/api/v1/seed-assets/...`.
-- Seed data initializes automatically into `data/app-db.json` on first run.
+- Seed data initializes automatically into `CLAWLODGE_DATA_DIR/app-db.json` on first run.

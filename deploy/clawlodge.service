@@ -8,6 +8,7 @@ User=ubuntu
 WorkingDirectory=/var/www/clawlodge
 Environment=NODE_ENV=production
 Environment=PORT=3001
+Environment=CLAWLODGE_DATA_DIR=/var/lib/clawlodge
 EnvironmentFile=/var/www/clawlodge/.env.production
 ExecStart=/usr/bin/npm run start
 Restart=always

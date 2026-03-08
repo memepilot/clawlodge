@@ -4,7 +4,7 @@ import path from "node:path";
 import { seededState } from "./storeSeed";
 import { DbState } from "./types";
 
-const dataDir = path.resolve(process.cwd(), "data");
+const dataDir = path.resolve(process.env.CLAWLODGE_DATA_DIR || path.join(process.cwd(), "data"));
 const dbPath = path.join(dataDir, "app-db.json");
 
 let writeChain = Promise.resolve();

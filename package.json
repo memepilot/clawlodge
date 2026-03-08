@@ -2,13 +2,16 @@
   "name": "clawlodge",
   "private": true,
   "version": "0.1.0",
+  "bin": {
+    "clawlodge": "scripts/openclaw-lodge.mjs"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "openclaw:lodge:pack": "node scripts/openclaw-lodge.mjs pack",
-    "openclaw:lodge:publish": "node scripts/openclaw-lodge.mjs publish"
+    "clawlodge:pack": "node scripts/openclaw-lodge.mjs pack",
+    "clawlodge:publish": "node scripts/openclaw-lodge.mjs publish"
   },
   "dependencies": {
     "next": "16.1.6",
