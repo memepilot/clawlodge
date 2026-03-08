@@ -1,13 +1,44 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
-import rehypeSanitize from "rehype-sanitize";
+import rehypeRaw from "rehype-raw";
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
 
 import { LobsterActions } from "@/components/lobster-actions";
 import { WorkspaceBrowser } from "@/components/workspace-browser";
 import { ApiError } from "@/lib/server/errors";
 import { getComments, getLobsterBySlug } from "@/lib/server/service";
+
+const markdownSchema = {
+  ...defaultSchema,
+  tagNames: [...(defaultSchema.tagNames || []), "img", "picture", "source"],
+  attributes: {
+    ...defaultSchema.attributes,
+    img: [
+      ...(defaultSchema.attributes?.img || []),
+      "src",
+      "alt",
+      "title",
+      "width",
+      "height",
+      "loading",
+      "decoding",
+      "align",
+    ],
+    picture: [...(defaultSchema.attributes?.picture || [])],
+    source: [
+      ...(defaultSchema.attributes?.source || []),
+      "src",
+      "srcSet",
+      "media",
+      "type",
+      "sizes",
+    ],
+    a: [...(defaultSchema.attributes?.a || []), "target", "rel"],
+    p: [...(defaultSchema.attributes?.p || []), "align"],
+  },
+};
 
 export default async function LobsterDetailPage({
   params,
@@ -69,7 +100,7 @@ export default async function LobsterDetailPage({
         </div>
         {latest ? (
           <article className="markdown mt-4 text-sm">
-            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[[rehypeRaw], [rehypeSanitize, markdownSchema]]}>
               {latest.readme_text}
             </ReactMarkdown>
           </article>
