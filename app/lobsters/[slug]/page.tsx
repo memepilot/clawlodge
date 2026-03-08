@@ -47,7 +47,15 @@ export default async function LobsterDetailPage({ params }: { params: Promise<{ 
             <div key={version.version} className="subcard">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <strong className="mono">v{version.version}</strong>
-                <span className="muted text-xs">{new Date(version.created_at).toLocaleString()}</span>
+                <div className="flex items-center gap-3">
+                  <a
+                    className="inline-link text-xs"
+                    href={`/api/v1/lobsters/${encodeURIComponent(slug)}/versions/${encodeURIComponent(version.version)}/download`}
+                  >
+                    Download .zip
+                  </a>
+                  <span className="muted text-xs">{new Date(version.created_at).toLocaleString()}</span>
+                </div>
               </div>
               <p className="muted mt-1 text-sm">{version.changelog}</p>
               {version.skills.length ? (
@@ -59,7 +67,17 @@ export default async function LobsterDetailPage({ params }: { params: Promise<{ 
       </section>
 
       <section className="shell page-panel p-5 md:p-6">
-        <h2 className="panel-title">README{latest ? ` (v${latest.version})` : ""}</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="panel-title">README{latest ? ` (v${latest.version})` : ""}</h2>
+          {latest ? (
+            <a
+              className="btn"
+              href={`/api/v1/lobsters/${encodeURIComponent(slug)}/versions/${encodeURIComponent(latest.version)}/download`}
+            >
+              Download Latest .zip
+            </a>
+          ) : null}
+        </div>
         {latest ? (
           <article className="markdown mt-4 text-sm">
             <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>

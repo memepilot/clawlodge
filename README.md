@@ -26,10 +26,44 @@ Open [http://localhost:3001](http://localhost:3001).
 APP_ORIGIN=http://127.0.0.1:3001
 ```
 
+## CLI Package
+
+Build the installable CLI tarball from this repo:
+
+```bash
+cd /Users/2shou/Codes/clawlodge
+npm run clawlodge:pack-cli
+```
+
+This produces `clawlodge-cli-0.1.0.tgz`, which can be installed with:
+
+```bash
+npm install -g ./clawlodge-cli-0.1.0.tgz
+```
+
+Authenticate once from the command line after you create a PAT in `https://clawlodge.com/settings`:
+
+```bash
+clawlodge login
+clawlodge whoami
+clawlodge publish
+```
+
+Optional publish flags:
+
+```bash
+clawlodge publish --name "My Workspace"
+clawlodge publish --readme /path/to/README.md
+```
+
+If you omit `--readme`, the publish API generates the README on the server.
+
 ## Required Env
 
 - `APP_ORIGIN`: optional public origin override. Leave empty for local self-hosting so the current request origin is used. Set it explicitly for production, for example `https://clawlodge.com`
 - `CLAWLODGE_DATA_DIR`: optional data directory override. Leave empty locally to use `./data`; set it in production to a persistent path such as `/var/lib/clawlodge`
+- `OPENROUTER_API_KEY`: required if you want the server to auto-generate README content during workspace publish when the CLI does not pass `--readme`
+- `CLAWLODGE_README_MODEL`: optional OpenRouter model override for server-side README generation; defaults to `openai/gpt-4.1`
 - `GITHUB_CLIENT_ID`: GitHub OAuth app client id
 - `GITHUB_CLIENT_SECRET`: GitHub OAuth app client secret
 - `ALLOW_DEV_AUTH`: keep `false` in production; only set `true` for local preview auth

@@ -80,7 +80,7 @@ export type WorkspacePublishPayload = {
   version: string;
   changelog: string;
   tags: string[];
-  readme_markdown: string;
+  readme_markdown?: string;
   source_repo?: string;
   source_commit?: string;
   publish_client: string;

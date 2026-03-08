@@ -1,0 +1,18 @@
+{
+  "name": "clawlodge-cli",
+  "version": "0.1.0",
+  "description": "CLI for packing and publishing OpenClaw configs to ClawLodge",
+  "bin": {
+    "clawlodge": "bin/clawlodge.mjs"
+  },
+  "type": "module",
+  "files": [
+    "bin/clawlodge.mjs",
+    "lib/core.mjs",
+    "README.md"
+  ],
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=18"
+  }
+}

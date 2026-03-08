@@ -13,13 +13,20 @@ export default function MCPPage() {
       <section className="shell page-panel p-5 md:p-6">
         <h2 className="panel-title">OpenClaw Lodge Flow</h2>
         <pre className="code-block mt-3">
-{`1. Rotate a PAT in Settings
-2. Pack a workspace locally
-3. Publish the generated bundle to ClawLodge
+{`1. Install the ClawLodge CLI package
+   From a ClawLodge repo checkout
+2. Create a PAT in Settings
+3. Save it in the CLI
+4. Verify the bound account
+5. Publish
 
-clawlodge pack --workspace ~/my-workspace
-clawlodge publish --workspace ~/my-workspace --origin http://localhost:3001`}
+npm run clawlodge:pack-cli
+npm install -g ./clawlodge-cli-0.1.0.tgz
+clawlodge login
+clawlodge whoami
+clawlodge publish`}
         </pre>
+        <p className="page-subtitle mt-3">Optional flags: `--name` and `--readme /path/to/README.md`. If you omit README, the server generates it during publish.</p>
       </section>
 
       <section className="shell page-panel p-5 md:p-6">
@@ -31,6 +38,7 @@ clawlodge publish --workspace ~/my-workspace --origin http://localhost:3001`}
 - extracts skills metadata
 - sends the final publish request with your PAT`}
         </pre>
+        <p className="page-subtitle mt-3">For advanced flags such as custom workspace path, output file, token, or origin, run `clawlodge help`.</p>
       </section>
 
       <section className="shell page-panel p-5 md:p-6">

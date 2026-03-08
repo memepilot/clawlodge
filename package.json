@@ -10,10 +10,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "clawlodge:pack-cli": "npm pack ./packages/clawlodge-cli",
     "clawlodge:pack": "node scripts/openclaw-lodge.mjs pack",
     "clawlodge:publish": "node scripts/openclaw-lodge.mjs publish"
   },
   "dependencies": {
+    "fflate": "^0.8.2",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",

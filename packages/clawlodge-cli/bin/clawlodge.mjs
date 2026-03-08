@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { runCli } from "../packages/clawlodge-cli/lib/core.mjs";
+import { runCli } from "../lib/core.mjs";
 
 runCli().catch((error) => {
   console.error(error instanceof Error ? error.message : String(error));

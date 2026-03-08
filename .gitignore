@@ -13,6 +13,7 @@ out/
 dist/
 coverage/
 *.tsbuildinfo
+*.tgz
 
 # Python caches used by helper scripts
 __pycache__/

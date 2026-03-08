@@ -1,10 +1,11 @@
 import { CommentItem, LobsterDetail, LobsterSummary, LobsterVersion, MeProfile, SeedRecord, UserProfile } from "@/lib/types";
+import { zipSync, strToU8 } from "fflate";
 
 import { ApiError } from "./errors";
 import { parseAndValidateManifest } from "./manifest";
 import { allowRate } from "./rate-limit";
 import { mutateDb, readDb } from "./store";
-import { putObject, resolvePublicAssetUrl } from "./storage";
+import { getStoredObject, putObject, resolvePublicAssetUrl } from "./storage";
 import { DbLobster, DbLobsterVersion, DbUser } from "./types";
 import {
   allowedLicenses,
@@ -17,6 +18,79 @@ import {
   tokenPrefix,
 } from "./utils";
 import type { WorkspacePublishPayload } from "./workspace-publish";
+
+const DEFAULT_README_MODEL = process.env.CLAWLODGE_README_MODEL?.trim() || "openai/gpt-4.1";
+const MAX_README_CONTEXT_FILES = 24;
+
+function buildWorkspaceReadmePrompt(payload: WorkspacePublishPayload) {
+  const files = payload.workspace_files
+    .filter((file) => file.kind === "text")
+    .slice(0, MAX_README_CONTEXT_FILES)
+    .map((file) => {
+      const excerpt = file.content_excerpt || file.content_text || "";
+      return [`Path: ${file.path}`, excerpt ? `Excerpt:\n${excerpt}` : "Excerpt: (empty)"].join("\n");
+    })
+    .join("\n\n---\n\n");
+
+  return [
+    "Write a concise README.md for a ClawLodge workspace publish.",
+    "Return Markdown only.",
+    "Use a practical structure: title, summary, what is included, key files, and usage notes.",
+    "Do not invent capabilities that are not supported by the provided files.",
+    "If details are incomplete, describe the package conservatively.",
+    "",
+    `Package name: ${payload.name}`,
+    `Summary: ${payload.summary}`,
+    `Version: ${payload.version}`,
+    `Tags: ${payload.tags.length ? payload.tags.join(", ") : "(none)"}`,
+    "",
+    "Workspace files and excerpts:",
+    files || "(no eligible text files found)",
+  ].join("\n");
+}
+
+async function generateWorkspaceReadme(payload: WorkspacePublishPayload) {
+  const apiKey = process.env.OPENROUTER_API_KEY?.trim();
+  if (!apiKey) {
+    throw new ApiError(500, "README generation is unavailable because OPENROUTER_API_KEY is not configured");
+  }
+
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+      "HTTP-Referer": process.env.APP_ORIGIN?.trim() || "https://clawlodge.com",
+      "X-Title": "ClawLodge",
+    },
+    body: JSON.stringify({
+      model: DEFAULT_README_MODEL,
+      messages: [
+        {
+          role: "system",
+          content: "You write concise, accurate README.md files for software workspaces. Return Markdown only.",
+        },
+        {
+          role: "user",
+          content: buildWorkspaceReadmePrompt(payload),
+        },
+      ],
+    }),
+  });
+
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new ApiError(502, body?.error?.message || body?.detail || `README generation failed: ${response.status}`);
+  }
+
+  const readme = typeof body?.choices?.[0]?.message?.content === "string"
+    ? body.choices[0].message.content.trim()
+    : "";
+  if (!readme) {
+    throw new ApiError(502, "README generation returned an empty response");
+  }
+  return readme;
+}
 
 function toSummary(item: DbLobster, owner: DbUser): LobsterSummary {
   return {
@@ -83,6 +157,15 @@ function attachLatestVersion(summary: LobsterSummary, versions: DbLobsterVersion
   };
 }
 
+function decodeStorageKeyFromUrl(url: string | null | undefined) {
+  if (!url?.startsWith("/api/v1/storage/")) return null;
+  const encoded = url.slice("/api/v1/storage/".length);
+  return encoded
+    .split("/")
+    .map((part) => decodeURIComponent(part))
+    .join("/");
+}
+
 export async function listLobsters(params?: { sort?: string; tag?: string; q?: string }) {
   const db = await readDb();
   let items = db.lobsters.filter((item) => item.status === "active");
@@ -135,6 +218,81 @@ export async function getLobsterVersion(slug: string, version: string) {
   const found = db.lobsterVersions.find((item) => item.lobsterId === lobster.id && item.version === version);
   if (!found) throw new ApiError(404, "Version not found");
   return toVersion(found);
+}
+
+export async function buildLobsterVersionZip(slug: string, version: string) {
+  const db = await readDb();
+  const lobster = db.lobsters.find((item) => item.slug === slug);
+  if (!lobster) throw new ApiError(404, "Lobster not found");
+
+  const found = db.lobsterVersions.find((item) => item.lobsterId === lobster.id && item.version === version);
+  if (!found) throw new ApiError(404, "Version not found");
+
+  const entries: Record<string, Uint8Array> = {};
+  const root = `${lobster.slug}-${found.version}`;
+  const unrecoverable: string[] = [];
+
+  entries[`${root}/README.md`] = strToU8(found.readmeText);
+
+  const manifest = {
+    schema_version: "1.0",
+    lobster_slug: lobster.slug,
+    version: found.version,
+    name: lobster.name,
+    summary: lobster.summary,
+    license: lobster.license,
+    readme_path: "README.md",
+    skills: found.skills.map((skill) => ({
+      id: skill.skillId,
+      name: skill.name,
+      entry: skill.entry,
+      path: skill.path,
+      digest: skill.digest ?? undefined,
+      size: skill.size ?? undefined,
+    })),
+    settings: [
+      { key: "blocked_files_count", value: found.blockedFilesCount },
+      { key: "masked_secrets_count", value: found.maskedSecretsCount },
+    ],
+    source: {
+      repo_url: found.sourceRepo,
+      commit: found.sourceCommit,
+    },
+    publish_client: found.publishClient,
+  };
+  entries[`${root}/manifest.json`] = strToU8(JSON.stringify(manifest, null, 2));
+
+  for (const file of found.workspaceFiles) {
+    if (file.path === "README.md") continue;
+    if (file.kind === "text" && file.contentText) {
+      entries[`${root}/${file.path}`] = strToU8(file.contentText);
+      continue;
+    }
+    unrecoverable.push(file.path);
+  }
+
+  const skillsBundleKey = decodeStorageKeyFromUrl(found.skillsBundleUrl);
+  if (skillsBundleKey) {
+    const stored = await getStoredObject(skillsBundleKey);
+    entries[`${root}/skills_bundle.zip`] = new Uint8Array(stored.body);
+  }
+
+  if (unrecoverable.length) {
+    entries[`${root}/EXPORT_NOTES.md`] = strToU8([
+      "# Export Notes",
+      "",
+      "Some published workspace files could not be reconstructed into this archive because only preview or metadata was stored for them.",
+      "",
+      "Missing files:",
+      "",
+      ...unrecoverable.map((filePath) => `- \`${filePath}\``),
+    ].join("\n"));
+  }
+
+  return {
+    filename: `${root}.zip`,
+    body: zipSync(entries, { level: 6 }),
+  };
 }
 
 export async function createLobster(
@@ -737,6 +895,7 @@ export async function uploadViaMcp(
 }
 
 export async function publishWorkspace(userId: number, payload: WorkspacePublishPayload) {
+  const readmeMarkdown = payload.readme_markdown?.trim() || await generateWorkspaceReadme(payload);
   const db = await readDb();
   const existing = db.lobsters.find((item) => item.slug === payload.lobster_slug);
 
@@ -769,7 +928,7 @@ export async function publishWorkspace(userId: number, payload: WorkspacePublish
   const version = await createVersion(userId, slug, {
     version: payload.version,
     changelog: payload.changelog,
-    readme_markdown: payload.readme_markdown,
+    readme_markdown: readmeMarkdown,
     source_repo: payload.source_repo,
     source_commit: payload.source_commit,
     publish_client: payload.publish_client,

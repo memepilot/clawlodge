@@ -190,7 +190,12 @@ export default function PublishPage() {
         changelog: "Initial release",
         readme_markdown: readme,
         source_repo: sourceRepo,
-        workspace_files: workspaceFiles,
+        workspace_files: workspaceFiles.map((file) => ({
+          path: file.path,
+          size: file.size,
+          kind: file.kind,
+          content_excerpt: file.content_excerpt ?? null,
+        })),
         skills: [
           {
             id: skillId,
@@ -395,18 +400,27 @@ export default function PublishPage() {
           <section className="shell page-panel publish-side-card">
             <div className="publish-panel-head">
               <h2 className="panel-title">ClawLodge CLI</h2>
-              <p className="page-subtitle">Publish straight from your workspace with PAT auth and automatic redaction.</p>
+              <p className="page-subtitle">Install the CLI once, then publish straight from your workspace with PAT auth and automatic redaction.</p>
             </div>
             <div className="publish-defaults">
               <div className="subcard">
-                <div className="field-label">Pack locally</div>
-                <div className="publish-static mono">clawlodge pack --workspace ~/my-workspace</div>
+                <div className="field-label">Install</div>
+                <div className="publish-static mono">npm run clawlodge:pack-cli && npm install -g ./clawlodge-cli-0.1.0.tgz</div>
+              </div>
+              <div className="subcard">
+                <div className="field-label">Login with PAT</div>
+                <div className="publish-static mono">clawlodge login</div>
+              </div>
+              <div className="subcard">
+                <div className="field-label">Confirm account</div>
+                <div className="publish-static mono">clawlodge whoami</div>
               </div>
               <div className="subcard">
                 <div className="field-label">Publish to ClawLodge</div>
-                <div className="publish-static mono">clawlodge publish --workspace ~/my-workspace --origin http://localhost:3001</div>
+                <div className="publish-static mono">clawlodge publish</div>
               </div>
             </div>
+            <p className="page-subtitle mt-3">Create the PAT in Settings first. You can also pass `--name` or `--readme /path/to/README.md`. If you omit README, the server generates it during publish. Need more flags? Run `clawlodge help`.</p>
           </section>
 
           <section className="shell page-panel publish-side-card">
