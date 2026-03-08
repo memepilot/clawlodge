@@ -47,6 +47,7 @@ export async function readDb(): Promise<DbState> {
   parsed.lobsters = parsed.lobsters.map((lobster) => ({
     ...lobster,
     recommendationScore: lobster.recommendationScore ?? null,
+    githubStars: lobster.githubStars ?? null,
     shareCount: lobster.shareCount ?? 0,
   }));
   parsed.lobsterVersions = parsed.lobsterVersions.map((version) => ({

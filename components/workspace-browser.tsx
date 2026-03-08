@@ -96,7 +96,7 @@ export function WorkspaceBrowser({
   return (
     <>
       <div className="workspace-browser-head">
-        <div>
+        <div className="workspace-browser-copy">
           <h2 className="panel-title">Workspace</h2>
           <p className="page-subtitle mt-2">Current published snapshot. New publishes overwrite this view.</p>
         </div>
@@ -104,11 +104,11 @@ export function WorkspaceBrowser({
           <a className="btn" href={downloadHref}>
             Download .zip
           </a>
-          <div className="workspace-browser-meta muted text-xs">
-            <span>{files.length} files</span>
-            <span>Updated {formatPublishedAt(publishedAt)} UTC</span>
-            {maskedSecretsCount ? <span>{maskedSecretsCount} redactions</span> : null}
-            {blockedFilesCount ? <span>{blockedFilesCount} blocked</span> : null}
+          <div className="workspace-browser-meta">
+            <span className="workspace-meta-pill">{files.length} files</span>
+            <span className="workspace-meta-pill">Updated {formatPublishedAt(publishedAt)} UTC</span>
+            {maskedSecretsCount ? <span className="workspace-meta-pill">{maskedSecretsCount} redactions</span> : null}
+            {blockedFilesCount ? <span className="workspace-meta-pill">{blockedFilesCount} blocked</span> : null}
           </div>
         </div>
       </div>

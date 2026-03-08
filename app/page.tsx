@@ -12,14 +12,24 @@ export const dynamic = "force-dynamic";
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ sort?: string; tag?: string; q?: string }>;
+  searchParams: Promise<{ sort?: string; tag?: string; q?: string; page?: string }>;
 }) {
   const params = await searchParams;
   const sort = params.sort === "new" ? "new" : "hot";
-  const result = await listLobsters({ sort, tag: params.tag, q: params.q });
+  const page = Number.isFinite(Number(params.page)) ? Math.max(1, Math.floor(Number(params.page))) : 1;
+  const result = await listLobsters({ sort, tag: params.tag, q: params.q, page, per_page: 12 });
   const sessionUser = await getSessionUser();
   const githubLoginUrl = `${apiOrigin}/api/v1/auth/github/start?next=/publish`;
   const isTagResults = Boolean(params.tag);
+  const buildPageHref = (nextPage: number) => {
+    const search = new URLSearchParams();
+    if (params.q?.trim()) search.set("q", params.q.trim());
+    if (params.tag?.trim()) search.set("tag", params.tag.trim());
+    if (sort !== "hot") search.set("sort", sort);
+    if (nextPage > 1) search.set("page", String(nextPage));
+    const query = search.toString();
+    return query ? `/?${query}` : "/";
+  };
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
@@ -134,6 +144,36 @@ export default async function Home({
             <div className="card muted">No lobster found.</div>
           )}
         </div>
+        {result.total_pages > 1 ? (
+          <div className="pagination-bar">
+            <p className="pagination-summary muted">
+              Showing {(result.page - 1) * result.per_page + 1}-{Math.min(result.page * result.per_page, result.total)} of {result.total}
+            </p>
+            <div className="pagination-actions">
+              {result.has_prev ? (
+                <Link className="btn" href={buildPageHref(result.page - 1)}>
+                  Previous
+                </Link>
+              ) : (
+                <span className="btn pagination-disabled" aria-disabled="true">
+                  Previous
+                </span>
+              )}
+              <span className="pagination-current">
+                Page {result.page} / {result.total_pages}
+              </span>
+              {result.has_next ? (
+                <Link className="btn btn-primary" href={buildPageHref(result.page + 1)}>
+                  Next
+                </Link>
+              ) : (
+                <span className="btn btn-primary pagination-disabled" aria-disabled="true">
+                  Next
+                </span>
+              )}
+            </div>
+          </div>
+        ) : null}
       </section>
     </div>
   );

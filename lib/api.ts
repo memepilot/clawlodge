@@ -1,4 +1,4 @@
-import { CommentItem, LobsterDetail, LobsterSummary, MeProfile, SeedRecord, UserProfile } from "./types";
+import { CommentItem, LobsterDetail, LobsterListResult, MeProfile, SeedRecord, UserProfile } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/v1";
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_ORIGIN ?? "";
@@ -24,13 +24,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export async function getLobsters(params?: { sort?: string; tag?: string; q?: string }) {
+export async function getLobsters(params?: { sort?: string; tag?: string; q?: string; page?: number; per_page?: number }) {
   const search = new URLSearchParams();
   if (params?.sort) search.set("sort", params.sort);
   if (params?.tag) search.set("tag", params.tag);
   if (params?.q) search.set("q", params.q);
+  if (params?.page) search.set("page", String(params.page));
+  if (params?.per_page) search.set("per_page", String(params.per_page));
   const query = search.toString();
-  return request<{ items: LobsterSummary[]; total: number }>(`/lobsters${query ? `?${query}` : ""}`);
+  return request<LobsterListResult>(`/lobsters${query ? `?${query}` : ""}`);
 }
 
 export function getLobster(slug: string) {

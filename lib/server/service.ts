@@ -25,6 +25,7 @@ const DEFAULT_README_MODEL = process.env.CLAWLODGE_README_MODEL?.trim() || "open
 const DEFAULT_SUMMARY_MODEL = process.env.CLAWLODGE_SUMMARY_MODEL?.trim() || DEFAULT_README_MODEL;
 const MAX_README_CONTEXT_FILES = 24;
 const MAX_GITHUB_README_ASSET_BYTES = 8 * 1024 * 1024;
+const MAX_SUMMARY_LENGTH = 160;
 
 function parseGithubRepoRef(sourceRepo: string | null | undefined) {
   const raw = sourceRepo?.trim();
@@ -59,6 +60,25 @@ async function resolveGithubDefaultBranch(owner: string, repo: string) {
     throw new ApiError(502, `Default branch missing for ${owner}/${repo}`);
   }
   return branch;
+}
+
+async function fetchGithubRepoSignals(sourceRepo: string | null | undefined) {
+  const ref = parseGithubRepoRef(sourceRepo);
+  if (!ref) return null;
+
+  const response = await fetch(`https://api.github.com/repos/${ref.owner}/${ref.repo}`, {
+    headers: {
+      Accept: "application/vnd.github+json",
+      "User-Agent": "ClawLodge",
+    },
+  });
+  if (!response.ok) return null;
+
+  const body = await response.json().catch(() => ({}));
+  return {
+    defaultBranch: typeof body?.default_branch === "string" ? body.default_branch.trim() || null : null,
+    stars: typeof body?.stargazers_count === "number" ? body.stargazers_count : null,
+  };
 }
 
 function decodeMarkdownUrl(rawTarget: string) {
@@ -263,16 +283,100 @@ async function generateWorkspaceReadme(payload: WorkspacePublishPayload) {
   return readme;
 }
 
-function buildSummaryFallback(name: string, readmeMarkdown: string) {
-  const normalized = readmeMarkdown
+function truncateSummary(value: string, maxLength = MAX_SUMMARY_LENGTH) {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  if (!normalized) return "";
+  if (normalized.length <= maxLength) return normalized;
+
+  const sentenceMatch = normalized.slice(0, maxLength + 1).match(/^(.+?[.!?。！？])(?:\s|$)/);
+  if (sentenceMatch?.[1] && sentenceMatch[1].length >= Math.min(80, maxLength)) {
+    return sentenceMatch[1].trim();
+  }
+
+  const window = normalized.slice(0, maxLength + 1);
+  const lastBoundary = Math.max(window.lastIndexOf(". "), window.lastIndexOf("! "), window.lastIndexOf("? "), window.lastIndexOf("。"), window.lastIndexOf("！"), window.lastIndexOf("？"));
+  if (lastBoundary >= 70) {
+    return window.slice(0, lastBoundary + 1).trim();
+  }
+
+  const lastSpace = window.lastIndexOf(" ");
+  if (lastSpace >= 70) {
+    return `${window.slice(0, lastSpace).trim()}...`;
+  }
+
+  return `${window.slice(0, maxLength - 3).trim()}...`;
+}
+
+function extractSummaryCandidate(name: string, readmeMarkdown: string) {
+  const escapedName = name.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const withoutFrontmatter = readmeMarkdown.replace(/^---\s*\n[\s\S]*?\n---\s*\n?/, "");
+  const withoutCodeBlocks = withoutFrontmatter.replace(/```[\s\S]*?```/g, " ");
+  const paragraphs = withoutCodeBlocks
+    .split(/\n\s*\n/)
+    .map((part) =>
+      part
+        .replace(/<img\b[^>]*>/gi, " ")
+        .replace(/<br\s*\/?>/gi, " ")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/!\[[^\]]*]\([^)]+\)/g, " ")
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+        .replace(/^#+\s*/gm, "")
+        .replace(/^>\s*/gm, "")
+        .replace(/`+/g, "")
+        .replace(/\*+/g, "")
+        .replace(/\|/g, " ")
+        .replace(/\s+/g, " ")
+        .trim(),
+    )
+    .filter(Boolean);
+
+  const blacklist = [
+    /^version\b/i,
+    /^license\b/i,
+    /^stars\b/i,
+    /^prs?\b/i,
+    /^skills?\b/i,
+    /^workflows?\b/i,
+    /^openclaw[-\s\w]*config$/i,
+    /^openclaw[-\s\w]*workspace$/i,
+  ];
+
+  for (const paragraph of paragraphs) {
+    const withoutNamePrefix = paragraph
+      .replace(new RegExp(`^[^\\p{L}\\p{N}]*${escapedName}(?:\\s*[—:：-]\\s*|\\s+)`, "iu"), "")
+      .trim();
+    const candidate = withoutNamePrefix || paragraph;
+    if (candidate.length < 20) continue;
+    if (blacklist.some((pattern) => pattern.test(candidate))) continue;
+    if (candidate.toLowerCase() === name.trim().toLowerCase()) continue;
+    return candidate;
+  }
+
+  return "";
+}
+
+function normalizeSummary(name: string, rawSummary: string, readmeMarkdown: string) {
+  const candidate = rawSummary
     .replace(/<[^>]+>/g, " ")
-    .replace(/^#+\s*/gm, "")
-    .replace(/`/g, "")
     .replace(/\[(.*?)\]\((.*?)\)/g, "$1")
+    .replace(/`/g, "")
     .replace(/\s+/g, " ")
     .trim();
 
-  return normalized ? normalized.slice(0, 160) : `${name} OpenClaw config workspace.`;
+  if (candidate && candidate.length <= MAX_SUMMARY_LENGTH && /[.!?。！？]$/.test(candidate)) {
+    return candidate;
+  }
+
+  const extracted = extractSummaryCandidate(name, readmeMarkdown);
+  if (extracted) return truncateSummary(extracted);
+
+  if (candidate) return truncateSummary(candidate);
+  return `${name} OpenClaw config workspace.`;
+}
+
+function buildSummaryFallback(name: string, readmeMarkdown: string) {
+  const extracted = extractSummaryCandidate(name, readmeMarkdown);
+  return extracted ? truncateSummary(extracted) : `${name} OpenClaw config workspace.`;
 }
 
 async function generateWorkspaceSummary(name: string, readmeMarkdown: string) {
@@ -314,7 +418,7 @@ async function generateWorkspaceSummary(name: string, readmeMarkdown: string) {
     ? body.choices[0].message.content.replace(/\s+/g, " ").trim()
     : "";
 
-  return summary || buildSummaryFallback(name, readmeMarkdown);
+  return normalizeSummary(name, summary, readmeMarkdown);
 }
 
 function toSummary(item: DbLobster, owner: DbUser): LobsterSummary {
@@ -384,6 +488,7 @@ function attachLatestVersion(summary: LobsterSummary, versions: DbLobsterVersion
 }
 
 function rankingScore(item: DbLobster, summary: LobsterSummary) {
+  if (typeof item.githubStars === "number") return item.githubStars;
   if (typeof item.recommendationScore === "number") return item.recommendationScore;
   return summary.hot_score;
 }
@@ -397,7 +502,30 @@ function decodeStorageKeyFromUrl(url: string | null | undefined) {
     .join("/");
 }
 
-export async function listLobsters(params?: { sort?: string; tag?: string; q?: string }) {
+export async function listLobsters(params?: { sort?: string; tag?: string; q?: string; page?: number; per_page?: number }) {
+  if (params?.sort !== "new") {
+    await mutateDb(async (db) => {
+      const pending = db.lobsters.filter(
+        (item) => item.status === "active" && item.sourceUrl && parseGithubRepoRef(item.sourceUrl) && item.githubStars == null,
+      );
+      if (!pending.length) return;
+
+      await Promise.all(
+        pending.map(async (item) => {
+          const signals = await fetchGithubRepoSignals(item.sourceUrl);
+          item.githubStars = signals?.stars ?? 0;
+        }),
+      );
+    });
+  }
+
+  const page = Number.isFinite(Number(params?.page))
+    ? Math.max(1, Math.floor(Number(params?.page)))
+    : 1;
+  const perPageRaw = Number.isFinite(Number(params?.per_page))
+    ? Math.floor(Number(params?.per_page))
+    : 12;
+  const perPage = Math.min(Math.max(perPageRaw, 1), 48);
   const db = await readDb();
   let items = db.lobsters.filter((item) => item.status === "active");
   if (params?.tag?.trim()) {
@@ -426,12 +554,23 @@ export async function listLobsters(params?: { sort?: string; tag?: string; q?: s
     return +new Date(b.summary.created_at) - +new Date(a.summary.created_at);
   });
 
+  const ranked = summaries.map((entry, index) => ({
+    ...entry.summary,
+    recommended: params?.sort !== "new" && index < 3,
+  }));
+  const total = ranked.length;
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
+  const safePage = Math.min(page, totalPages);
+  const start = (safePage - 1) * perPage;
+
   return {
-    items: summaries.map((entry, index) => ({
-      ...entry.summary,
-      recommended: params?.sort !== "new" && index < 3,
-    })),
-    total: summaries.length,
+    items: ranked.slice(start, start + perPage),
+    total,
+    page: safePage,
+    per_page: perPage,
+    total_pages: totalPages,
+    has_prev: safePage > 1,
+    has_next: safePage < totalPages,
   };
 }
 
@@ -578,6 +717,7 @@ export async function createLobster(
       searchDocument: [payload.name.trim(), payload.summary.trim(), tags.join(" ")].join("\n"),
       tags,
       recommendationScore: null,
+      githubStars: null,
       favoriteCount: 0,
       shareCount: 0,
       commentCount: 0,
@@ -636,6 +776,7 @@ export async function createVersion(
       sourceCommit: payload.source_commit,
     });
     const generatedSummary = await generateWorkspaceSummary(lobster.name, migratedReadmeMarkdown);
+    const repoSignals = await fetchGithubRepoSignals(payload.source_repo);
 
     const manifest = {
       schema_version: "1.0",
@@ -701,6 +842,7 @@ export async function createVersion(
     db.lobsterVersions.push(created);
     lobster.summary = generatedSummary;
     lobster.updatedAt = now;
+    lobster.githubStars = repoSignals?.stars ?? lobster.githubStars ?? null;
     lobster.searchDocument = [
       lobster.name,
       generatedSummary,
@@ -1082,6 +1224,7 @@ export async function uploadViaMcp(
         searchDocument: `${manifest.name}\n${manifest.summary}`,
         tags: [],
         recommendationScore: null,
+        githubStars: null,
         favoriteCount: 0,
         shareCount: 0,
         commentCount: 0,
@@ -1105,6 +1248,7 @@ export async function uploadViaMcp(
       sourceRepo: manifest.source?.repo_url,
       sourceCommit: manifest.source?.commit,
     });
+    const repoSignals = await fetchGithubRepoSignals(manifest.source?.repo_url);
     const readmeUrl = await putObject(
       `${base}/README.md`,
       Buffer.from(migratedReadmeText, "utf8"),
@@ -1140,6 +1284,7 @@ export async function uploadViaMcp(
       })),
       createdAt: now,
     });
+    lobster.githubStars = repoSignals?.stars ?? lobster.githubStars ?? null;
 
     const tagSetting = manifest.settings.find((item) => item.key === "tags");
     if (Array.isArray(tagSetting?.value)) {

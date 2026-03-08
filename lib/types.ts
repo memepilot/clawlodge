@@ -22,6 +22,16 @@ export type LobsterSummary = {
   created_at: string;
 };
 
+export type LobsterListResult = {
+  items: LobsterSummary[];
+  total: number;
+  page: number;
+  per_page: number;
+  total_pages: number;
+  has_prev: boolean;
+  has_next: boolean;
+};
+
 export type LobsterVersion = {
   version: string;
   changelog: string;

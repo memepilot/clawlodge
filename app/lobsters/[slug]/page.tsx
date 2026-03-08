@@ -98,33 +98,71 @@ export default async function LobsterDetailPage({
 
   return (
     <div className="page-shell stack-lg">
-      <section className="shell page-panel p-5 md:p-6">
-        <div className="detail-head flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="page-title">
-              {lobster.name}
-            </h1>
-            <p className="page-subtitle">
-              by <Link className="inline-link" href={`/u/${lobster.owner_handle}`}>@{lobster.owner_handle}</Link>
-            </p>
+      <section className="shell page-panel detail-hero">
+        <div className="detail-hero-main">
+          <div className="detail-kickers">
+            {lobster.source_type ? <span className="tag tag-source">{lobster.source_type === "community" ? "community upload" : lobster.source_type}</span> : null}
+            {lobster.verified ? <span className="tag tag-verified">verified</span> : null}
           </div>
-          <div className="lobster-card-side">
-            <div>{lobster.license}</div>
+          <div className="detail-head">
+            <div>
+              <h1 className="page-title">
+                {lobster.name}
+              </h1>
+              <p className="page-subtitle">
+                by <Link className="inline-link" href={`/u/${lobster.owner_handle}`}>@{lobster.owner_handle}</Link>
+              </p>
+            </div>
+          </div>
+          <p className="detail-summary">{lobster.summary}</p>
+          <div className="lobster-card-tags detail-tags">
+            {lobster.tags.map((tag) => (
+              <Link key={tag} className="tag" href={`/?tag=${encodeURIComponent(tag)}`}>
+                #{tag}
+              </Link>
+            ))}
+          </div>
+          <div className="detail-jump-links">
+            <a className="detail-jump-link" href="#readme">README</a>
+            <a className="detail-jump-link" href="#workspace">Workspace</a>
+            {lobster.source_url ? <a className="detail-jump-link" href="#source-repository">Source</a> : null}
+            <a className="detail-jump-link" href="#community">Community</a>
           </div>
         </div>
-
-        <p className="lobster-card-summary">{lobster.summary}</p>
-
-        <div className="lobster-card-tags">
-          {lobster.tags.map((tag) => (
-            <Link key={tag} className="tag" href={`/?tag=${encodeURIComponent(tag)}`}>
-              #{tag}
-            </Link>
-          ))}
-        </div>
+        <aside className="detail-hero-aside">
+          <div className="detail-aside-card">
+            <span className="detail-aside-label">Latest release</span>
+            <strong className="detail-aside-value mono">{latest ? `v${latest.version}` : "No version"}</strong>
+            <div className="detail-aside-grid">
+              <div>
+                <span className="detail-aside-label">License</span>
+                <strong className="detail-aside-meta">{lobster.license}</strong>
+              </div>
+              <div>
+                <span className="detail-aside-label">Files</span>
+                <strong className="detail-aside-meta">{latest?.workspace_files?.length ?? 0}</strong>
+              </div>
+            </div>
+            <div className="detail-aside-actions">
+              {latest ? (
+                <a
+                  className="btn btn-primary"
+                  href={`/api/v1/lobsters/${encodeURIComponent(slug)}/versions/${encodeURIComponent(latest.version)}/download`}
+                >
+                  Download .zip
+                </a>
+              ) : null}
+              {lobster.source_url ? (
+                <a className="btn" href={lobster.source_url} target="_blank" rel="noreferrer">
+                  View on GitHub
+                </a>
+              ) : null}
+            </div>
+          </div>
+        </aside>
       </section>
 
-      <section className="shell page-panel p-5 md:p-6">
+      <section id="readme" className="shell page-panel p-5 md:p-6">
         <div className="detail-section-head flex flex-wrap items-center justify-between gap-3">
           <h2 className="panel-title">README</h2>
           {latest ? (
@@ -148,7 +186,7 @@ export default async function LobsterDetailPage({
       </section>
 
       {latest?.workspace_files?.length ? (
-        <section className="shell page-panel p-5 md:p-6">
+        <section id="workspace" className="shell page-panel p-5 md:p-6">
           <WorkspaceBrowser
             files={latest.workspace_files}
             publishedAt={latest.created_at}
@@ -161,13 +199,13 @@ export default async function LobsterDetailPage({
       ) : null}
 
       {lobster.source_url ? (
-        <section className="shell page-panel p-5 md:p-6">
-          <div className="stack-sm">
+        <section id="source-repository" className="shell page-panel p-5 md:p-6">
+          <div className="stack-sm source-card">
             <h2 className="panel-title">Source Repository</h2>
             <p className="muted text-sm">
               Original GitHub repository for this workspace.
             </p>
-            <div>
+            <div className="source-card-link">
               <a
                 className="inline-link"
                 href={lobster.source_url}
@@ -181,12 +219,14 @@ export default async function LobsterDetailPage({
         </section>
       ) : null}
 
-      <LobsterActions
-        slug={slug}
-        initialComments={comments}
-        initialFavoriteCount={lobster.favorite_count}
-        initialShareCount={lobster.share_count}
-      />
+      <div id="community">
+        <LobsterActions
+          slug={slug}
+          initialComments={comments}
+          initialFavoriteCount={lobster.favorite_count}
+          initialShareCount={lobster.share_count}
+        />
+      </div>
     </div>
   );
 }

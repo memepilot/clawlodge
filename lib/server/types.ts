@@ -60,6 +60,7 @@ export type DbLobster = {
   searchDocument: string;
   tags: string[];
   recommendationScore: number | null;
+  githubStars: number | null;
   favoriteCount: number;
   shareCount: number;
   commentCount: number;
