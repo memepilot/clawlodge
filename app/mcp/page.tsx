@@ -14,14 +14,12 @@ export default function MCPPage() {
         <h2 className="panel-title">OpenClaw Lodge Flow</h2>
         <pre className="code-block mt-3">
 {`1. Install the ClawLodge CLI package
-   From a ClawLodge repo checkout
 2. Create a PAT in Settings
 3. Save it in the CLI
 4. Verify the bound account
 5. Publish
 
-npm run clawlodge:pack-cli
-npm install -g ./clawlodge-cli-0.1.0.tgz
+npm install -g clawlodge-cli
 clawlodge login
 clawlodge whoami
 clawlodge publish`}

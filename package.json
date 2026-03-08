@@ -11,6 +11,7 @@
     "start": "next start",
     "lint": "eslint .",
     "clawlodge:pack-cli": "npm pack ./packages/clawlodge-cli",
+    "clawlodge:publish-cli": "npm publish ./packages/clawlodge-cli --access public",
     "clawlodge:pack": "node scripts/openclaw-lodge.mjs pack",
     "clawlodge:publish": "node scripts/openclaw-lodge.mjs publish"
   },

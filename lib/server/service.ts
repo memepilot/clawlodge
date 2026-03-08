@@ -20,6 +20,7 @@ import {
 import type { WorkspacePublishPayload } from "./workspace-publish";
 
 const DEFAULT_README_MODEL = process.env.CLAWLODGE_README_MODEL?.trim() || "openai/gpt-4.1";
+const DEFAULT_SUMMARY_MODEL = process.env.CLAWLODGE_SUMMARY_MODEL?.trim() || DEFAULT_README_MODEL;
 const MAX_README_CONTEXT_FILES = 24;
 
 function buildWorkspaceReadmePrompt(payload: WorkspacePublishPayload) {
@@ -90,6 +91,60 @@ async function generateWorkspaceReadme(payload: WorkspacePublishPayload) {
     throw new ApiError(502, "README generation returned an empty response");
   }
   return readme;
+}
+
+function buildSummaryFallback(name: string, readmeMarkdown: string) {
+  const normalized = readmeMarkdown
+    .replace(/<[^>]+>/g, " ")
+    .replace(/^#+\s*/gm, "")
+    .replace(/`/g, "")
+    .replace(/\[(.*?)\]\((.*?)\)/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return normalized ? normalized.slice(0, 160) : `${name} OpenClaw config workspace.`;
+}
+
+async function generateWorkspaceSummary(name: string, readmeMarkdown: string) {
+  const apiKey = process.env.OPENROUTER_API_KEY?.trim();
+  if (!apiKey) {
+    return buildSummaryFallback(name, readmeMarkdown);
+  }
+
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+      "HTTP-Referer": process.env.APP_ORIGIN?.trim() || "https://clawlodge.com",
+      "X-Title": "ClawLodge",
+    },
+    body: JSON.stringify({
+      model: DEFAULT_SUMMARY_MODEL,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You write concise one-sentence summaries for OpenClaw config pages. Return plain text only. Keep it under 160 characters and do not include markdown or HTML.",
+        },
+        {
+          role: "user",
+          content: [`Package name: ${name}`, "", "README:", readmeMarkdown].join("\n"),
+        },
+      ],
+    }),
+  });
+
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    return buildSummaryFallback(name, readmeMarkdown);
+  }
+
+  const summary = typeof body?.choices?.[0]?.message?.content === "string"
+    ? body.choices[0].message.content.replace(/\s+/g, " ").trim()
+    : "";
+
+  return summary || buildSummaryFallback(name, readmeMarkdown);
 }
 
 function toSummary(item: DbLobster, owner: DbUser): LobsterSummary {
@@ -385,13 +440,14 @@ export async function createVersion(
     if (db.lobsterVersions.some((item) => item.lobsterId === lobster.id && item.version === payload.version)) {
       throw new ApiError(409, "version already exists");
     }
+    const generatedSummary = await generateWorkspaceSummary(lobster.name, payload.readme_markdown);
 
     const manifest = {
       schema_version: "1.0",
       lobster_slug: lobster.slug,
       version: payload.version,
       name: lobster.name,
-      summary: lobster.summary,
+      summary: generatedSummary,
       license: lobster.license,
       readme_path: "README.md",
       skills: payload.skills,
@@ -448,10 +504,11 @@ export async function createVersion(
       createdAt: now,
     };
     db.lobsterVersions.push(created);
+    lobster.summary = generatedSummary;
     lobster.updatedAt = now;
     lobster.searchDocument = [
       lobster.name,
-      lobster.summary,
+      generatedSummary,
       payload.readme_markdown,
       lobster.tags.join(" "),
       ...(payload.workspace_files ?? []).map((file) => `${file.path}\n${file.content_excerpt ?? ""}`),

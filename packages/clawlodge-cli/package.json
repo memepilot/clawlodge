@@ -1,7 +1,19 @@
 {
   "name": "clawlodge-cli",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "CLI for packing and publishing OpenClaw configs to ClawLodge",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/memepilot/clawlodge.git",
+    "directory": "packages/clawlodge-cli"
+  },
+  "homepage": "https://clawlodge.com/publish",
+  "bugs": {
+    "url": "https://github.com/memepilot/clawlodge/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "clawlodge": "bin/clawlodge.mjs"
   },
@@ -11,7 +23,7 @@
     "lib/core.mjs",
     "README.md"
   ],
-  "license": "UNLICENSED",
+  "license": "MIT",
   "engines": {
     "node": ">=18"
   }

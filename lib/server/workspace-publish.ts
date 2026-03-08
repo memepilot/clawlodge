@@ -4,7 +4,7 @@ import path from "node:path";
 import { allowedLicenses, semverRe, slugify } from "./utils";
 
 const ALLOWED_ROOT_FILES = new Set(["AGENTS.md", "SOUL.md", "TOOLS.md", "README.md"]);
-const ALLOWED_PREFIXES = ["skills/", "examples/", "templates/", "prompts/", ".openclaw/"];
+const ALLOWED_PREFIXES = ["skills/", "examples/", "templates/", "prompts/", "memory/", ".openclaw/"];
 const BLOCKED_DIRS = new Set([
   ".git",
   ".next",
@@ -174,16 +174,10 @@ function deriveName(workspaceRoot: string, explicit?: string) {
 
 function deriveSummary(name: string, explicitSummary: string | undefined, readme: string, sharedCount: number) {
   if (explicitSummary?.trim()) return explicitSummary.trim();
-  const fromReadme = readme
-    .replace(/^#+\s*/gm, "")
-    .replace(/`/g, "")
-    .replace(/\[(.*?)\]\((.*?)\)/g, "$1")
-    .replace(/\s+/g, " ")
-    .trim();
-  if (fromReadme) {
-    return fromReadme.slice(0, 180);
+  if (readme.trim() || sharedCount > 0) {
+    return `${name} OpenClaw config workspace.`;
   }
-  return `${name} workspace publish with ${sharedCount} shared files.`;
+  return `${name} for OpenClaw.`;
 }
 
 function sanitizeContent(content: string) {

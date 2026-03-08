@@ -5,7 +5,7 @@ Pack and publish OpenClaw config workspaces to ClawLodge.
 ## Install
 
 ```bash
-npm install -g ./clawlodge-cli-0.1.0.tgz
+npm install -g clawlodge-cli
 ```
 
 ## Basic usage

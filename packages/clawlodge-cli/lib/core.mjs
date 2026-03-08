@@ -5,7 +5,7 @@ import readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 
 const ALLOWED_ROOT_FILES = new Set(["AGENTS.md", "SOUL.md", "TOOLS.md", "README.md"]);
-const ALLOWED_PREFIXES = ["skills/", "examples/", "templates/", "prompts/", ".openclaw/"];
+const ALLOWED_PREFIXES = ["skills/", "examples/", "templates/", "prompts/", "memory/", ".openclaw/"];
 const BLOCKED_DIRS = new Set([".git", ".next", "node_modules", "dist", "build", "coverage", ".idea", ".vscode", "tmp", "temp", "logs", "data"]);
 const BLOCKED_FILE_NAMES = [/^\.env(\..+)?$/i, /^id_(rsa|dsa|ecdsa|ed25519)(\.pub)?$/i];
 const BLOCKED_FILE_EXTENSIONS = new Set([".pem", ".key", ".p12", ".pfx", ".db", ".sqlite", ".sqlite3", ".log"]);
@@ -259,8 +259,10 @@ async function readExplicitReadme(readmePath) {
 
 function deriveSummary(name, summary, readme, sharedCount) {
   if (summary?.trim()) return summary.trim();
-  const normalized = readme.replace(/^#+\s*/gm, "").replace(/`/g, "").replace(/\[(.*?)\]\((.*?)\)/g, "$1").replace(/\s+/g, " ").trim();
-  return normalized ? normalized.slice(0, 180) : `${name} workspace publish with ${sharedCount} shared files.`;
+  if (readme.trim() || sharedCount > 0) {
+    return `${name} OpenClaw config workspace.`;
+  }
+  return `${name} for OpenClaw.`;
 }
 
 async function buildPayload(options) {
@@ -304,7 +306,7 @@ async function buildPayload(options) {
       readme_markdown: readme || undefined,
       source_repo: options.source_repo?.trim() || undefined,
       source_commit: options.source_commit?.trim() || undefined,
-      publish_client: "clawlodge-cli/0.1.0",
+      publish_client: "clawlodge-cli/0.1.2",
       workspace_files: shared,
       blocked_files: blocked,
       skills: Array.from(skills.values()),
@@ -333,8 +335,8 @@ async function readConfig() {
 }
 
 async function writeConfig(config) {
-  await fs.mkdir(path.dirname(CONFIG_PATH), { recursive: true });
-  await fs.writeFile(CONFIG_PATH, JSON.stringify(config, null, 2), "utf8");
+  await fs.mkdir(path.dirname(CONFIG_PATH), { recursive: true, mode: 0o700 });
+  await fs.writeFile(CONFIG_PATH, JSON.stringify(config, null, 2), { encoding: "utf8", mode: 0o600 });
 }
 
 async function clearConfig() {

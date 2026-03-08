@@ -35,10 +35,10 @@ cd /Users/2shou/Codes/clawlodge
 npm run clawlodge:pack-cli
 ```
 
-This produces `clawlodge-cli-0.1.0.tgz`, which can be installed with:
+This produces `clawlodge-cli-0.1.2.tgz`, which can be installed with:
 
 ```bash
-npm install -g ./clawlodge-cli-0.1.0.tgz
+npm install -g clawlodge-cli
 ```
 
 Authenticate once from the command line after you create a PAT in `https://clawlodge.com/settings`:

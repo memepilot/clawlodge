@@ -50,26 +50,10 @@ function sanitizeWorkspaceContent(input: string) {
 }
 
 function deriveSummary(name: string, readme: string, workspaceFiles: WorkspaceDraftFile[]) {
-  const compact = readme
-    .replace(/^#+\s*/gm, "")
-    .replace(/`/g, "")
-    .replace(/\[(.*?)\]\((.*?)\)/g, "$1")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  if (!compact && !workspaceFiles.length) {
-    return `${name} for OpenClaw.`;
+  if (readme.trim() || workspaceFiles.length) {
+    return `${name} OpenClaw config workspace.`;
   }
-
-  if (!compact) {
-    const fileSummary = workspaceFiles
-      .slice(0, 6)
-      .map((file) => file.path)
-      .join(", ");
-    return fileSummary ? `${name} workspace with ${fileSummary}.` : `${name} for OpenClaw.`;
-  }
-
-  return compact.slice(0, 140);
+  return `${name} for OpenClaw.`;
 }
 
 function buildReadme(name: string, readme: string, workspaceFiles: WorkspaceDraftFile[]) {
@@ -405,7 +389,7 @@ export default function PublishPage() {
             <div className="publish-defaults">
               <div className="subcard">
                 <div className="field-label">Install</div>
-                <div className="publish-static mono">npm run clawlodge:pack-cli && npm install -g ./clawlodge-cli-0.1.0.tgz</div>
+                <div className="publish-static mono">npm install -g clawlodge-cli</div>
               </div>
               <div className="subcard">
                 <div className="field-label">Login with PAT</div>
