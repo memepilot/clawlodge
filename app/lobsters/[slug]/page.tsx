@@ -20,7 +20,7 @@ export default async function LobsterDetailPage({
   return (
     <div className="page-shell stack-lg">
       <section className="shell page-panel p-5 md:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="detail-head flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="page-title">
               {lobster.name}
@@ -46,7 +46,7 @@ export default async function LobsterDetailPage({
       </section>
 
       <section className="shell page-panel p-5 md:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="detail-section-head flex flex-wrap items-center justify-between gap-3">
           <h2 className="panel-title">README</h2>
           {latest ? (
             <a
