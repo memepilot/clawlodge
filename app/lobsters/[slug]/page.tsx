@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ReactMarkdown from "react-markdown";
@@ -9,6 +10,7 @@ import { LobsterActions } from "@/components/lobster-actions";
 import { WorkspaceBrowser } from "@/components/workspace-browser";
 import { ApiError } from "@/lib/server/errors";
 import { getComments, getLobsterBySlug } from "@/lib/server/service";
+import { absoluteUrl } from "@/lib/site";
 
 const markdownSchema = {
   ...defaultSchema,
@@ -39,6 +41,42 @@ const markdownSchema = {
     p: [...(defaultSchema.attributes?.p || []), "align"],
   },
 };
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  try {
+    const lobster = await getLobsterBySlug(slug);
+    return {
+      title: lobster.name,
+      description: lobster.summary,
+      alternates: {
+        canonical: absoluteUrl(`/lobsters/${slug}`),
+      },
+      openGraph: {
+        title: lobster.name,
+        description: lobster.summary,
+        url: absoluteUrl(`/lobsters/${slug}`),
+        type: "article",
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: lobster.name,
+        description: lobster.summary,
+      },
+    };
+  } catch {
+    return {
+      title: "Workspace",
+      alternates: {
+        canonical: absoluteUrl(`/lobsters/${slug}`),
+      },
+    };
+  }
+}
 
 export default async function LobsterDetailPage({
   params,

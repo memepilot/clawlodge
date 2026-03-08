@@ -1,9 +1,11 @@
+import Script from "next/script";
 import Link from "next/link";
 
 import { LobsterCard } from "@/components/lobster-card";
 import { apiOrigin } from "@/lib/api";
 import { getSessionUser } from "@/lib/server/auth";
 import { listLobsters } from "@/lib/server/service";
+import { absoluteUrl, siteConfig } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -18,9 +20,36 @@ export default async function Home({
   const sessionUser = await getSessionUser();
   const githubLoginUrl = `${apiOrigin}/api/v1/auth/github/start?next=/publish`;
   const isTagResults = Boolean(params.tag);
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        name: siteConfig.name,
+        url: siteConfig.origin,
+        sameAs: [siteConfig.githubUrl],
+      },
+      {
+        "@type": "WebSite",
+        name: siteConfig.name,
+        url: siteConfig.origin,
+        description: siteConfig.description,
+        potentialAction: {
+          "@type": "SearchAction",
+          target: `${absoluteUrl("/")}?q={search_term_string}`,
+          "query-input": "required name=search_term_string",
+        },
+      },
+    ],
+  };
 
   return (
     <div>
+      <Script
+        id="home-jsonld"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       {isTagResults ? (
         <section className="section section-tight">
           <div className="tag-results-bar hero-card">
