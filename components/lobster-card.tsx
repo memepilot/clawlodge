@@ -8,6 +8,7 @@ export function LobsterCard({ item }: { item: LobsterSummary }) {
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="lobster-card-meta">
+            {item.recommended ? <span className="tag tag-verified">recommended</span> : null}
             {item.source_type ? <span className={`tag tag-source`}>{item.source_type}</span> : null}
             {item.verified ? <span className="tag tag-verified">verified</span> : null}
           </div>

@@ -59,6 +59,7 @@ export type DbLobster = {
   reportPenalty: number;
   searchDocument: string;
   tags: string[];
+  recommendationScore: number | null;
   favoriteCount: number;
   shareCount: number;
   commentCount: number;

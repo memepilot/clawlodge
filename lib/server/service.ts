@@ -163,6 +163,7 @@ function toSummary(item: DbLobster, owner: DbUser): LobsterSummary {
     owner_display_name: owner.displayName,
     tags: item.tags,
     latest_version: null,
+    recommended: false,
     favorite_count: item.favoriteCount,
     share_count: item.shareCount,
     comment_count: item.commentCount,
@@ -212,6 +213,11 @@ function attachLatestVersion(summary: LobsterSummary, versions: DbLobsterVersion
   };
 }
 
+function rankingScore(item: DbLobster, summary: LobsterSummary) {
+  if (typeof item.recommendationScore === "number") return item.recommendationScore;
+  return summary.hot_score;
+}
+
 function decodeStorageKeyFromUrl(url: string | null | undefined) {
   if (!url?.startsWith("/api/v1/storage/")) return null;
   const encoded = url.slice("/api/v1/storage/".length);
@@ -236,16 +242,27 @@ export async function listLobsters(params?: { sort?: string; tag?: string; q?: s
   const summaries = items.map((item) => {
     const owner = db.users.find((user) => user.id === item.ownerId)!;
     const versions = db.lobsterVersions.filter((version) => version.lobsterId === item.id);
-    return attachLatestVersion(toSummary(item, owner), versions);
+    return {
+      item,
+      summary: attachLatestVersion(toSummary(item, owner), versions),
+    };
   });
 
   summaries.sort((a, b) => {
-    if (params?.sort === "new") return +new Date(b.created_at) - +new Date(a.created_at);
-    if (b.hot_score !== a.hot_score) return b.hot_score - a.hot_score;
-    return +new Date(b.created_at) - +new Date(a.created_at);
+    if (params?.sort === "new") return +new Date(b.summary.created_at) - +new Date(a.summary.created_at);
+    const scoreDiff = rankingScore(b.item, b.summary) - rankingScore(a.item, a.summary);
+    if (scoreDiff !== 0) return scoreDiff;
+    if (b.summary.hot_score !== a.summary.hot_score) return b.summary.hot_score - a.summary.hot_score;
+    return +new Date(b.summary.created_at) - +new Date(a.summary.created_at);
   });
 
-  return { items: summaries, total: summaries.length };
+  return {
+    items: summaries.map((entry, index) => ({
+      ...entry.summary,
+      recommended: params?.sort !== "new" && index < 3,
+    })),
+    total: summaries.length,
+  };
 }
 
 export async function getLobsterBySlug(slug: string): Promise<LobsterDetail> {
@@ -390,6 +407,7 @@ export async function createLobster(
       reportPenalty: 0,
       searchDocument: [payload.name.trim(), payload.summary.trim(), tags.join(" ")].join("\n"),
       tags,
+      recommendationScore: null,
       favoriteCount: 0,
       shareCount: 0,
       commentCount: 0,
@@ -886,6 +904,7 @@ export async function uploadViaMcp(
         reportPenalty: 0,
         searchDocument: `${manifest.name}\n${manifest.summary}`,
         tags: [],
+        recommendationScore: null,
         favoriteCount: 0,
         shareCount: 0,
         commentCount: 0,

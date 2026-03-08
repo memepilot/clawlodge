@@ -46,6 +46,7 @@ export async function readDb(): Promise<DbState> {
   const parsed = JSON.parse(raw) as DbState;
   parsed.lobsters = parsed.lobsters.map((lobster) => ({
     ...lobster,
+    recommendationScore: lobster.recommendationScore ?? null,
     shareCount: lobster.shareCount ?? 0,
   }));
   parsed.lobsterVersions = parsed.lobsterVersions.map((version) => ({
