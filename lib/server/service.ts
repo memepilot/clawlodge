@@ -1,3 +1,5 @@
+import path from "node:path";
+
 import { CommentItem, LobsterDetail, LobsterSummary, LobsterVersion, MeProfile, SeedRecord, UserProfile } from "@/lib/types";
 import { zipSync, strToU8 } from "fflate";
 
@@ -22,6 +24,174 @@ import type { WorkspacePublishPayload } from "./workspace-publish";
 const DEFAULT_README_MODEL = process.env.CLAWLODGE_README_MODEL?.trim() || "openai/gpt-4.1";
 const DEFAULT_SUMMARY_MODEL = process.env.CLAWLODGE_SUMMARY_MODEL?.trim() || DEFAULT_README_MODEL;
 const MAX_README_CONTEXT_FILES = 24;
+const MAX_GITHUB_README_ASSET_BYTES = 8 * 1024 * 1024;
+
+function parseGithubRepoRef(sourceRepo: string | null | undefined) {
+  const raw = sourceRepo?.trim();
+  if (!raw) return null;
+  try {
+    const url = new URL(raw);
+    if (url.hostname !== "github.com") return null;
+    const parts = url.pathname.replace(/^\/+|\/+$/g, "").split("/");
+    if (parts.length < 2) return null;
+    const owner = parts[0];
+    const repo = parts[1].replace(/\.git$/i, "");
+    if (!owner || !repo) return null;
+    return { owner, repo };
+  } catch {
+    return null;
+  }
+}
+
+async function resolveGithubDefaultBranch(owner: string, repo: string) {
+  const response = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+    headers: {
+      Accept: "application/vnd.github+json",
+      "User-Agent": "ClawLodge",
+    },
+  });
+  if (!response.ok) {
+    throw new ApiError(502, `Failed to resolve default branch for ${owner}/${repo}`);
+  }
+  const body = await response.json().catch(() => ({}));
+  const branch = typeof body?.default_branch === "string" ? body.default_branch.trim() : "";
+  if (!branch) {
+    throw new ApiError(502, `Default branch missing for ${owner}/${repo}`);
+  }
+  return branch;
+}
+
+function decodeMarkdownUrl(rawTarget: string) {
+  const trimmed = rawTarget.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith("<") && trimmed.endsWith(">")) {
+    return {
+      url: trimmed.slice(1, -1).trim(),
+      wrap: "angle" as const,
+    };
+  }
+  const match = trimmed.match(/^(\S+)(\s+["'][\s\S]*["'])?$/);
+  if (!match) return null;
+  return {
+    url: match[1],
+    suffix: match[2] ?? "",
+    wrap: "plain" as const,
+  };
+}
+
+function isLikelyRelativeAsset(url: string) {
+  return Boolean(url) && !/^(?:[a-z]+:)?\/\//i.test(url) && !url.startsWith("#") && !url.startsWith("data:");
+}
+
+function toGithubRawAssetUrl(
+  assetUrl: string,
+  repo: { owner: string; repo: string },
+  ref: string,
+) {
+  if (isLikelyRelativeAsset(assetUrl)) {
+    const cleanPath = assetUrl.split("#")[0].split("?")[0];
+    const normalized = path.posix.normalize(cleanPath).replace(/^(\.\.\/)+/, "").replace(/^\.?\//, "");
+    if (!normalized) return null;
+    return {
+      downloadUrl: `https://raw.githubusercontent.com/${repo.owner}/${repo.repo}/${encodeURIComponent(ref)}/${normalized
+        .split("/")
+        .map(encodeURIComponent)
+        .join("/")}`,
+      assetPath: normalized,
+    };
+  }
+
+  try {
+    const parsed = new URL(assetUrl);
+    if (parsed.hostname === "raw.githubusercontent.com") {
+      const parts = parsed.pathname.replace(/^\/+/, "").split("/");
+      if (parts.length < 4) return null;
+      const owner = parts[0];
+      const repoName = parts[1];
+      if (owner !== repo.owner || repoName !== repo.repo) return null;
+      return {
+        downloadUrl: assetUrl,
+        assetPath: parts.slice(3).join("/"),
+      };
+    }
+    if (parsed.hostname === "github.com") {
+      const parts = parsed.pathname.replace(/^\/+/, "").split("/");
+      if (parts.length < 5) return null;
+      const [owner, repoName, mode, branch, ...rest] = parts;
+      if (owner !== repo.owner || repoName !== repo.repo) return null;
+      if (mode !== "blob" && mode !== "raw") return null;
+      const assetPath = rest.join("/");
+      return {
+        downloadUrl: `https://raw.githubusercontent.com/${owner}/${repoName}/${encodeURIComponent(branch)}/${assetPath
+          .split("/")
+          .map(encodeURIComponent)
+          .join("/")}`,
+        assetPath,
+      };
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+async function mirrorGithubReadmeAssets(params: {
+  lobsterSlug: string;
+  version: string;
+  readmeMarkdown: string;
+  sourceRepo?: string;
+  sourceCommit?: string;
+}) {
+  const repo = parseGithubRepoRef(params.sourceRepo);
+  if (!repo) return params.readmeMarkdown;
+  const repoRef = repo;
+
+  const ref = params.sourceCommit?.trim() || await resolveGithubDefaultBranch(repoRef.owner, repoRef.repo);
+  const cache = new Map<string, string>();
+
+  async function mirror(rawUrl: string) {
+    const resolved = toGithubRawAssetUrl(rawUrl, repoRef, ref);
+    if (!resolved) return null;
+    if (cache.has(resolved.downloadUrl)) return cache.get(resolved.downloadUrl) ?? null;
+
+    const response = await fetch(resolved.downloadUrl, {
+      headers: { "User-Agent": "ClawLodge" },
+    });
+    if (!response.ok) return null;
+
+    const contentType = response.headers.get("content-type") || "application/octet-stream";
+    if (!contentType.startsWith("image/")) return null;
+
+    const arrayBuffer = await response.arrayBuffer();
+    if (arrayBuffer.byteLength > MAX_GITHUB_README_ASSET_BYTES) return null;
+
+    const assetKey = `lobsters/${params.lobsterSlug}/${params.version}/readme-assets/${resolved.assetPath}`;
+    const storedUrl = await putObject(assetKey, Buffer.from(arrayBuffer), contentType);
+    cache.set(resolved.downloadUrl, storedUrl);
+    return storedUrl;
+  }
+
+  let next = params.readmeMarkdown;
+  const markdownMatches = Array.from(next.matchAll(/!\[([^\]]*)\]\(([^)]+)\)/g));
+  for (const match of markdownMatches) {
+    const parsed = decodeMarkdownUrl(match[2]);
+    if (!parsed) continue;
+    const storedUrl = await mirror(parsed.url);
+    if (!storedUrl) continue;
+    const replacementTarget = parsed.wrap === "angle" ? `<${storedUrl}>` : `${storedUrl}${parsed.suffix ?? ""}`;
+    next = next.replace(match[0], `![${match[1]}](${replacementTarget})`);
+  }
+
+  const htmlMatches = Array.from(next.matchAll(/<img\b[^>]*\bsrc=(['"])(.*?)\1[^>]*>/gi));
+  for (const match of htmlMatches) {
+    const storedUrl = await mirror(match[2]);
+    if (!storedUrl) continue;
+    next = next.replace(match[0], match[0].replace(match[2], storedUrl));
+  }
+
+  return next;
+}
 
 function buildWorkspaceReadmePrompt(payload: WorkspacePublishPayload) {
   const files = payload.workspace_files
@@ -458,7 +628,14 @@ export async function createVersion(
     if (db.lobsterVersions.some((item) => item.lobsterId === lobster.id && item.version === payload.version)) {
       throw new ApiError(409, "version already exists");
     }
-    const generatedSummary = await generateWorkspaceSummary(lobster.name, payload.readme_markdown);
+    const migratedReadmeMarkdown = await mirrorGithubReadmeAssets({
+      lobsterSlug: lobster.slug,
+      version: payload.version,
+      readmeMarkdown: payload.readme_markdown,
+      sourceRepo: payload.source_repo,
+      sourceCommit: payload.source_commit,
+    });
+    const generatedSummary = await generateWorkspaceSummary(lobster.name, migratedReadmeMarkdown);
 
     const manifest = {
       schema_version: "1.0",
@@ -478,7 +655,7 @@ export async function createVersion(
 
     const readmeUrl = await putObject(
       `lobsters/${lobster.slug}/${payload.version}/README.md`,
-      Buffer.from(payload.readme_markdown, "utf8"),
+      Buffer.from(migratedReadmeMarkdown, "utf8"),
       "text/markdown",
     );
     const manifestUrl = await putObject(
@@ -494,7 +671,7 @@ export async function createVersion(
       createdBy: userId,
       version: payload.version,
       changelog: payload.changelog.trim(),
-      readmeText: payload.readme_markdown,
+      readmeText: migratedReadmeMarkdown,
       manifestUrl,
       readmeUrl,
       skillsBundleUrl: null,
@@ -527,7 +704,7 @@ export async function createVersion(
     lobster.searchDocument = [
       lobster.name,
       generatedSummary,
-      payload.readme_markdown,
+      migratedReadmeMarkdown,
       lobster.tags.join(" "),
       ...(payload.workspace_files ?? []).map((file) => `${file.path}\n${file.content_excerpt ?? ""}`),
     ].join("\n");
@@ -921,7 +1098,18 @@ export async function uploadViaMcp(
     }
 
     const base = `lobsters/${lobster.slug}/${manifest.version}`;
-    const readmeUrl = await putObject(`${base}/README.md`, files.readmeRaw, "text/markdown");
+    const migratedReadmeText = await mirrorGithubReadmeAssets({
+      lobsterSlug: lobster.slug,
+      version: manifest.version,
+      readmeMarkdown: files.readmeRaw.toString("utf8"),
+      sourceRepo: manifest.source?.repo_url,
+      sourceCommit: manifest.source?.commit,
+    });
+    const readmeUrl = await putObject(
+      `${base}/README.md`,
+      Buffer.from(migratedReadmeText, "utf8"),
+      "text/markdown",
+    );
     const manifestUrl = await putObject(`${base}/manifest.json`, files.manifestRaw, "application/json");
     const skillsBundleUrl = await putObject(`${base}/skills_bundle.zip`, files.skillsRaw, "application/zip");
     const now = new Date().toISOString();
@@ -932,7 +1120,7 @@ export async function uploadViaMcp(
       createdBy: userId,
       version: manifest.version,
       changelog: "Uploaded via MCP",
-      readmeText: files.readmeRaw.toString("utf8"),
+      readmeText: migratedReadmeText,
       manifestUrl,
       readmeUrl,
       skillsBundleUrl,
@@ -957,7 +1145,7 @@ export async function uploadViaMcp(
     if (Array.isArray(tagSetting?.value)) {
       lobster.tags = [...new Set(tagSetting.value.map((item) => String(item).trim().toLowerCase()).filter(Boolean))];
     }
-    lobster.searchDocument = `${lobster.name}\n${lobster.summary}\n${files.readmeRaw.toString("utf8")}`;
+    lobster.searchDocument = `${lobster.name}\n${lobster.summary}\n${migratedReadmeText}`;
     lobster.updatedAt = now;
 
     return {
