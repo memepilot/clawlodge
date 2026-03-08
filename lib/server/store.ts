@@ -1,7 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { seededState } from "./storeSeed";
 import { DbState } from "./types";
 
 const dataDir = path.resolve(process.env.CLAWLODGE_DATA_DIR || path.join(process.cwd(), "data"));
@@ -9,12 +8,35 @@ const dbPath = path.join(dataDir, "app-db.json");
 
 let writeChain = Promise.resolve();
 
+function emptyState(): DbState {
+  return {
+    nextIds: {
+      user: 1,
+      session: 1,
+      apiToken: 1,
+      hireProfile: 1,
+      lobster: 1,
+      lobsterVersion: 1,
+      comment: 1,
+      report: 1,
+    },
+    users: [],
+    sessions: [],
+    apiTokens: [],
+    hireProfiles: [],
+    lobsters: [],
+    lobsterVersions: [],
+    comments: [],
+    reports: [],
+  };
+}
+
 async function ensureDbFile() {
   await fs.mkdir(dataDir, { recursive: true });
   try {
     await fs.access(dbPath);
   } catch {
-    await fs.writeFile(dbPath, JSON.stringify(seededState(), null, 2), "utf8");
+    await fs.writeFile(dbPath, JSON.stringify(emptyState(), null, 2), "utf8");
   }
 }
 

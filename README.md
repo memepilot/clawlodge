@@ -105,5 +105,4 @@ For production, store data outside the repo checkout by setting `CLAWLODGE_DATA_
 ## Notes
 
 - Uploaded asset URLs now resolve through `/api/v1/storage/...` and do not expose server filesystem paths.
-- Seed asset URLs resolve through `/api/v1/seed-assets/...`.
-- Seed data initializes automatically into `CLAWLODGE_DATA_DIR/app-db.json` on first run.
+- On first run, the app initializes an empty `CLAWLODGE_DATA_DIR/app-db.json`.

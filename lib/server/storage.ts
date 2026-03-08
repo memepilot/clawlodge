@@ -32,18 +32,10 @@ export function toStorageUrl(key: string) {
   return `/api/v1/storage/${normalized.split('/').map(encodeURIComponent).join('/')}`;
 }
 
-export function toSeedAssetUrl(seedPath: string) {
-  const normalized = normalizeKey(seedPath);
-  return `/api/v1/seed-assets/${normalized.split('/').map(encodeURIComponent).join('/')}`;
-}
-
 export function resolvePublicAssetUrl(input: string | null | undefined) {
   if (!input) return null;
-  if (input.startsWith('/api/v1/storage/') || input.startsWith('/api/v1/seed-assets/')) {
+  if (input.startsWith('/api/v1/storage/')) {
     return input;
-  }
-  if (input.startsWith('file:///seed/')) {
-    return toSeedAssetUrl(input.slice('file:///seed/'.length));
   }
   if (input.startsWith('file://')) {
     const withoutScheme = decodeURIComponent(input.slice('file://'.length).split('?')[0]);
