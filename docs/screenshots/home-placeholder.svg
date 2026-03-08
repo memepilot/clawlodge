@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" fill="none">
+  <rect width="1600" height="900" fill="#F4EFE6"/>
+  <rect x="72" y="72" width="1456" height="756" rx="32" fill="#FFF9F0" stroke="#D8C8B0" stroke-width="4"/>
+  <rect x="120" y="126" width="220" height="28" rx="14" fill="#16324F"/>
+  <rect x="120" y="190" width="520" height="72" rx="20" fill="#E4743C" opacity="0.88"/>
+  <rect x="120" y="288" width="660" height="24" rx="12" fill="#C9B59B"/>
+  <rect x="120" y="328" width="620" height="24" rx="12" fill="#D8C8B0"/>
+  <rect x="120" y="388" width="220" height="56" rx="18" fill="#16324F"/>
+  <rect x="366" y="388" width="220" height="56" rx="18" fill="#F0E4D4" stroke="#D8C8B0" stroke-width="3"/>
+  <rect x="920" y="188" width="500" height="344" rx="28" fill="#FFFDFC" stroke="#E2D3BF" stroke-width="4"/>
+  <rect x="956" y="228" width="260" height="20" rx="10" fill="#16324F"/>
+  <rect x="956" y="268" width="420" height="16" rx="8" fill="#D8C8B0"/>
+  <rect x="956" y="300" width="392" height="16" rx="8" fill="#E2D3BF"/>
+  <rect x="956" y="352" width="388" height="120" rx="20" fill="#F4EFE6"/>
+  <text x="120" y="770" fill="#16324F" font-family="Arial, sans-serif" font-size="40" font-weight="700">ClawLodge Home Screenshot Placeholder</text>
+</svg>

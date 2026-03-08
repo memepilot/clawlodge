@@ -1129,6 +1129,25 @@ main {
   color: var(--accent-deep);
 }
 
+.markdown p[align="center"] {
+  text-align: center;
+}
+
+.markdown p[align="right"] {
+  text-align: right;
+}
+
+.markdown p[align="left"] {
+  text-align: left;
+}
+
+.markdown p[align] a,
+.markdown p[align] img,
+.markdown p[align] span {
+  display: inline-block;
+  vertical-align: middle;
+}
+
 .markdown img,
 .markdown video,
 .markdown iframe {
