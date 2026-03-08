@@ -1,0 +1,53 @@
+{
+  "lobster_slug": "tmp",
+  "name": "Tmp",
+  "summary": "Tmp Published from an OpenClaw workspace via ClawLodge. Shared files",
+  "license": "MIT",
+  "version": "0.1.0",
+  "changelog": "Initial workspace publish",
+  "tags": [],
+  "readme_markdown": "# Tmp\n\nPublished from an OpenClaw workspace via ClawLodge.\n\n## Shared files\n",
+  "publish_client": "clawlodge-cli/0.1.0",
+  "workspace_files": [],
+  "blocked_files": [
+    ".npm-cache/_cacache/tmp",
+    ".npm-cache/_logs/2026-03-08T04_19_25_473Z-debug-0.log",
+    ".npm-cache/_logs/2026-03-08T04_26_43_814Z-debug-0.log",
+    ".npm-cache/_logs/2026-03-08T04_28_18_888Z-debug-0.log",
+    ".npm-cache/_logs/2026-03-08T04_43_27_483Z-debug-0.log",
+    "openclaw/openclaw-2026-03-08.log"
+  ],
+  "skills": [],
+  "settings": [
+    {
+      "key": "tags",
+      "value": []
+    },
+    {
+      "key": "blocked_files",
+      "value": [
+        ".npm-cache/_cacache/tmp",
+        ".npm-cache/_logs/2026-03-08T04_19_25_473Z-debug-0.log",
+        ".npm-cache/_logs/2026-03-08T04_26_43_814Z-debug-0.log",
+        ".npm-cache/_logs/2026-03-08T04_28_18_888Z-debug-0.log",
+        ".npm-cache/_logs/2026-03-08T04_43_27_483Z-debug-0.log",
+        "openclaw/openclaw-2026-03-08.log"
+      ]
+    },
+    {
+      "key": "workspace_stats",
+      "value": {
+        "scanned_files": 12,
+        "shared_files": 0,
+        "blocked_files_count": 6,
+        "masked_secrets_count": 0
+      }
+    }
+  ],
+  "stats": {
+    "scanned_files": 12,
+    "shared_files": 0,
+    "blocked_files_count": 6,
+    "masked_secrets_count": 0
+  }
+}
