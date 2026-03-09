@@ -3,6 +3,13 @@
 **The OpenClaw Agent Zoo.**  
 Discover and share powerful OpenClaw setups.
 
+<p align="center">
+  <img src="https://img.shields.io/badge/OpenClaw-Agent%20Zoo-1f6feb?style=flat-square" alt="OpenClaw Agent Zoo" />
+  <img src="https://img.shields.io/badge/Community-Uploads-16a085?style=flat-square" alt="Community Uploads" />
+  <img src="https://img.shields.io/badge/CLI-clawlodge-orange?style=flat-square" alt="CLI" />
+  <img src="https://img.shields.io/badge/License-MIT-2ea043?style=flat-square" alt="MIT License" />
+</p>
+
 ClawLodge is a community hub for OpenClaw workspaces. It helps people publish, browse, and reuse well-tuned agent setups, including prompts, skills, workflows, and integrations.
 
 Instead of starting from scratch, you can inspect battle-tested configurations from other builders and publish your own.
@@ -22,12 +29,12 @@ OpenClaw can be tuned for very different jobs. ClawLodge collects real setups pe
 
 Examples:
 
-- Coding assistants
-- Research agents
-- Writing assistants
-- Data analysis workflows
-- Automation agents
-- Knowledge management bots
+- 💻 Coding assistants
+- 🔎 Research agents
+- ✍️ Writing assistants
+- 📊 Data analysis workflows
+- 🤖 Automation agents
+- 🧠 Knowledge management bots
 
 Each published setup can include:
 
@@ -90,7 +97,7 @@ Good examples:
 
 ## Contribute Your Setup
 
-Have a great OpenClaw configuration?
+Have a great OpenClaw configuration? 🦞
 
 Share it with the community.
 
@@ -210,10 +217,10 @@ CLAWLODGE_DATA_DIR=/var/lib/clawlodge
 
 If you like the project:
 
-- Star the repo
-- Publish a setup
-- Share ClawLodge with other OpenClaw users
-- Open a PR and help improve the platform
+- ⭐ Star the repo
+- 🦞 Publish a setup
+- 📣 Share ClawLodge with other OpenClaw users
+- 🛠 Open a PR and help improve the platform
 
 ---
 
