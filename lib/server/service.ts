@@ -382,6 +382,7 @@ function toSummary(item: DbLobster, owner: DbUser): LobsterSummary {
     latest_version: null,
     recommended: false,
     favorite_count: item.favoriteCount,
+    download_count: item.downloadCount,
     share_count: item.shareCount,
     comment_count: item.commentCount,
     hot_score: computeHotScore(item.favoriteCount, item.commentCount, new Date(item.createdAt), item.reportPenalty),
@@ -431,9 +432,10 @@ function attachLatestVersion(summary: LobsterSummary, versions: DbLobsterVersion
 }
 
 function rankingScore(item: DbLobster, summary: LobsterSummary) {
-  if (typeof item.githubStars === "number") return item.githubStars;
-  if (typeof item.recommendationScore === "number") return item.recommendationScore;
-  return summary.hot_score;
+  const downloads = item.downloadCount ?? 0;
+  const githubStars = item.githubStars ?? 0;
+  const recommendation = item.recommendationScore ?? 0;
+  return downloads * 100000 + githubStars * 100 + recommendation + summary.hot_score;
 }
 
 function decodeStorageKeyFromUrl(url: string | null | undefined) {
@@ -542,6 +544,15 @@ export async function getLobsterVersion(slug: string, version: string) {
   const found = db.lobsterVersions.find((item) => item.lobsterId === lobster.id && item.version === version);
   if (!found) throw new ApiError(404, "Version not found");
   return toVersion(found);
+}
+
+export async function recordLobsterDownload(slug: string) {
+  return mutateDb((db) => {
+    const lobster = db.lobsters.find((item) => item.slug === slug && item.status === "active");
+    if (!lobster) throw new ApiError(404, "Lobster not found");
+    lobster.downloadCount = (lobster.downloadCount ?? 0) + 1;
+    return { lobster_slug: slug, download_count: lobster.downloadCount };
+  });
 }
 
 export async function buildLobsterVersionZip(slug: string, version: string) {
@@ -662,6 +673,7 @@ export async function createLobster(
       recommendationScore: null,
       githubStars: null,
       favoriteCount: 0,
+      downloadCount: 0,
       shareCount: 0,
       commentCount: 0,
       createdAt: now,
@@ -1169,6 +1181,7 @@ export async function uploadViaMcp(
         recommendationScore: null,
         githubStars: null,
         favoriteCount: 0,
+        downloadCount: 0,
         shareCount: 0,
         commentCount: 0,
         createdAt: now,

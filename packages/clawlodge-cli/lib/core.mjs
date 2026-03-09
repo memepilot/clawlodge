@@ -25,6 +25,7 @@ const SEMVER_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?
 const MAX_FILE_BYTES = 128 * 1024;
 const MAX_EXCERPT_CHARS = 1600;
 const DEFAULT_ORIGIN = "https://clawlodge.com";
+const CLI_VERSION = "0.1.5";
 const CONFIG_PATH = path.join(os.homedir(), ".config", "clawlodge", "config.json");
 const REDACTION_RULES = [
   [/\bsk-[A-Za-z0-9]{20,}\b/g, "[REDACTED_OPENAI_KEY]"],
@@ -75,16 +76,23 @@ function printHelp() {
 
 Basic usage:
   clawlodge login
+  clawlodge --version
   clawlodge search "memory"
   clawlodge show openclaw-config
   clawlodge get openclaw-config
   clawlodge download openclaw-config
+  clawlodge favorite openclaw-config
+  clawlodge comment openclaw-config --content "Useful setup"
+  clawlodge report openclaw-config --reason "Contains broken publish output"
   clawlodge pack
   clawlodge publish
 
 Commands:
   clawlodge login
     Save a PAT locally after you create it in https://clawlodge.com/settings
+
+  clawlodge version
+    Show the installed CLI version
 
   clawlodge whoami
     Show the user bound to the saved PAT
@@ -104,6 +112,18 @@ Commands:
   clawlodge download
     Download one published workspace version as a zip
 
+  clawlodge favorite
+    Favorite one published workspace
+
+  clawlodge unfavorite
+    Remove one published workspace from favorites
+
+  clawlodge comment
+    Post a comment on one published workspace
+
+  clawlodge report
+    Submit negative feedback for one published workspace
+
   clawlodge pack
     Pack the default OpenClaw workspace into .clawlodge/workspace-publish.json
 
@@ -115,10 +135,15 @@ Commands:
 
 Advanced usage:
   clawlodge login --origin https://clawlodge.com
+  clawlodge --version
   clawlodge search "openclaw" --sort new
   clawlodge show cft0808-edict
   clawlodge get cft0808-edict
   clawlodge download cft0808-edict --version 0.1.1 --out /tmp/cft0808-edict.zip
+  clawlodge favorite cft0808-edict
+  clawlodge unfavorite cft0808-edict
+  clawlodge comment cft0808-edict --content "Helpful docs and workflows."
+  clawlodge report cft0808-edict --reason "README contains broken instructions"
   clawlodge pack --name "My Workspace"
   clawlodge publish --readme /tmp/README.md
   clawlodge pack --workspace ~/my-workspace --out /tmp/workspace-publish.json
@@ -129,6 +154,10 @@ Environment variables:
   CLAWLODGE_PAT
   CLAWLODGE_ORIGIN
 `);
+}
+
+function printVersion() {
+  console.log(CLI_VERSION);
 }
 
 async function resolveWorkspaceRoot(explicitWorkspace) {
@@ -340,7 +369,7 @@ async function buildPayload(options) {
       readme_markdown: readme || undefined,
       source_repo: options.source_repo?.trim() || undefined,
       source_commit: options.source_commit?.trim() || undefined,
-      publish_client: "clawlodge-cli/0.1.4",
+      publish_client: `clawlodge-cli/${CLI_VERSION}`,
       workspace_files: shared,
       blocked_files: blocked,
       skills: Array.from(skills.values()),
@@ -534,10 +563,83 @@ async function runDownload(options, positionals) {
   console.log(JSON.stringify({ ok: true, mode: "download", origin, slug, version, out, bytes: body.length }, null, 2));
 }
 
+function requireTextOption(options, positionals, key, label) {
+  const direct = options[key]?.trim();
+  if (direct) return direct;
+  const fallback = positionals.slice(1).join(" ").trim();
+  if (fallback) return fallback;
+  throw new Error(`Missing ${label}`);
+}
+
+async function runFavorite(options, positionals) {
+  const config = await readConfig();
+  const origin = resolveOrigin(options, config);
+  const token = resolveToken(options, config);
+  if (!token) {
+    throw new Error(`Missing PAT. Create one at ${origin}/settings, then run clawlodge login.`);
+  }
+  const slug = options.slug?.trim() || requirePositional(positionals, "slug");
+  const result = await requestJson(`${origin.replace(/\/$/, "")}/api/v1/lobsters/${encodeURIComponent(slug)}/favorite`, token, {
+    method: "POST",
+  });
+  console.log(JSON.stringify({ ok: true, mode: "favorite", origin, slug, result }, null, 2));
+}
+
+async function runUnfavorite(options, positionals) {
+  const config = await readConfig();
+  const origin = resolveOrigin(options, config);
+  const token = resolveToken(options, config);
+  if (!token) {
+    throw new Error(`Missing PAT. Create one at ${origin}/settings, then run clawlodge login.`);
+  }
+  const slug = options.slug?.trim() || requirePositional(positionals, "slug");
+  const result = await requestJson(`${origin.replace(/\/$/, "")}/api/v1/lobsters/${encodeURIComponent(slug)}/favorite`, token, {
+    method: "DELETE",
+  });
+  console.log(JSON.stringify({ ok: true, mode: "unfavorite", origin, slug, result }, null, 2));
+}
+
+async function runComment(options, positionals) {
+  const config = await readConfig();
+  const origin = resolveOrigin(options, config);
+  const token = resolveToken(options, config);
+  if (!token) {
+    throw new Error(`Missing PAT. Create one at ${origin}/settings, then run clawlodge login.`);
+  }
+  const slug = options.slug?.trim() || requirePositional(positionals, "slug");
+  const content = requireTextOption(options, positionals, "content", "comment content");
+  const result = await requestJson(`${origin.replace(/\/$/, "")}/api/v1/lobsters/${encodeURIComponent(slug)}/comments`, token, {
+    method: "POST",
+    body: JSON.stringify({ content }),
+  });
+  console.log(JSON.stringify({ ok: true, mode: "comment", origin, slug, result }, null, 2));
+}
+
+async function runReport(options, positionals) {
+  const config = await readConfig();
+  const origin = resolveOrigin(options, config);
+  const token = resolveToken(options, config);
+  if (!token) {
+    throw new Error(`Missing PAT. Create one at ${origin}/settings, then run clawlodge login.`);
+  }
+  const slug = options.slug?.trim() || requirePositional(positionals, "slug");
+  const reason = requireTextOption(options, positionals, "reason", "report reason");
+  const result = await requestJson(`${origin.replace(/\/$/, "")}/api/v1/lobsters/${encodeURIComponent(slug)}/report`, token, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+  console.log(JSON.stringify({ ok: true, mode: "report", origin, slug, result }, null, 2));
+}
+
 export async function runCli(argv = process.argv.slice(2)) {
   const { command, options, positionals } = parseArgs(argv);
   if (command === "help" || command === "--help" || command === "-h") {
     printHelp();
+    return;
+  }
+
+  if (command === "version" || command === "--version" || command === "-v") {
+    printVersion();
     return;
   }
 
@@ -568,6 +670,26 @@ export async function runCli(argv = process.argv.slice(2)) {
 
   if (command === "download") {
     await runDownload(options, positionals);
+    return;
+  }
+
+  if (command === "favorite") {
+    await runFavorite(options, positionals);
+    return;
+  }
+
+  if (command === "unfavorite") {
+    await runUnfavorite(options, positionals);
+    return;
+  }
+
+  if (command === "comment") {
+    await runComment(options, positionals);
+    return;
+  }
+
+  if (command === "report") {
+    await runReport(options, positionals);
     return;
   }
 

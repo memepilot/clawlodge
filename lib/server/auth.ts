@@ -81,6 +81,14 @@ export async function requireSessionUser() {
   return user;
 }
 
+export async function requireApiUser(authorization?: string | null) {
+  const sessionUser = await getSessionUser();
+  if (sessionUser) {
+    return sessionUser;
+  }
+  return requirePatUser(authorization);
+}
+
 export async function requirePatUser(authorization?: string | null) {
   if (!authorization?.startsWith("Bearer ")) {
     throw new ApiError(401, "PAT required");

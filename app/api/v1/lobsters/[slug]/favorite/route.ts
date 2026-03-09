@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { requireSessionUser } from "@/lib/server/auth";
+import { requireApiUser } from "@/lib/server/auth";
 import { ApiError } from "@/lib/server/errors";
 import { addFavorite, removeFavorite } from "@/lib/server/service";
 
-export async function POST(_: Request, { params }: { params: Promise<{ slug: string }> }) {
+export async function POST(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   try {
-    const user = await requireSessionUser();
+    const user = await requireApiUser(request.headers.get("authorization"));
     const { slug } = await params;
     return NextResponse.json(await addFavorite(user.id, slug));
   } catch (error) {
@@ -17,9 +17,9 @@ export async function POST(_: Request, { params }: { params: Promise<{ slug: str
   }
 }
 
-export async function DELETE(_: Request, { params }: { params: Promise<{ slug: string }> }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   try {
-    const user = await requireSessionUser();
+    const user = await requireApiUser(request.headers.get("authorization"));
     const { slug } = await params;
     return NextResponse.json(await removeFavorite(user.id, slug));
   } catch (error) {

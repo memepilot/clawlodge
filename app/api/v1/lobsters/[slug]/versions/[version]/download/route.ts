@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { ApiError } from "@/lib/server/errors";
-import { buildLobsterVersionZip } from "@/lib/server/service";
+import { buildLobsterVersionZip, recordLobsterDownload } from "@/lib/server/service";
 
 export async function GET(
   _: Request,
@@ -9,6 +9,7 @@ export async function GET(
 ) {
   try {
     const { slug, version } = await params;
+    await recordLobsterDownload(slug);
     const archive = await buildLobsterVersionZip(slug, version);
     return new NextResponse(Buffer.from(archive.body), {
       status: 200,

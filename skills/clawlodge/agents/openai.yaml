@@ -1,0 +1,3 @@
+display_name: ClawLodge
+short_description: Search, inspect, download, and publish OpenClaw workspaces on ClawLodge.
+default_prompt: Use ClawLodge to find, inspect, download, or publish OpenClaw workspaces.

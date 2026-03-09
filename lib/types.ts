@@ -15,6 +15,7 @@ export type LobsterSummary = {
   latest_version?: string | null;
   recommended?: boolean;
   favorite_count: number;
+  download_count: number;
   share_count: number;
   comment_count: number;
   hot_score: number;

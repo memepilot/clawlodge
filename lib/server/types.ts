@@ -62,6 +62,7 @@ export type DbLobster = {
   recommendationScore: number | null;
   githubStars: number | null;
   favoriteCount: number;
+  downloadCount: number;
   shareCount: number;
   commentCount: number;
   createdAt: string;
