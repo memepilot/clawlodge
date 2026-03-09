@@ -169,6 +169,29 @@ function isTextFile(relativePath: string) {
   return TEXT_EXTENSIONS.has(ext) || relativePath.endsWith(".md");
 }
 
+async function tryReadTextFile(absolutePath: string, relativePath: string, size: number) {
+  if (size > MAX_FILE_BYTES) {
+    return null;
+  }
+
+  if (isTextFile(relativePath)) {
+    return fs.readFile(absolutePath, "utf8");
+  }
+
+  const buffer = await fs.readFile(absolutePath);
+  if (buffer.includes(0)) {
+    return null;
+  }
+
+  const text = buffer.toString("utf8");
+  const normalized = text.replace(/\uFEFF/g, "").trim();
+  if (!normalized && size > 0) {
+    return null;
+  }
+
+  return text;
+}
+
 function titleCaseFromSlug(input: string) {
   return input
     .split(/[-_/]+/)
@@ -278,12 +301,11 @@ async function collectFiles(
       masked_count: 0,
     };
 
-    if (!isTextFile(relativePath) || fileStat.size > MAX_FILE_BYTES) {
+    const raw = await tryReadTextFile(absolutePath, relativePath, fileStat.size);
+    if (raw == null) {
       shared.push(baseRecord);
       continue;
     }
-
-    const raw = await fs.readFile(absolutePath, "utf8");
     const sanitized = sanitizeContent(raw);
     const record: WorkspaceSharedFile = {
       ...baseRecord,

@@ -38,6 +38,12 @@ clawlodge publish
 - Use `clawlodge pack` to preview what the current OpenClaw workspace would publish.
 - Use `clawlodge publish` only after the user clearly wants to publish.
 
+Decision rule:
+
+- If the user wants metadata, file lists, versions, author, tags, or source repo, use `show`/`get`.
+- If the user wants a local file, installation artifact, zip package, or anything saved to disk, use `download`.
+- Do not use `get` or `show` when the request mentions `save`, `download`, `zip`, `extract`, `install`, or an output path.
+
 ## Auth model
 
 These read actions do not require login:
@@ -89,6 +95,13 @@ Look for:
 - `result.versions` to compare release history
 - `result.latest.workspace_files` to understand what is actually shared
 
+Hard rules:
+
+- `show` and `get` are read-only metadata commands.
+- `show` and `get` do not create files or directories.
+- Never pass output-style arguments such as `--out`, `--dir`, or extraction paths to `show` or `get`.
+- If the user asks for a local copy, switch to `download`.
+
 ## Download workflow
 
 Use `download` when the user wants to install, inspect offline, or reuse a workspace.
@@ -102,6 +115,20 @@ Notes:
 
 - If `--version` is omitted, the CLI downloads the latest published version.
 - If `--out` is omitted, the file is saved as `<slug>-<version>.zip` in the current directory.
+
+Hard rules:
+
+- Always use `download` for saved artifacts.
+- Use `--out` only with `download`.
+- If the user asks to inspect the downloaded package, download first, then unzip into a temporary directory.
+
+Example:
+
+```bash
+clawlodge download openclaw-config --out /tmp/openclaw-config.zip
+mkdir -p /tmp/openclaw-config-inspect
+unzip -o /tmp/openclaw-config.zip -d /tmp/openclaw-config-inspect
+```
 
 ## Local backup workflow
 
@@ -191,6 +218,7 @@ clawlodge publish --workspace ~/.openclaw/workspace
 - Treat `login` as credential setup. Do not ask the user to paste tokens into shared logs.
 - Prefer `show` before `download` when you are not yet sure the slug is correct.
 - Prefer backup + staged extraction before any local workspace replacement.
+- Never invent `get/show` flags for output directories or downloads.
 - Do not claim ClawLodge supports CLI actions that do not exist yet.
 
 ## Output style

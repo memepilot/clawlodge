@@ -226,6 +226,29 @@ function isTextFile(relativePath) {
   return TEXT_EXTENSIONS.has(path.extname(relativePath).toLowerCase()) || relativePath.endsWith(".md");
 }
 
+async function tryReadTextFile(absolutePath, relativePath, size) {
+  if (size > MAX_FILE_BYTES) {
+    return null;
+  }
+
+  if (isTextFile(relativePath)) {
+    return fs.readFile(absolutePath, "utf8");
+  }
+
+  const buffer = await fs.readFile(absolutePath);
+  if (buffer.includes(0)) {
+    return null;
+  }
+
+  const text = buffer.toString("utf8");
+  const normalized = text.replace(/\uFEFF/g, "").trim();
+  if (!normalized && size > 0) {
+    return null;
+  }
+
+  return text;
+}
+
 function sanitizeContent(content) {
   let next = content;
   let maskedCount = 0;
@@ -293,12 +316,11 @@ async function collectFiles(root, currentDir, shared, blocked, skills, stats) {
       masked_count: 0,
     };
 
-    if (!isTextFile(relativePath) || fileStat.size > MAX_FILE_BYTES) {
+    const raw = await tryReadTextFile(absolutePath, relativePath, fileStat.size);
+    if (raw == null) {
       shared.push(record);
       continue;
     }
-
-    const raw = await fs.readFile(absolutePath, "utf8");
     const sanitized = sanitizeContent(raw);
     record.kind = "text";
     record.content_excerpt = buildExcerpt(sanitized.content);
