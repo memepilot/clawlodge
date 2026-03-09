@@ -81,6 +81,32 @@ async function fetchGithubRepoSignals(sourceRepo: string | null | undefined) {
   };
 }
 
+async function fetchGithubRawWorkspaceFile(params: {
+  sourceRepo?: string | null;
+  sourceCommit?: string | null;
+  filePath: string;
+}) {
+  const repo = parseGithubRepoRef(params.sourceRepo);
+  if (!repo) return null;
+  const ref = params.sourceCommit?.trim() || await resolveGithubDefaultBranch(repo.owner, repo.repo);
+  const rawUrl = toGithubRawAssetUrl(params.filePath, repo, ref);
+  if (!rawUrl) return null;
+
+  const response = await fetch(rawUrl.downloadUrl, {
+    headers: {
+      Accept: "application/octet-stream",
+      "User-Agent": "ClawLodge",
+    },
+  });
+  if (!response.ok) return null;
+
+  const arrayBuffer = await response.arrayBuffer();
+  return {
+    body: Buffer.from(arrayBuffer),
+    contentType: response.headers.get("content-type") || "application/octet-stream",
+  };
+}
+
 function decodeMarkdownUrl(rawTarget: string) {
   const trimmed = rawTarget.trim();
   if (!trimmed) return null;
@@ -447,6 +473,10 @@ function decodeStorageKeyFromUrl(url: string | null | undefined) {
     .join("/");
 }
 
+function normalizeWorkspaceFileStorageKey(slug: string, version: string, filePath: string) {
+  return `lobsters/${slug}/${version}/workspace-files/${filePath}`;
+}
+
 export async function listLobsters(params?: { sort?: string; tag?: string; q?: string; page?: number; per_page?: number }) {
   if (params?.sort !== "new") {
     await mutateDb(async (db) => {
@@ -603,6 +633,24 @@ export async function buildLobsterVersionZip(slug: string, version: string) {
       entries[`${root}/${file.path}`] = strToU8(file.contentText);
       continue;
     }
+
+    const storedKey = decodeStorageKeyFromUrl(file.storageUrl);
+    if (storedKey) {
+      const stored = await getStoredObject(storedKey);
+      entries[`${root}/${file.path}`] = new Uint8Array(stored.body);
+      continue;
+    }
+
+    const githubRaw = await fetchGithubRawWorkspaceFile({
+      sourceRepo: found.sourceRepo,
+      sourceCommit: found.sourceCommit,
+      filePath: file.path,
+    });
+    if (githubRaw) {
+      entries[`${root}/${file.path}`] = new Uint8Array(githubRaw.body);
+      continue;
+    }
+
     unrecoverable.push(file.path);
   }
 
@@ -704,6 +752,8 @@ export async function createVersion(
       kind: "text" | "binary";
       content_excerpt?: string | null;
       content_text?: string | null;
+      content_base64?: string | null;
+      content_type?: string | null;
       masked_count?: number;
     }>;
     publish_client?: string;
@@ -761,6 +811,30 @@ export async function createVersion(
     );
 
     const now = new Date().toISOString();
+    const workspaceFiles = await Promise.all((payload.workspace_files ?? []).map(async (file) => {
+      let storageUrl: string | null = null;
+      let contentType: string | null = file.content_type ?? null;
+      if (file.kind === "binary" && file.content_base64) {
+        const body = Buffer.from(file.content_base64, "base64");
+        contentType = file.content_type ?? "application/octet-stream";
+        storageUrl = await putObject(
+          normalizeWorkspaceFileStorageKey(lobster.slug, payload.version, file.path),
+          body,
+          contentType,
+        );
+      }
+      return {
+        path: file.path,
+        size: file.size,
+        kind: file.kind,
+        contentExcerpt: file.content_excerpt ?? null,
+        contentText: file.content_text ?? null,
+        contentType,
+        storageUrl,
+        maskedCount: file.masked_count ?? 0,
+      };
+    }));
+
     const created: DbLobsterVersion = {
       id: db.nextIds.lobsterVersion++,
       lobsterId: lobster.id,
@@ -773,14 +847,7 @@ export async function createVersion(
       skillsBundleUrl: null,
       sourceRepo: payload.source_repo ?? null,
       sourceCommit: payload.source_commit ?? null,
-      workspaceFiles: (payload.workspace_files ?? []).map((file) => ({
-        path: file.path,
-        size: file.size,
-        kind: file.kind,
-        contentExcerpt: file.content_excerpt ?? null,
-        contentText: file.content_text ?? null,
-        maskedCount: file.masked_count ?? 0,
-      })),
+      workspaceFiles,
       publishClient: payload.publish_client ?? null,
       maskedSecretsCount: payload.masked_secrets_count ?? 0,
       blockedFilesCount: payload.blocked_files_count ?? 0,

@@ -84,6 +84,8 @@ export type DbWorkspaceFile = {
   kind: "text" | "binary";
   contentExcerpt: string | null;
   contentText: string | null;
+  contentType: string | null;
+  storageUrl: string | null;
   maskedCount: number;
 };
 

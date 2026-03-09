@@ -24,6 +24,7 @@ const ALLOWED_LICENSES = new Set(["MIT", "Apache-2.0", "CC-BY-4.0", "BSD-3-Claus
 const SEMVER_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 const MAX_FILE_BYTES = 128 * 1024;
 const MAX_EXCERPT_CHARS = 1600;
+const MAX_BINARY_EMBED_BYTES = 8 * 1024 * 1024;
 const DEFAULT_ORIGIN = "https://clawlodge.com";
 const CLI_VERSION = "0.1.5";
 const CONFIG_PATH = path.join(os.homedir(), ".config", "clawlodge", "config.json");
@@ -226,6 +227,37 @@ function isTextFile(relativePath) {
   return TEXT_EXTENSIONS.has(path.extname(relativePath).toLowerCase()) || relativePath.endsWith(".md");
 }
 
+function inferBinaryContentType(relativePath) {
+  const ext = path.extname(relativePath).toLowerCase();
+  switch (ext) {
+    case ".png":
+      return "image/png";
+    case ".jpg":
+    case ".jpeg":
+      return "image/jpeg";
+    case ".gif":
+      return "image/gif";
+    case ".webp":
+      return "image/webp";
+    case ".svg":
+      return "image/svg+xml";
+    case ".ico":
+      return "image/x-icon";
+    case ".mp4":
+      return "video/mp4";
+    case ".webm":
+      return "video/webm";
+    case ".mov":
+      return "video/quicktime";
+    case ".pdf":
+      return "application/pdf";
+    case ".zip":
+      return "application/zip";
+    default:
+      return "application/octet-stream";
+  }
+}
+
 async function tryReadTextFile(absolutePath, relativePath, size) {
   if (size > MAX_FILE_BYTES) {
     return null;
@@ -313,11 +345,18 @@ async function collectFiles(root, currentDir, shared, blocked, skills, stats) {
       kind: "binary",
       content_excerpt: null,
       content_text: null,
+      content_base64: null,
+      content_type: null,
       masked_count: 0,
     };
 
     const raw = await tryReadTextFile(absolutePath, relativePath, fileStat.size);
     if (raw == null) {
+      if (fileStat.size <= MAX_BINARY_EMBED_BYTES) {
+        const binary = await fs.readFile(absolutePath);
+        record.content_base64 = binary.toString("base64");
+        record.content_type = inferBinaryContentType(relativePath);
+      }
       shared.push(record);
       continue;
     }

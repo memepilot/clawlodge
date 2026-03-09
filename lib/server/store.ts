@@ -56,6 +56,8 @@ export async function readDb(): Promise<DbState> {
     workspaceFiles: (version.workspaceFiles ?? []).map((file) => ({
       ...file,
       contentText: file.contentText ?? null,
+      contentType: file.contentType ?? null,
+      storageUrl: file.storageUrl ?? null,
       maskedCount: file.maskedCount ?? 0,
     })),
     publishClient: version.publishClient ?? null,

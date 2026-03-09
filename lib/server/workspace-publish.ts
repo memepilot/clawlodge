@@ -65,6 +65,7 @@ const TEXT_EXTENSIONS = new Set([
 ]);
 const MAX_FILE_BYTES = 128 * 1024;
 const MAX_EXCERPT_CHARS = 1600;
+const MAX_BINARY_EMBED_BYTES = 8 * 1024 * 1024;
 
 export type WorkspaceSharedFile = {
   path: string;
@@ -72,6 +73,8 @@ export type WorkspaceSharedFile = {
   kind: "text" | "binary";
   content_excerpt: string | null;
   content_text: string | null;
+  content_base64?: string | null;
+  content_type?: string | null;
   masked_count: number;
 };
 
@@ -167,6 +170,20 @@ function isAllowedFile(relativePath: string) {
 function isTextFile(relativePath: string) {
   const ext = path.extname(relativePath).toLowerCase();
   return TEXT_EXTENSIONS.has(ext) || relativePath.endsWith(".md");
+}
+
+function inferBinaryContentType(relativePath: string) {
+  const ext = path.extname(relativePath).toLowerCase();
+  if (ext === ".png") return "image/png";
+  if (ext === ".jpg" || ext === ".jpeg") return "image/jpeg";
+  if (ext === ".gif") return "image/gif";
+  if (ext === ".webp") return "image/webp";
+  if (ext === ".svg") return "image/svg+xml";
+  if (ext === ".mp4") return "video/mp4";
+  if (ext === ".mov") return "video/quicktime";
+  if (ext === ".pdf") return "application/pdf";
+  if (ext === ".zip") return "application/zip";
+  return "application/octet-stream";
 }
 
 async function tryReadTextFile(absolutePath: string, relativePath: string, size: number) {
@@ -298,11 +315,22 @@ async function collectFiles(
       kind: "binary",
       content_excerpt: null,
       content_text: null,
+      content_base64: null,
+      content_type: null,
       masked_count: 0,
     };
 
     const raw = await tryReadTextFile(absolutePath, relativePath, fileStat.size);
     if (raw == null) {
+      if (fileStat.size <= MAX_BINARY_EMBED_BYTES) {
+        const binary = await fs.readFile(absolutePath);
+        shared.push({
+          ...baseRecord,
+          content_base64: binary.toString("base64"),
+          content_type: inferBinaryContentType(relativePath),
+        });
+        continue;
+      }
       shared.push(baseRecord);
       continue;
     }
