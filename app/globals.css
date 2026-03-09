@@ -414,6 +414,8 @@ main {
   position: relative;
   overflow: hidden;
   padding: 22px 22px 18px;
+  display: grid;
+  gap: 14px;
   background: linear-gradient(135deg, var(--surface), var(--surface-muted));
   border: 1px solid rgba(42, 31, 25, 0.08);
   box-shadow:
@@ -444,6 +446,21 @@ main {
   text-transform: uppercase;
 }
 
+.lobster-card-main {
+  min-width: 0;
+}
+
+.lobster-card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.lobster-card-heading {
+  min-width: 0;
+}
+
 .lobster-card-meta {
   display: flex;
   flex-wrap: wrap;
@@ -464,6 +481,33 @@ main {
   font-size: 0.84rem;
   line-height: 1.45;
   flex-shrink: 0;
+}
+
+.lobster-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(42, 31, 25, 0.08);
+  box-shadow:
+    0 10px 24px rgba(44, 28, 20, 0.08),
+    inset 0 1px rgba(255, 255, 255, 0.88);
+  overflow: hidden;
+}
+
+.lobster-avatar-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lobster-card-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
 }
 
 .lobster-card-summary {
@@ -1154,6 +1198,23 @@ main {
   gap: 16px;
 }
 
+.detail-head {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+}
+
+.detail-head > div {
+  min-width: 0;
+}
+
+.detail-lobster-avatar {
+  width: 112px;
+  height: 112px;
+  border-radius: 32px;
+}
+
 .detail-kickers {
   display: flex;
   flex-wrap: wrap;
@@ -1531,6 +1592,10 @@ main {
     align-items: stretch;
   }
 
+  .detail-head {
+    display: grid;
+  }
+
   .detail-head .lobster-card-side {
     text-align: left;
   }
@@ -1544,6 +1609,12 @@ main {
   .detail-aside-actions .btn {
     width: 100%;
     justify-content: center;
+  }
+
+  .detail-lobster-avatar {
+    width: 84px;
+    height: 84px;
+    border-radius: 24px;
   }
 
   .workspace-browser-aside {

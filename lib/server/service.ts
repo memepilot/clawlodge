@@ -4,6 +4,7 @@ import { CommentItem, LobsterDetail, LobsterSummary, LobsterVersion, MeProfile, 
 import { zipSync, strToU8 } from "fflate";
 
 import { ApiError } from "./errors";
+import { generateLobsterIcon } from "./lobster-icon";
 import { parseAndValidateManifest } from "./manifest";
 import { allowRate } from "./rate-limit";
 import { mutateDb, readDb } from "./store";
@@ -395,6 +396,7 @@ function toSummary(item: DbLobster, owner: DbUser): LobsterSummary {
     slug: item.slug,
     name: item.name,
     summary: normalizeStoredSummary(item.summary),
+    icon_url: null,
     license: item.license,
     source_type: item.sourceType,
     source_url: item.sourceUrl,
@@ -424,6 +426,9 @@ function toVersion(version: DbLobsterVersion): LobsterVersion {
     readme_text: version.readmeText,
     manifest_url: resolvePublicAssetUrl(version.manifestUrl) ?? version.manifestUrl,
     readme_url: resolvePublicAssetUrl(version.readmeUrl) ?? version.readmeUrl,
+    icon_url: resolvePublicAssetUrl(version.iconUrl) ?? version.iconUrl,
+    icon_seed: version.iconSeed,
+    icon_spec_version: version.iconSpecVersion,
     skills_bundle_url: resolvePublicAssetUrl(version.skillsBundleUrl),
     source_repo: version.sourceRepo,
     source_commit: version.sourceCommit,
@@ -456,6 +461,7 @@ function attachLatestVersion(summary: LobsterSummary, versions: DbLobsterVersion
     ...summary,
     latest_version: latest?.version ?? null,
     latest_source_repo: latest?.sourceRepo ?? null,
+    icon_url: resolvePublicAssetUrl(latest?.iconUrl) ?? latest?.iconUrl ?? null,
   };
 }
 
@@ -800,6 +806,13 @@ export async function createVersion(
         commit: payload.source_commit,
       },
     };
+    const icon = generateLobsterIcon({
+      slug: lobster.slug,
+      version: payload.version,
+      tags: lobster.tags,
+      sourceType: lobster.sourceType,
+      workspacePaths: (payload.workspace_files ?? []).map((file) => file.path),
+    });
 
     const readmeUrl = await putObject(
       `lobsters/${lobster.slug}/${payload.version}/README.md`,
@@ -810,6 +823,11 @@ export async function createVersion(
       `lobsters/${lobster.slug}/${payload.version}/manifest.json`,
       Buffer.from(JSON.stringify(manifest, null, 2), "utf8"),
       "application/json",
+    );
+    const iconUrl = await putObject(
+      `lobsters/${lobster.slug}/${payload.version}/icon.svg`,
+      Buffer.from(icon.svg, "utf8"),
+      "image/svg+xml",
     );
 
     const now = new Date().toISOString();
@@ -847,6 +865,9 @@ export async function createVersion(
       manifestUrl,
       readmeUrl,
       skillsBundleUrl: null,
+      iconUrl,
+      iconSeed: icon.seed,
+      iconSpecVersion: icon.specVersion,
       sourceRepo: payload.source_repo ?? null,
       sourceCommit: payload.source_commit ?? null,
       workspaceFiles,
@@ -1281,6 +1302,14 @@ export async function uploadViaMcp(
     );
     const manifestUrl = await putObject(`${base}/manifest.json`, files.manifestRaw, "application/json");
     const skillsBundleUrl = await putObject(`${base}/skills_bundle.zip`, files.skillsRaw, "application/zip");
+    const icon = generateLobsterIcon({
+      slug: lobster.slug,
+      version: manifest.version,
+      tags: lobster.tags,
+      sourceType: lobster.sourceType,
+      workspacePaths: [],
+    });
+    const iconUrl = await putObject(`${base}/icon.svg`, Buffer.from(icon.svg, "utf8"), "image/svg+xml");
     const now = new Date().toISOString();
 
     db.lobsterVersions.push({
@@ -1293,6 +1322,9 @@ export async function uploadViaMcp(
       manifestUrl,
       readmeUrl,
       skillsBundleUrl,
+      iconUrl,
+      iconSeed: icon.seed,
+      iconSpecVersion: icon.specVersion,
       sourceRepo: manifest.source?.repo_url ?? null,
       sourceCommit: manifest.source?.commit ?? null,
       workspaceFiles: [],

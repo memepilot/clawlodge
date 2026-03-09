@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { LobsterActions } from "@/components/lobster-actions";
+import { getLobsterAvatarSrc, LobsterAvatar } from "@/components/lobster-avatar";
 import { MarkdownContent } from "@/components/markdown-content";
 import { WorkspaceBrowser } from "@/components/workspace-browser";
 import { getDetailDisplayLobsterName, getDisplayAuthor } from "@/lib/lobster-display";
@@ -42,11 +43,18 @@ export async function generateMetadata({
         description: lobster.summary,
         url: absoluteUrl(`/lobsters/${slug}`),
         type: "article",
+        images: [
+          {
+            url: absoluteUrl(getLobsterAvatarSrc(lobster.icon_url)),
+            alt: `${displayName} lobster icon`,
+          },
+        ],
       },
       twitter: {
         card: "summary_large_image",
         title: displayName,
         description: lobster.summary,
+        images: [absoluteUrl(getLobsterAvatarSrc(lobster.icon_url))],
       },
     };
   } catch {
@@ -88,6 +96,7 @@ export default async function LobsterDetailPage({
             {lobster.verified ? <span className="tag tag-verified">verified</span> : null}
           </div>
           <div className="detail-head">
+            <LobsterAvatar iconUrl={lobster.icon_url} alt="" size={112} className="detail-lobster-avatar" />
             <div>
               <h1 className="page-title">
                 {displayName}

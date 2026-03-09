@@ -53,6 +53,9 @@ export async function readDb(): Promise<DbState> {
   }));
   parsed.lobsterVersions = parsed.lobsterVersions.map((version) => ({
     ...version,
+    iconUrl: version.iconUrl ?? null,
+    iconSeed: version.iconSeed ?? null,
+    iconSpecVersion: version.iconSpecVersion ?? null,
     workspaceFiles: (version.workspaceFiles ?? []).map((file) => ({
       ...file,
       contentText: file.contentText ?? null,

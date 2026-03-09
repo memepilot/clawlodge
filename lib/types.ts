@@ -2,6 +2,7 @@ export type LobsterSummary = {
   slug: string;
   name: string;
   summary: string;
+  icon_url?: string | null;
   license: string;
   source_type?: "official" | "curated" | "community" | "demo";
   source_url?: string | null;
@@ -40,6 +41,9 @@ export type LobsterVersion = {
   readme_text: string;
   manifest_url: string;
   readme_url: string;
+  icon_url?: string | null;
+  icon_seed?: string | null;
+  icon_spec_version?: string | null;
   skills_bundle_url?: string | null;
   source_repo?: string | null;
   source_commit?: string | null;

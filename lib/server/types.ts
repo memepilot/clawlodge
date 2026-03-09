@@ -99,6 +99,9 @@ export type DbLobsterVersion = {
   manifestUrl: string;
   readmeUrl: string;
   skillsBundleUrl: string | null;
+  iconUrl: string | null;
+  iconSeed: string | null;
+  iconSpecVersion: string | null;
   sourceRepo: string | null;
   sourceCommit: string | null;
   workspaceFiles: DbWorkspaceFile[];

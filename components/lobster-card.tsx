@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { LobsterAvatar } from "@/components/lobster-avatar";
 import { getDisplayAuthor, getDisplayLobsterName, getDisplaySummary } from "@/lib/lobster-display";
 import { LobsterSummary } from "@/lib/types";
 
@@ -30,25 +31,30 @@ export function LobsterCard({ item }: { item: LobsterSummary }) {
         </div>
       ) : null}
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="lobster-card-main">
           <div className="lobster-card-meta">
             {item.source_type ? <span className={`tag tag-source`}>{sourceTypeLabel(item.source_type)}</span> : null}
             {item.verified ? <span className="tag tag-verified">verified</span> : null}
           </div>
-          <h3 className="lobster-card-title">
-            <Link href={`/lobsters/${item.slug}`}>{displayName}</Link>
-          </h3>
-          <p className="muted text-sm">
-            by{" "}
-            {author.href ? (
-              <Link className="inline-link" href={author.href}>
-                {author.label}
-              </Link>
-            ) : (
-              author.label
-            )}
-            {author.suffix ?? null}
-          </p>
+          <div className="lobster-card-header">
+            <LobsterAvatar iconUrl={item.icon_url} alt="" size={56} className="lobster-card-avatar" />
+            <div className="lobster-card-heading">
+              <h3 className="lobster-card-title">
+                <Link href={`/lobsters/${item.slug}`}>{displayName}</Link>
+              </h3>
+              <p className="muted text-sm">
+                by{" "}
+                {author.href ? (
+                  <Link className="inline-link" href={author.href}>
+                    {author.label}
+                  </Link>
+                ) : (
+                  author.label
+                )}
+                {author.suffix ?? null}
+              </p>
+            </div>
+          </div>
         </div>
         <div className="lobster-card-side">
           <div className="mono">{item.latest_version ? `v${item.latest_version}` : "no version"}</div>
