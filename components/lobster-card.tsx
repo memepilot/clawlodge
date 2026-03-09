@@ -34,7 +34,10 @@ export function LobsterCard({ item }: { item: LobsterSummary }) {
           <h3 className="lobster-card-title">
             <Link href={`/lobsters/${item.slug}`}>{item.name}</Link>
           </h3>
-          <p className="muted text-sm">by @{item.owner_handle}</p>
+          <p className="muted text-sm">
+            by {item.owner_display_name || `@${item.owner_handle}`}
+            {item.owner_display_name ? ` (@${item.owner_handle})` : null}
+          </p>
         </div>
         <div className="lobster-card-side">
           <div className="mono">{item.latest_version ? `v${item.latest_version}` : "no version"}</div>

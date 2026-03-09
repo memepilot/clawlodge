@@ -110,7 +110,11 @@ export default async function LobsterDetailPage({
                 {lobster.name}
               </h1>
               <p className="page-subtitle">
-                by <Link className="inline-link" href={`/u/${lobster.owner_handle}`}>@{lobster.owner_handle}</Link>
+                by{" "}
+                <Link className="inline-link" href={`/u/${lobster.owner_handle}`}>
+                  {lobster.owner_display_name || `@${lobster.owner_handle}`}
+                </Link>
+                {lobster.owner_display_name ? ` (@${lobster.owner_handle})` : null}
               </p>
             </div>
           </div>
