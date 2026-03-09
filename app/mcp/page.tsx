@@ -6,7 +6,7 @@ export default function MCPPage() {
           Plugin Upload
         </h1>
         <p className="page-subtitle">
-          OpenClaw Lodge is the primary publish flow. Use the CLI to pack a workspace locally, then publish it with PAT auth.
+          OpenClaw Lodge is the main way to publish. Pack your OpenClaw workspace locally, then publish it to ClawLodge with the CLI.
         </p>
       </section>
 
@@ -24,7 +24,7 @@ clawlodge login
 clawlodge whoami
 clawlodge publish`}
         </pre>
-        <p className="page-subtitle mt-3">Optional flags: `--name` and `--readme /path/to/README.md`. If you omit README, the server generates it during publish.</p>
+        <p className="page-subtitle mt-3">Optional flags: `--name` and `--readme /path/to/README.md`. If you omit README, ClawLodge can generate one from the uploaded workspace.</p>
       </section>
 
       <section className="shell page-panel p-5 md:p-6">

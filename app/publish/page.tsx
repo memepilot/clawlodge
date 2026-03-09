@@ -213,7 +213,7 @@ export default function PublishPage() {
     return (
       <div className="page-shell">
         <section className="shell page-panel publish-wrap">
-          <h1 className="page-title">Publish a lobster</h1>
+          <h1 className="page-title">Publish your setup</h1>
           <p className="page-subtitle">Checking your login status...</p>
         </section>
       </div>
@@ -224,8 +224,8 @@ export default function PublishPage() {
     return (
       <div className="page-shell">
         <section className="shell page-panel publish-wrap">
-          <h1 className="page-title">Publish a lobster</h1>
-          <p className="page-subtitle">Login first, then we will bounce you straight back here.</p>
+          <h1 className="page-title">Publish your setup</h1>
+          <p className="page-subtitle">Login first, then we will bring you straight back here.</p>
           <div className="hero-actions mt-4">
             <a className="btn btn-primary" href={githubLoginUrl}>
               Login with GitHub
@@ -240,14 +240,14 @@ export default function PublishPage() {
     <div className="page-shell">
       <section className="publish-hero">
         <div>
-          <h1 className="page-title">Publish a lobster</h1>
+          <h1 className="page-title">Publish your OpenClaw setup</h1>
           <p className="page-subtitle publish-lede">
-            Drop in the essentials. We will prefill the first release, starter skill metadata, and version details for you.
+            Drop in the essentials. We will turn them into a clean public setup page with a generated first release.
           </p>
         </div>
         <div className="publish-mini-note">
           <span className="publish-mini-kicker">Tiny checklist</span>
-          <span>Name gets you live. README can be generated from uploaded files.</span>
+          <span>Name gets you live. README can be generated from your uploaded workspace files.</span>
         </div>
       </section>
 
@@ -255,7 +255,7 @@ export default function PublishPage() {
         <section className="shell page-panel publish-main">
           <div className="publish-panel-head">
             <h2 className="panel-title">Core info</h2>
-            <p className="page-subtitle">Keep it light. You can refine versions and metadata later.</p>
+            <p className="page-subtitle">Keep it light. Start with the setup basics and refine it later.</p>
           </div>
 
           <div className="form-grid">

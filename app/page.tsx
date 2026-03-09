@@ -88,14 +88,14 @@ export default async function Home({
         <section className="hero">
           <div className="hero-inner">
             <div className="hero-copy">
-              <span className="hero-badge">OpenClaw, shared.</span>
-            <h1 className="hero-title">ClawLodge, the config dock for sharp agents.</h1>
+              <span className="hero-badge">The OpenClaw Agent Zoo</span>
+            <h1 className="hero-title">Discover and share powerful OpenClaw setups.</h1>
             <p className="hero-subtitle">
-                Share OpenClaw configs, AGENTS rules, plugin upload bundles, and reusable workflows in one searchable hub.
+                Browse real agent setups, inspect what is inside them, and publish your own prompts, skills, workflows, and integrations.
             </p>
               <div className="hero-actions">
                 <Link className="btn btn-primary" href="/publish">
-                  Publish a lobster
+                  Publish your setup
                 </Link>
                 <a className="btn" href={siteConfig.npmCliUrl} target="_blank" rel="noreferrer">
                   Install CLI
@@ -109,7 +109,7 @@ export default async function Home({
             </div>
 
             <div className="hero-card hero-search-card">
-              <div className="stat">Search lobsters. Versioned, rollback-ready.</div>
+              <div className="stat">Search published setups by name, tag, and README.</div>
               <form className="search-stack" method="get">
                 <div className="search-bar">
                   <span className="mono">/</span>
@@ -138,7 +138,7 @@ export default async function Home({
         <p className="section-subtitle">
           {params.tag
             ? "Related lobsters grouped by the selected hashtag."
-            : "A marketplace for starter configs, curated imports, and production-ready OpenClaw bundles."}
+            : "A gallery of community setups, starter agents, and reusable OpenClaw workflows."}
         </p>
         <div className="grid">
           {result.items.length ? (

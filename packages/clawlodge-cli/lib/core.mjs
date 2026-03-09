@@ -51,9 +51,13 @@ function titleCaseFromSlug(inputValue) {
 function parseArgs(argv) {
   const [command = "help", ...rest] = argv;
   const options = {};
+  const positionals = [];
   for (let index = 0; index < rest.length; index += 1) {
     const current = rest[index];
-    if (!current.startsWith("--")) continue;
+    if (!current.startsWith("--")) {
+      positionals.push(current);
+      continue;
+    }
     const key = current.slice(2);
     const next = rest[index + 1];
     if (!next || next.startsWith("--")) {
@@ -63,7 +67,7 @@ function parseArgs(argv) {
     options[key] = next;
     index += 1;
   }
-  return { command, options };
+  return { command, options, positionals };
 }
 
 function printHelp() {
@@ -71,6 +75,10 @@ function printHelp() {
 
 Basic usage:
   clawlodge login
+  clawlodge search "memory"
+  clawlodge show openclaw-config
+  clawlodge get openclaw-config
+  clawlodge download openclaw-config
   clawlodge pack
   clawlodge publish
 
@@ -84,6 +92,18 @@ Commands:
   clawlodge logout
     Remove the saved local PAT
 
+  clawlodge search
+    Search published workspaces
+
+  clawlodge show
+    Show one published workspace and its versions
+
+  clawlodge get
+    Alias of clawlodge show
+
+  clawlodge download
+    Download one published workspace version as a zip
+
   clawlodge pack
     Pack the default OpenClaw workspace into .clawlodge/workspace-publish.json
 
@@ -95,6 +115,10 @@ Commands:
 
 Advanced usage:
   clawlodge login --origin https://clawlodge.com
+  clawlodge search "openclaw" --sort new
+  clawlodge show cft0808-edict
+  clawlodge get cft0808-edict
+  clawlodge download cft0808-edict --version 0.1.1 --out /tmp/cft0808-edict.zip
   clawlodge pack --name "My Workspace"
   clawlodge publish --readme /tmp/README.md
   clawlodge pack --workspace ~/my-workspace --out /tmp/workspace-publish.json
@@ -392,6 +416,26 @@ async function requestJson(url, token, init = {}) {
   return body;
 }
 
+async function requestBuffer(url, token, init = {}) {
+  const response = await fetch(url, {
+    ...init,
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(init.headers ?? {}),
+    },
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(detail || `Request failed: ${response.status}`);
+  }
+
+  return {
+    body: Buffer.from(await response.arrayBuffer()),
+    headers: response.headers,
+  };
+}
+
 async function fetchPatProfile(origin, token) {
   return requestJson(`${origin.replace(/\/$/, "")}/api/v1/me/pat`, token, { method: "GET" });
 }
@@ -440,8 +484,58 @@ async function runLogout() {
   console.log(JSON.stringify({ ok: true, mode: "logout", config_path: CONFIG_PATH }, null, 2));
 }
 
+function requirePositional(positionals, label) {
+  const value = positionals[0]?.trim();
+  if (!value) {
+    throw new Error(`Missing ${label}`);
+  }
+  return value;
+}
+
+async function runSearch(options, positionals) {
+  const origin = resolveOrigin(options);
+  const query = options.q?.trim() || positionals.join(" ").trim();
+  const search = new URLSearchParams();
+  if (query) search.set("q", query);
+  if (options.sort?.trim()) search.set("sort", options.sort.trim());
+  if (options.tag?.trim()) search.set("tag", options.tag.trim());
+  if (options.page?.trim()) search.set("page", options.page.trim());
+  if (options.per_page?.trim()) search.set("per_page", options.per_page.trim());
+  const url = `${origin.replace(/\/$/, "")}/api/v1/lobsters${search.toString() ? `?${search.toString()}` : ""}`;
+  const result = await requestJson(url, "");
+  console.log(JSON.stringify({ ok: true, mode: "search", origin, query: query || null, result }, null, 2));
+}
+
+async function runShow(options, positionals) {
+  const origin = resolveOrigin(options);
+  const slug = options.slug?.trim() || requirePositional(positionals, "slug");
+  const url = `${origin.replace(/\/$/, "")}/api/v1/lobsters/${encodeURIComponent(slug)}`;
+  const result = await requestJson(url, "");
+  console.log(JSON.stringify({ ok: true, mode: "show", origin, slug, result }, null, 2));
+}
+
+async function runDownload(options, positionals) {
+  const origin = resolveOrigin(options);
+  const slug = options.slug?.trim() || requirePositional(positionals, "slug");
+  let version = options.version?.trim() || "";
+  if (!version) {
+    const detail = await requestJson(`${origin.replace(/\/$/, "")}/api/v1/lobsters/${encodeURIComponent(slug)}`, "");
+    version = detail.latest_version;
+    if (!version) {
+      throw new Error(`No published version found for ${slug}`);
+    }
+  }
+
+  const url = `${origin.replace(/\/$/, "")}/api/v1/lobsters/${encodeURIComponent(slug)}/versions/${encodeURIComponent(version)}/download`;
+  const { body } = await requestBuffer(url, "");
+  const out = path.resolve(options.out?.trim() || `${slug}-${version}.zip`);
+  await fs.mkdir(path.dirname(out), { recursive: true });
+  await fs.writeFile(out, body);
+  console.log(JSON.stringify({ ok: true, mode: "download", origin, slug, version, out, bytes: body.length }, null, 2));
+}
+
 export async function runCli(argv = process.argv.slice(2)) {
-  const { command, options } = parseArgs(argv);
+  const { command, options, positionals } = parseArgs(argv);
   if (command === "help" || command === "--help" || command === "-h") {
     printHelp();
     return;
@@ -459,6 +553,21 @@ export async function runCli(argv = process.argv.slice(2)) {
 
   if (command === "logout") {
     await runLogout();
+    return;
+  }
+
+  if (command === "search") {
+    await runSearch(options, positionals);
+    return;
+  }
+
+  if (command === "show" || command === "get") {
+    await runShow(options, positionals);
+    return;
+  }
+
+  if (command === "download") {
+    await runDownload(options, positionals);
     return;
   }
 

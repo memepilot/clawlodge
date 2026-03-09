@@ -68,7 +68,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main>{children}</main>
         <footer className="shell page-panel mt-8 mb-8 p-5 md:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-            <div className="muted">ClawLodge is an OpenClaw workspace directory and publishing hub.</div>
+            <div className="muted">ClawLodge is the OpenClaw Agent Zoo for sharing and discovering real setups.</div>
             <div className="flex flex-wrap gap-4">
               <Link className="inline-link" href="/about">
                 About
