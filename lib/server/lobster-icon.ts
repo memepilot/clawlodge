@@ -1,16 +1,21 @@
+import { ApiError } from "./errors";
 import { sha256 } from "./utils";
 
-export const LOBSTER_ICON_SPEC_VERSION = "1";
+const PROCEDURAL_ICON_SPEC_VERSION = "procedural-v1";
+const NANOBANA_ICON_SPEC_VERSION = "nanobana-v1";
 const ICON_SIZE = 256;
+const MAX_README_PROMPT_CHARS = 200;
 
 type IconSourceType = "official" | "curated" | "community" | "demo";
 
-type IconSignals = {
+export type IconSignals = {
   slug: string;
   version: string;
   tags: string[];
   sourceType: IconSourceType;
   workspacePaths: string[];
+  readmeText?: string;
+  summary?: string;
 };
 
 type Palette = {
@@ -85,7 +90,321 @@ function badgeMarkup(motif: string, color: string) {
   }
 }
 
-export function generateLobsterIcon(signals: IconSignals) {
+function sanitizeReadmeExcerpt(readmeText?: string) {
+  return (readmeText || "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/!\[[^\]]*]\([^)]+\)/g, " ")
+    .replace(/\[(.*?)\]\((.*?)\)/g, "$1")
+    .replace(/`{1,3}/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, MAX_README_PROMPT_CHARS);
+}
+
+function buildImageDirection(signals: IconSignals) {
+  const cues: string[] = [];
+  if (hasPath(signals.workspacePaths, "skills")) cues.push("skillful");
+  if (hasPath(signals.workspacePaths, "memory")) cues.push("memory-oriented");
+  if (hasPath(signals.workspacePaths, "workflows")) cues.push("workflow-heavy");
+  if (hasPath(signals.workspacePaths, "docs")) cues.push("documentation-rich");
+  if (hasPath(signals.workspacePaths, "devops")) cues.push("infrastructure-flavored");
+  if (!cues.length) cues.push("general-purpose");
+  return cues.join(", ");
+}
+
+async function generateOpenRouterIconPrompt(signals: IconSignals) {
+  const apiKey = process.env.OPENROUTER_API_KEY?.trim();
+  if (!apiKey) {
+    throw new ApiError(500, "OpenRouter prompt generation is unavailable because OPENROUTER_API_KEY is not configured");
+  }
+
+  const readmeExcerpt = sanitizeReadmeExcerpt(signals.readmeText);
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+      "HTTP-Referer": process.env.APP_ORIGIN?.trim() || "https://clawlodge.com",
+      "X-Title": "ClawLodge",
+    },
+    body: JSON.stringify({
+      model: process.env.CLAWLODGE_ICON_PROMPT_MODEL?.trim() || process.env.CLAWLODGE_README_MODEL?.trim() || "openai/gpt-4.1",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You write one concise image-generation prompt for a square UI icon. Return plain text only. The subject must always be a single lobster mascot. Emphasize silhouette, personality, and workspace-specific props or mood. Keep it under 90 words. No markdown.",
+        },
+        {
+          role: "user",
+          content: [
+            `Workspace slug: ${signals.slug}`,
+            `Version: ${signals.version}`,
+            `Source type: ${signals.sourceType}`,
+            `Tags: ${signals.tags.join(", ") || "none"}`,
+            `Workspace shape: ${buildImageDirection(signals)}`,
+            signals.summary ? `Summary: ${signals.summary}` : "",
+            readmeExcerpt ? `README excerpt: ${readmeExcerpt}` : "",
+            "",
+            "Write a prompt for a distinct square icon: one stylized lobster, transparent or clean plain background, suitable for a product card, crisp edges, readable at small size, bold silhouette, no text.",
+          ].filter(Boolean).join("\n"),
+        },
+      ],
+    }),
+  });
+
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new ApiError(502, body?.error?.message || body?.detail || `OpenRouter prompt generation failed: ${response.status}`);
+  }
+
+  const prompt = typeof body?.choices?.[0]?.message?.content === "string"
+    ? body.choices[0].message.content.replace(/\s+/g, " ").trim()
+    : "";
+  if (!prompt) {
+    throw new ApiError(502, "OpenRouter icon prompt generation returned an empty response");
+  }
+  return prompt;
+}
+
+function parseDataUrl(value: string) {
+  const match = value.match(/^data:([^;,]+)?;base64,(.+)$/);
+  if (!match) return null;
+  return {
+    contentType: match[1] || "application/octet-stream",
+    body: Buffer.from(match[2], "base64"),
+  };
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : null;
+}
+
+function toDataUrl(base64Value: string, mimeType = "image/png") {
+  const cleaned = base64Value.replace(/\s+/g, "").trim();
+  if (cleaned.length < 64) return null;
+  return `data:${mimeType};base64,${cleaned}`;
+}
+
+function isAbsoluteAssetUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:" || url.protocol === "data:";
+  } catch {
+    return false;
+  }
+}
+
+function extractUrlFromText(text: string) {
+  const normalized = text.trim();
+  if (!normalized) return null;
+
+  const dataUrlMatch = normalized.match(/data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+/);
+  if (dataUrlMatch?.[0] && isAbsoluteAssetUrl(dataUrlMatch[0])) {
+    return dataUrlMatch[0];
+  }
+
+  const urlMatch = normalized.match(/https?:\/\/\S+/i)?.[0];
+  if (urlMatch && isAbsoluteAssetUrl(urlMatch)) {
+    return urlMatch;
+  }
+
+  return null;
+}
+
+function extractAssetCandidate(value: unknown): string | null {
+  if (typeof value === "string") {
+    if (isAbsoluteAssetUrl(value)) return value;
+    return extractUrlFromText(value);
+  }
+
+  const record = asRecord(value);
+  if (!record) return null;
+
+  const imageUrlField = record.image_url;
+  if (typeof imageUrlField === "string" && isAbsoluteAssetUrl(imageUrlField)) {
+    return imageUrlField;
+  }
+  const imageUrlObj = asRecord(imageUrlField);
+  if (typeof imageUrlObj?.url === "string" && isAbsoluteAssetUrl(imageUrlObj.url)) {
+    return imageUrlObj.url;
+  }
+
+  const camelImageUrl = asRecord(record.imageUrl);
+  if (typeof camelImageUrl?.url === "string" && isAbsoluteAssetUrl(camelImageUrl.url)) {
+    return camelImageUrl.url;
+  }
+
+  if (typeof record.url === "string" && isAbsoluteAssetUrl(record.url)) {
+    return record.url;
+  }
+
+  if (typeof record.asset_url === "string" && isAbsoluteAssetUrl(record.asset_url)) {
+    return record.asset_url;
+  }
+
+  if (typeof record.b64_json === "string") {
+    return toDataUrl(record.b64_json, typeof record.mime_type === "string" ? record.mime_type : "image/png");
+  }
+  if (typeof record.base64 === "string") {
+    return toDataUrl(record.base64, typeof record.mime_type === "string" ? record.mime_type : "image/png");
+  }
+
+  const inlineData = asRecord(record.inlineData);
+  if (typeof inlineData?.data === "string") {
+    return toDataUrl(inlineData.data, typeof inlineData.mimeType === "string" ? inlineData.mimeType : "image/png");
+  }
+
+  if (typeof record.text === "string") {
+    return extractUrlFromText(record.text);
+  }
+
+  return null;
+}
+
+async function resolveRemoteAsset(url: string) {
+  const response = await fetch(url);
+  if (!response.ok) throw new ApiError(502, `Failed to fetch generated icon asset: ${response.status}`);
+  return {
+    body: Buffer.from(await response.arrayBuffer()),
+    contentType: response.headers.get("content-type") || "application/octet-stream",
+  };
+}
+
+async function parseNanobanaAsset(body: unknown) {
+  const payload = asRecord(body) ?? {};
+  const candidates: string[] = [];
+
+  const choices = Array.isArray(payload.choices) ? payload.choices : [];
+  const firstChoice = asRecord(choices[0]) ?? {};
+  const firstMessage = asRecord(firstChoice.message) ?? {};
+  const messageImages = firstMessage.images;
+  if (Array.isArray(messageImages)) {
+    for (const item of messageImages) {
+      const candidate = extractAssetCandidate(item);
+      if (candidate) candidates.push(candidate);
+    }
+  }
+
+  const messageContent = firstMessage.content;
+  if (Array.isArray(messageContent)) {
+    for (const item of messageContent) {
+      const candidate = extractAssetCandidate(item);
+      if (candidate) candidates.push(candidate);
+    }
+  } else {
+    const candidate = extractAssetCandidate(messageContent);
+    if (candidate) candidates.push(candidate);
+  }
+
+  const bucketCandidates = [payload.data, payload.images];
+  for (const bucket of bucketCandidates) {
+    if (Array.isArray(bucket)) {
+      for (const item of bucket) {
+        const candidate = extractAssetCandidate(item);
+        if (candidate) candidates.push(candidate);
+      }
+    } else {
+      const candidate = extractAssetCandidate(bucket);
+      if (candidate) candidates.push(candidate);
+    }
+  }
+
+  if (Array.isArray(payload.output)) {
+    for (const outputItem of payload.output) {
+      const content = outputItem?.content;
+      if (Array.isArray(content)) {
+        for (const item of content) {
+          const candidate = extractAssetCandidate(item);
+          if (candidate) candidates.push(candidate);
+        }
+      } else {
+        const candidate = extractAssetCandidate(content);
+        if (candidate) candidates.push(candidate);
+      }
+    }
+  }
+
+  for (const candidate of candidates) {
+    const dataUrl = parseDataUrl(candidate);
+    if (dataUrl) return dataUrl;
+    if (isAbsoluteAssetUrl(candidate)) return resolveRemoteAsset(candidate);
+  }
+
+  const base64Payload = [
+    payload.base64,
+    payload.image_base64,
+    asRecord(payload.asset)?.base64,
+    Array.isArray(payload.data) ? asRecord(payload.data[0])?.base64 : undefined,
+  ].find((value) => typeof value === "string") as string | undefined;
+
+  if (base64Payload) {
+    return {
+      body: Buffer.from(base64Payload, "base64"),
+      contentType:
+        (typeof payload.content_type === "string" ? payload.content_type : undefined) ||
+        (typeof payload.mime_type === "string" ? payload.mime_type : undefined) ||
+        (typeof asRecord(payload.asset)?.content_type === "string" ? asRecord(payload.asset)?.content_type : undefined) ||
+        (Array.isArray(payload.data) && typeof asRecord(payload.data[0])?.content_type === "string"
+          ? asRecord(payload.data[0])?.content_type
+          : undefined) ||
+        "image/png",
+    };
+  }
+
+  throw new ApiError(502, "Nanobana asset response did not include a usable image");
+}
+
+export function iconExtensionForContentType(contentType: string) {
+  const normalized = contentType.toLowerCase();
+  if (normalized.includes("image/svg+xml")) return "svg";
+  if (normalized.includes("image/png")) return "png";
+  if (normalized.includes("image/webp")) return "webp";
+  if (normalized.includes("image/jpeg")) return "jpg";
+  if (normalized.includes("image/gif")) return "gif";
+  return "bin";
+}
+
+async function renderNanobanaIcon(prompt: string) {
+  const apiKey = process.env.OPENROUTER_API_KEY?.trim();
+  if (!apiKey) {
+    throw new ApiError(500, "Nanobana image generation is unavailable because OPENROUTER_API_KEY is not configured");
+  }
+
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+      "HTTP-Referer": process.env.APP_ORIGIN?.trim() || "https://clawlodge.com",
+      "X-Title": "ClawLodge",
+    },
+    body: JSON.stringify({
+      model: process.env.CLAWLODGE_ICON_IMAGE_MODEL?.trim() || process.env.NANO_BANANA_MODEL?.trim() || "google/gemini-2.5-flash-image",
+      stream: false,
+      modalities: ["image", "text"],
+      messages: [
+        {
+          role: "user",
+          content: [
+            prompt,
+            "Format: square 1:1 icon.",
+            "Background: transparent or clean plain backdrop.",
+            "Output: one polished lobster icon only.",
+            "Do not render any text or letters.",
+          ].join("\n"),
+        },
+      ],
+    }),
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new ApiError(502, body?.error?.message || body?.detail || `Nanobana image generation failed: ${response.status}`);
+  }
+  return parseNanobanaAsset(body);
+}
+
+export function generateProceduralLobsterIcon(signals: IconSignals) {
   const seed = sha256(
     JSON.stringify({
       slug: signals.slug,
@@ -93,7 +412,7 @@ export function generateLobsterIcon(signals: IconSignals) {
       tags: [...signals.tags].sort(),
       sourceType: signals.sourceType,
       workspacePaths: [...signals.workspacePaths].sort(),
-      spec: LOBSTER_ICON_SPEC_VERSION,
+      spec: PROCEDURAL_ICON_SPEC_VERSION,
     }),
   );
 
@@ -141,7 +460,6 @@ export function generateLobsterIcon(signals: IconSignals) {
   ][clawType];
 
   const slugInitial = escapeXml(signals.slug.slice(0, 1).toUpperCase() || "C");
-
   const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${ICON_SIZE}" height="${ICON_SIZE}" viewBox="0 0 ${ICON_SIZE} ${ICON_SIZE}" fill="none" role="img" aria-labelledby="title desc">
   <title id="title">${escapeXml(signals.slug)} workspace lobster icon</title>
@@ -183,5 +501,27 @@ export function generateLobsterIcon(signals: IconSignals) {
   </g>
 </svg>`;
 
-  return { svg, seed, specVersion: LOBSTER_ICON_SPEC_VERSION };
+  return {
+    body: Buffer.from(svg, "utf8"),
+    contentType: "image/svg+xml",
+    seed,
+    specVersion: PROCEDURAL_ICON_SPEC_VERSION,
+    prompt: null,
+  };
+}
+
+export async function generateWorkspaceLobsterIcon(signals: IconSignals) {
+  try {
+    const prompt = await generateOpenRouterIconPrompt(signals);
+    const asset = await renderNanobanaIcon(prompt);
+    return {
+      body: asset.body,
+      contentType: asset.contentType,
+      seed: sha256(`${signals.slug}:${signals.version}:${prompt}`),
+      specVersion: NANOBANA_ICON_SPEC_VERSION,
+      prompt,
+    };
+  } catch {
+    return generateProceduralLobsterIcon(signals);
+  }
 }

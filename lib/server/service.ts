@@ -4,7 +4,8 @@ import { CommentItem, LobsterDetail, LobsterSummary, LobsterVersion, MeProfile, 
 import { zipSync, strToU8 } from "fflate";
 
 import { ApiError } from "./errors";
-import { generateLobsterIcon } from "./lobster-icon";
+import { enqueueIconGenerationJob, kickIconJobWorker } from "./icon-jobs";
+import { generateProceduralLobsterIcon, iconExtensionForContentType } from "./lobster-icon";
 import { parseAndValidateManifest } from "./manifest";
 import { allowRate } from "./rate-limit";
 import { mutateDb, readDb } from "./store";
@@ -485,7 +486,12 @@ function normalizeWorkspaceFileStorageKey(slug: string, version: string, filePat
   return `lobsters/${slug}/${version}/workspace-files/${filePath}`;
 }
 
+function iconStorageKey(slug: string, version: string, contentType: string) {
+  return `lobsters/${slug}/${version}/icon.${iconExtensionForContentType(contentType)}`;
+}
+
 export async function listLobsters(params?: { sort?: string; tag?: string; q?: string; page?: number; per_page?: number }) {
+  void kickIconJobWorker();
   if (params?.sort !== "new") {
     await mutateDb(async (db) => {
       const pending = db.lobsters.filter(
@@ -558,6 +564,7 @@ export async function listLobsters(params?: { sort?: string; tag?: string; q?: s
 }
 
 export async function getLobsterBySlug(slug: string): Promise<LobsterDetail> {
+  void kickIconJobWorker();
   const db = await readDb();
   const lobster = db.lobsters.find((item) => item.slug === slug && item.status === "active");
   if (!lobster) {
@@ -752,6 +759,10 @@ export async function createVersion(
     version: string;
     changelog: string;
     readme_markdown: string;
+    icon_base64?: string;
+    icon_content_type?: string;
+    icon_seed?: string;
+    icon_spec_version?: string;
     source_repo?: string;
     source_commit?: string;
     workspace_files?: Array<{
@@ -774,7 +785,9 @@ export async function createVersion(
   if (!semverRe.test(payload.version)) throw new ApiError(400, "Invalid version");
   if (!payload.changelog.trim() || !payload.readme_markdown.trim()) throw new ApiError(400, "Invalid payload");
 
-  return mutateDb(async (db) => {
+  let createdId = 0;
+  let shouldQueueIcon = false;
+  const version = await mutateDb(async (db) => {
     const lobster = db.lobsters.find((item) => item.slug === slug);
     if (!lobster) throw new ApiError(404, "Lobster not found");
     if (lobster.ownerId !== userId) throw new ApiError(403, "Only owner can publish versions");
@@ -806,13 +819,23 @@ export async function createVersion(
         commit: payload.source_commit,
       },
     };
-    const icon = generateLobsterIcon({
+    const proceduralIcon = generateProceduralLobsterIcon({
       slug: lobster.slug,
       version: payload.version,
       tags: lobster.tags,
       sourceType: lobster.sourceType,
       workspacePaths: (payload.workspace_files ?? []).map((file) => file.path),
+      readmeText: migratedReadmeMarkdown,
+      summary: generatedSummary,
     });
+    const icon = payload.icon_base64?.trim() && payload.icon_content_type?.trim()
+      ? {
+          body: Buffer.from(payload.icon_base64, "base64"),
+          contentType: payload.icon_content_type.trim(),
+          seed: payload.icon_seed?.trim() || proceduralIcon.seed,
+          specVersion: payload.icon_spec_version?.trim() || "uploaded-local-v1",
+        }
+      : proceduralIcon;
 
     const readmeUrl = await putObject(
       `lobsters/${lobster.slug}/${payload.version}/README.md`,
@@ -825,9 +848,9 @@ export async function createVersion(
       "application/json",
     );
     const iconUrl = await putObject(
-      `lobsters/${lobster.slug}/${payload.version}/icon.svg`,
-      Buffer.from(icon.svg, "utf8"),
-      "image/svg+xml",
+      iconStorageKey(lobster.slug, payload.version, icon.contentType),
+      icon.body,
+      icon.contentType,
     );
 
     const now = new Date().toISOString();
@@ -885,6 +908,8 @@ export async function createVersion(
       createdAt: now,
     };
     db.lobsterVersions.push(created);
+    createdId = created.id;
+    shouldQueueIcon = !(payload.icon_base64?.trim() && payload.icon_content_type?.trim());
     lobster.summary = generatedSummary;
     lobster.updatedAt = now;
     lobster.githubStars = repoSignals?.stars ?? lobster.githubStars ?? null;
@@ -897,6 +922,13 @@ export async function createVersion(
     ].join("\n");
     return toVersion(created);
   });
+
+  if (shouldQueueIcon && createdId) {
+    await enqueueIconGenerationJob(createdId);
+    void kickIconJobWorker();
+  }
+
+  return version;
 }
 
 export async function getComments(slug: string): Promise<CommentItem[]> {
@@ -1247,7 +1279,7 @@ export async function uploadViaMcp(
   if (!(await allowRate(`mcp:${userId}`, 30, 3600))) throw new ApiError(429, "MCP upload rate limit exceeded");
   const manifest = parseAndValidateManifest(files.manifestRaw);
 
-  return mutateDb(async (db) => {
+  const result = await mutateDb(async (db) => {
     let lobster = db.lobsters.find((item) => item.slug === slugify(manifest.lobster_slug));
     if (!lobster) {
       const now = new Date().toISOString();
@@ -1302,17 +1334,19 @@ export async function uploadViaMcp(
     );
     const manifestUrl = await putObject(`${base}/manifest.json`, files.manifestRaw, "application/json");
     const skillsBundleUrl = await putObject(`${base}/skills_bundle.zip`, files.skillsRaw, "application/zip");
-    const icon = generateLobsterIcon({
+    const icon = generateProceduralLobsterIcon({
       slug: lobster.slug,
       version: manifest.version,
       tags: lobster.tags,
       sourceType: lobster.sourceType,
       workspacePaths: [],
+      readmeText: migratedReadmeText,
+      summary: lobster.summary,
     });
-    const iconUrl = await putObject(`${base}/icon.svg`, Buffer.from(icon.svg, "utf8"), "image/svg+xml");
+    const iconUrl = await putObject(iconStorageKey(lobster.slug, manifest.version, icon.contentType), icon.body, icon.contentType);
     const now = new Date().toISOString();
 
-    db.lobsterVersions.push({
+    const createdVersion = {
       id: db.nextIds.lobsterVersion++,
       lobsterId: lobster.id,
       createdBy: userId,
@@ -1340,7 +1374,8 @@ export async function uploadViaMcp(
         size: skill.size ?? null,
       })),
       createdAt: now,
-    });
+    };
+    db.lobsterVersions.push(createdVersion);
     lobster.githubStars = repoSignals?.stars ?? lobster.githubStars ?? null;
 
     const tagSetting = manifest.settings.find((item) => item.key === "tags");
@@ -1351,6 +1386,7 @@ export async function uploadViaMcp(
     lobster.updatedAt = now;
 
     return {
+      created_version_id: createdVersion.id,
       lobster_slug: lobster.slug,
       version: manifest.version,
       manifest_url: manifestUrl,
@@ -1358,6 +1394,16 @@ export async function uploadViaMcp(
       skills_bundle_url: skillsBundleUrl,
     };
   });
+
+  await enqueueIconGenerationJob(result.created_version_id);
+  void kickIconJobWorker();
+  return {
+    lobster_slug: result.lobster_slug,
+    version: result.version,
+    manifest_url: result.manifest_url,
+    readme_url: result.readme_url,
+    skills_bundle_url: result.skills_bundle_url,
+  };
 }
 
 export async function publishWorkspace(userId: number, payload: WorkspacePublishPayload) {
@@ -1397,6 +1443,10 @@ export async function publishWorkspace(userId: number, payload: WorkspacePublish
     readme_markdown: readmeMarkdown,
     source_repo: payload.source_repo,
     source_commit: payload.source_commit,
+    icon_base64: payload.icon_base64,
+    icon_content_type: payload.icon_content_type,
+    icon_seed: payload.icon_seed,
+    icon_spec_version: payload.icon_spec_version,
     publish_client: payload.publish_client,
     masked_secrets_count: payload.stats.masked_secrets_count,
     blocked_files_count: payload.stats.blocked_files_count,

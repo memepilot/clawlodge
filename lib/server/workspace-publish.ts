@@ -82,6 +82,10 @@ export type WorkspacePublishPayload = {
   changelog: string;
   tags: string[];
   readme_markdown?: string;
+  icon_base64?: string;
+  icon_content_type?: string;
+  icon_seed?: string;
+  icon_spec_version?: string;
   source_repo?: string;
   source_commit?: string;
   publish_client: string;

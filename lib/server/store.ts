@@ -19,6 +19,7 @@ function emptyState(): DbState {
       lobsterVersion: 1,
       comment: 1,
       report: 1,
+      iconJob: 1,
     },
     users: [],
     sessions: [],
@@ -28,6 +29,7 @@ function emptyState(): DbState {
     lobsterVersions: [],
     comments: [],
     reports: [],
+    iconJobs: [],
   };
 }
 
@@ -67,6 +69,15 @@ export async function readDb(): Promise<DbState> {
     maskedSecretsCount: version.maskedSecretsCount ?? 0,
     blockedFilesCount: version.blockedFilesCount ?? 0,
   }));
+  parsed.iconJobs = (parsed.iconJobs ?? []).map((job) => ({
+    ...job,
+    status: job.status ?? "pending",
+    attempts: job.attempts ?? 0,
+    lastError: job.lastError ?? null,
+    startedAt: job.startedAt ?? null,
+    completedAt: job.completedAt ?? null,
+  }));
+  parsed.nextIds.iconJob = parsed.nextIds.iconJob ?? 1;
   return parsed;
 }
 

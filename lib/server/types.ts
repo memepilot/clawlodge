@@ -131,6 +131,18 @@ export type DbReport = {
   createdAt: string;
 };
 
+export type DbIconJob = {
+  id: number;
+  lobsterVersionId: number;
+  status: "pending" | "running" | "completed" | "failed";
+  attempts: number;
+  lastError: string | null;
+  createdAt: string;
+  updatedAt: string;
+  startedAt: string | null;
+  completedAt: string | null;
+};
+
 export type DbState = {
   nextIds: {
     user: number;
@@ -141,6 +153,7 @@ export type DbState = {
     lobsterVersion: number;
     comment: number;
     report: number;
+    iconJob: number;
   };
   users: DbUser[];
   sessions: DbSession[];
@@ -150,4 +163,5 @@ export type DbState = {
   lobsterVersions: DbLobsterVersion[];
   comments: DbComment[];
   reports: DbReport[];
+  iconJobs: DbIconJob[];
 };
