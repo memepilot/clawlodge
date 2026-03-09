@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { getDisplayAuthor, getDisplayLobsterName } from "@/lib/lobster-display";
 import { LobsterSummary } from "@/lib/types";
 
 function sourceTypeLabel(value: LobsterSummary["source_type"]) {
@@ -18,6 +19,8 @@ function sourceTypeLabel(value: LobsterSummary["source_type"]) {
 }
 
 export function LobsterCard({ item }: { item: LobsterSummary }) {
+  const displayName = getDisplayLobsterName(item);
+  const author = getDisplayAuthor(item);
   return (
     <article className="card lobster-card">
       {item.recommended ? (
@@ -32,11 +35,18 @@ export function LobsterCard({ item }: { item: LobsterSummary }) {
             {item.verified ? <span className="tag tag-verified">verified</span> : null}
           </div>
           <h3 className="lobster-card-title">
-            <Link href={`/lobsters/${item.slug}`}>{item.name}</Link>
+            <Link href={`/lobsters/${item.slug}`}>{displayName}</Link>
           </h3>
           <p className="muted text-sm">
-            by {item.owner_display_name || `@${item.owner_handle}`}
-            {item.owner_display_name ? ` (@${item.owner_handle})` : null}
+            by{" "}
+            {author.href ? (
+              <Link className="inline-link" href={author.href}>
+                {author.label}
+              </Link>
+            ) : (
+              author.label
+            )}
+            {author.suffix ?? null}
           </p>
         </div>
         <div className="lobster-card-side">

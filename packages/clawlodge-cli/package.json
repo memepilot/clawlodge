@@ -1,6 +1,6 @@
 {
   "name": "clawlodge-cli",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "CLI for packing and publishing OpenClaw configs to ClawLodge",
   "repository": {
     "type": "git",

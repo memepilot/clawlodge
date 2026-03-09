@@ -8,6 +8,7 @@ import remarkGfm from "remark-gfm";
 
 import { LobsterActions } from "@/components/lobster-actions";
 import { WorkspaceBrowser } from "@/components/workspace-browser";
+import { getDetailDisplayLobsterName, getDisplayAuthor } from "@/lib/lobster-display";
 import { ApiError } from "@/lib/server/errors";
 import { getComments, getLobsterBySlug } from "@/lib/server/service";
 import { absoluteUrl } from "@/lib/site";
@@ -50,21 +51,22 @@ export async function generateMetadata({
   const { slug } = await params;
   try {
     const lobster = await getLobsterBySlug(slug);
+    const displayName = getDetailDisplayLobsterName(lobster);
     return {
-      title: lobster.name,
+      title: displayName,
       description: lobster.summary,
       alternates: {
         canonical: absoluteUrl(`/lobsters/${slug}`),
       },
       openGraph: {
-        title: lobster.name,
+        title: displayName,
         description: lobster.summary,
         url: absoluteUrl(`/lobsters/${slug}`),
         type: "article",
       },
       twitter: {
         card: "summary_large_image",
-        title: lobster.name,
+        title: displayName,
         description: lobster.summary,
       },
     };
@@ -95,6 +97,8 @@ export default async function LobsterDetailPage({
   }
   const comments = await getComments(slug);
   const latest = lobster.versions[0];
+  const displayName = getDetailDisplayLobsterName(lobster);
+  const author = getDisplayAuthor(lobster, latest?.source_repo);
 
   return (
     <div className="page-shell stack-lg">
@@ -107,14 +111,18 @@ export default async function LobsterDetailPage({
           <div className="detail-head">
             <div>
               <h1 className="page-title">
-                {lobster.name}
+                {displayName}
               </h1>
               <p className="page-subtitle">
                 by{" "}
-                <Link className="inline-link" href={`/u/${lobster.owner_handle}`}>
-                  {lobster.owner_display_name || `@${lobster.owner_handle}`}
-                </Link>
-                {lobster.owner_display_name ? ` (@${lobster.owner_handle})` : null}
+                {author.href ? (
+                  <Link className="inline-link" href={author.href}>
+                    {author.label}
+                  </Link>
+                ) : (
+                  author.label
+                )}
+                {author.suffix ?? null}
               </p>
             </div>
           </div>
