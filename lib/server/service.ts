@@ -451,9 +451,11 @@ function toVersion(version: DbLobsterVersion): LobsterVersion {
 }
 
 function attachLatestVersion(summary: LobsterSummary, versions: DbLobsterVersion[]) {
+  const latest = versions.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))[0];
   return {
     ...summary,
-    latest_version: versions.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))[0]?.version ?? null,
+    latest_version: latest?.version ?? null,
+    latest_source_repo: latest?.sourceRepo ?? null,
   };
 }
 

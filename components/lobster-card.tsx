@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { getDisplayAuthor, getDisplayLobsterName } from "@/lib/lobster-display";
+import { getDisplayAuthor, getDisplayLobsterName, getDisplaySummary } from "@/lib/lobster-display";
 import { LobsterSummary } from "@/lib/types";
 
 function sourceTypeLabel(value: LobsterSummary["source_type"]) {
@@ -19,8 +19,9 @@ function sourceTypeLabel(value: LobsterSummary["source_type"]) {
 }
 
 export function LobsterCard({ item }: { item: LobsterSummary }) {
-  const displayName = getDisplayLobsterName(item);
-  const author = getDisplayAuthor(item);
+  const displayName = getDisplayLobsterName(item, item.latest_source_repo);
+  const author = getDisplayAuthor(item, item.latest_source_repo);
+  const summary = getDisplaySummary(item, item.latest_source_repo);
   return (
     <article className="card lobster-card">
       {item.recommended ? (
@@ -54,7 +55,7 @@ export function LobsterCard({ item }: { item: LobsterSummary }) {
           <div>{item.license}</div>
         </div>
       </div>
-      <p className="lobster-card-summary lobster-card-summary-clamped">{item.summary}</p>
+      <p className="lobster-card-summary lobster-card-summary-clamped">{summary}</p>
       {item.curation_note ? <p className="lobster-card-note">{item.curation_note}</p> : null}
       <div className="lobster-card-tags">
         {item.tags.map((tag) => (

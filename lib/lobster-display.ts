@@ -13,8 +13,12 @@ function stripLeadingOwner(name: string, owner: string | null | undefined) {
   return name.replace(new RegExp(`^${escaped}\\s+`, "i"), "").trim();
 }
 
+function escapeForRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 export function getDisplayLobsterName(
-  lobster: Pick<LobsterSummary, "name" | "original_author" | "source_url" | "owner_handle">,
+  lobster: Pick<LobsterSummary, "name" | "original_author" | "source_url">,
   latestSourceRepo?: string | null,
 ) {
   const candidates = [
@@ -33,6 +37,21 @@ export function getDisplayLobsterName(
 
 export function getDetailDisplayLobsterName(lobster: LobsterDetail) {
   return getDisplayLobsterName(lobster, lobster.versions[0]?.source_repo);
+}
+
+export function getDisplaySummary(
+  lobster: Pick<LobsterSummary, "name" | "summary" | "original_author" | "source_url">,
+  latestSourceRepo?: string | null,
+) {
+  const displayName = getDisplayLobsterName(lobster, latestSourceRepo);
+  const originalName = lobster.name.trim();
+  const summary = lobster.summary.trim();
+  if (!summary) return summary;
+  if (!originalName || originalName === displayName) return summary;
+
+  const originalEscaped = escapeForRegex(originalName);
+  const replaced = summary.replace(new RegExp(`^${originalEscaped}(?=\\s|[,:;.!?-])`, "i"), displayName).trim();
+  return replaced || summary;
 }
 
 export function getDisplayAuthor(

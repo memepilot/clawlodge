@@ -13,6 +13,7 @@ export type LobsterSummary = {
   owner_display_name?: string | null;
   tags: string[];
   latest_version?: string | null;
+  latest_source_repo?: string | null;
   recommended?: boolean;
   favorite_count: number;
   download_count: number;
