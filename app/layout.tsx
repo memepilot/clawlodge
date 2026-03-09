@@ -56,6 +56,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/publish">Publish</Link>
               <Link href="/mcp">Plugin Upload</Link>
               <Link href="/settings">Settings</Link>
+              <a href={siteConfig.githubUrl} target="_blank" rel="noreferrer">
+                GitHub
+              </a>
             </nav>
             <div className="nav-actions">
               <HeaderAuth />
@@ -75,6 +78,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </Link>
               <a className="inline-link" href={siteConfig.githubUrl} target="_blank" rel="noreferrer">
                 GitHub
+              </a>
+              <a className="inline-link" href={siteConfig.npmCliUrl} target="_blank" rel="noreferrer">
+                Install CLI
               </a>
             </div>
           </div>

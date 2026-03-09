@@ -97,6 +97,9 @@ export default async function Home({
                 <Link className="btn btn-primary" href="/publish">
                   Publish a lobster
                 </Link>
+                <a className="btn" href={siteConfig.npmCliUrl} target="_blank" rel="noreferrer">
+                  Install CLI
+                </a>
                 {!sessionUser ? (
                   <a className="btn" href={githubLoginUrl}>
                     Login with GitHub

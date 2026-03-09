@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "bin": {
-    "clawlodge": "scripts/openclaw-lodge.mjs"
+    "clawlodge": "packages/clawlodge-cli/bin/clawlodge.mjs"
   },
   "scripts": {
     "dev": "next dev",
@@ -12,8 +12,8 @@
     "lint": "eslint .",
     "clawlodge:pack-cli": "npm pack ./packages/clawlodge-cli",
     "clawlodge:publish-cli": "npm publish ./packages/clawlodge-cli --access public",
-    "clawlodge:pack": "node scripts/openclaw-lodge.mjs pack",
-    "clawlodge:publish": "node scripts/openclaw-lodge.mjs publish"
+    "clawlodge:pack": "node packages/clawlodge-cli/bin/clawlodge.mjs pack",
+    "clawlodge:publish": "node packages/clawlodge-cli/bin/clawlodge.mjs publish"
   },
   "dependencies": {
     "fflate": "^0.8.2",

@@ -56,3 +56,8 @@ pnpm-debug.log*
 # Legacy local folders that should not be published
 frontend-archive/
 backend-archive/
+
+# Local reverse proxy / deployment machine config
+nginx/
+deploy/nginx*.conf
+scripts/deploy_remote.sh
