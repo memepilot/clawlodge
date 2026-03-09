@@ -23,6 +23,7 @@
   --radius-md: 14px;
   --radius-pill: 999px;
   --font-heading: var(--font-display);
+  --font-emoji: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Twemoji Mozilla";
 }
 
 * {
@@ -48,6 +49,7 @@ body {
   min-height: 100svh;
   display: flex;
   flex-direction: column;
+  font-family: var(--font-body), var(--font-emoji), sans-serif;
 }
 
 a {
@@ -154,7 +156,7 @@ main {
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  font-family: var(--font-display);
+  font-family: var(--font-display), var(--font-emoji), sans-serif;
   font-weight: 700;
   letter-spacing: -0.03em;
 }
@@ -352,7 +354,7 @@ main {
 
 .section-title {
   margin: 0;
-  font-family: var(--font-display);
+  font-family: var(--font-display), var(--font-emoji), sans-serif;
   letter-spacing: -0.03em;
   font-size: 2rem;
 }
@@ -380,7 +382,7 @@ main {
 .page-title,
 .panel-title {
   margin: 0;
-  font-family: var(--font-display);
+  font-family: var(--font-display), var(--font-emoji), sans-serif;
   letter-spacing: -0.03em;
 }
 
@@ -1322,7 +1324,7 @@ main {
 .markdown h6 {
   margin: 1.5em 0 0.55em;
   color: var(--ink);
-  font-family: var(--font-display);
+  font-family: var(--font-display), var(--font-emoji), sans-serif;
   letter-spacing: -0.03em;
   line-height: 1.1;
 }

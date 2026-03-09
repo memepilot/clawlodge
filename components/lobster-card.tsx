@@ -64,6 +64,12 @@ export function LobsterCard({ item }: { item: LobsterSummary }) {
         ))}
       </div>
       <div className="lobster-card-footer">
+        <span className="stat-chip" aria-label={`${item.download_count} downloads`}>
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M10 3.2v8.1M6.8 8.9 10 12.1l3.2-3.2M4 15.2h12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <span>{item.download_count}</span>
+        </span>
         <span className="stat-chip" aria-label={`${item.favorite_count} favorites`}>
           <svg viewBox="0 0 20 20" aria-hidden="true">
             <path d="M10 16.2 3.5 9.9a4.1 4.1 0 0 1 5.8-5.8L10 4.8l.7-.7a4.1 4.1 0 1 1 5.8 5.8Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />

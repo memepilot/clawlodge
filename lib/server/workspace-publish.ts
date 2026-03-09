@@ -3,18 +3,6 @@ import path from "node:path";
 
 import { allowedLicenses, semverRe, slugify } from "./utils";
 
-const ALLOWED_ROOT_FILES = new Set(["AGENTS.md", "SOUL.md", "TOOLS.md", "README.md"]);
-const ALLOWED_PREFIXES = [
-  "skills/",
-  "examples/",
-  "templates/",
-  "prompts/",
-  "memory/",
-  "workflows/",
-  "devops/",
-  "docs/",
-  ".openclaw/",
-];
 const BLOCKED_DIRS = new Set([
   ".git",
   ".next",
@@ -161,10 +149,7 @@ function isBlockedFile(relativePath: string) {
 
 function isAllowedFile(relativePath: string) {
   const normalized = relativePath.replace(/^\.\/+/, "");
-  if (ALLOWED_ROOT_FILES.has(normalized)) {
-    return true;
-  }
-  return ALLOWED_PREFIXES.some((prefix) => normalized.startsWith(prefix));
+  return Boolean(normalized);
 }
 
 function isTextFile(relativePath: string) {

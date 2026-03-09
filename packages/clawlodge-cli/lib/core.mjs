@@ -4,18 +4,6 @@ import path from "node:path";
 import readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 
-const ALLOWED_ROOT_FILES = new Set(["AGENTS.md", "SOUL.md", "TOOLS.md", "README.md"]);
-const ALLOWED_PREFIXES = [
-  "skills/",
-  "examples/",
-  "templates/",
-  "prompts/",
-  "memory/",
-  "workflows/",
-  "devops/",
-  "docs/",
-  ".openclaw/",
-];
 const BLOCKED_DIRS = new Set([".git", ".next", "node_modules", "dist", "build", "coverage", ".idea", ".vscode", "tmp", "temp", "logs", "data"]);
 const BLOCKED_FILE_NAMES = [/^\.env(\..+)?$/i, /^id_(rsa|dsa|ecdsa|ed25519)(\.pub)?$/i];
 const BLOCKED_FILE_EXTENSIONS = new Set([".pem", ".key", ".p12", ".pfx", ".db", ".sqlite", ".sqlite3", ".log"]);
@@ -26,7 +14,7 @@ const MAX_FILE_BYTES = 128 * 1024;
 const MAX_EXCERPT_CHARS = 1600;
 const MAX_BINARY_EMBED_BYTES = 8 * 1024 * 1024;
 const DEFAULT_ORIGIN = "https://clawlodge.com";
-const CLI_VERSION = "0.1.6";
+const CLI_VERSION = "0.1.7";
 const CONFIG_PATH = path.join(os.homedir(), ".config", "clawlodge", "config.json");
 const REDACTION_RULES = [
   [/\bsk-[A-Za-z0-9]{20,}\b/g, "[REDACTED_OPENAI_KEY]"],
@@ -219,8 +207,7 @@ function isBlockedFile(relativePath) {
 
 function isAllowedFile(relativePath) {
   const normalized = relativePath.replace(/^\.\/+/, "");
-  if (ALLOWED_ROOT_FILES.has(normalized)) return true;
-  return ALLOWED_PREFIXES.some((prefix) => normalized.startsWith(prefix));
+  return Boolean(normalized);
 }
 
 function isTextFile(relativePath) {
