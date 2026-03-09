@@ -3,11 +3,10 @@ import Link from "next/link";
 
 import { LobsterCard } from "@/components/lobster-card";
 import { apiOrigin } from "@/lib/api";
-import { getSessionUser } from "@/lib/server/auth";
 import { listLobsters } from "@/lib/server/service";
 import { absoluteUrl, siteConfig } from "@/lib/site";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export default async function Home({
   searchParams,
@@ -18,9 +17,9 @@ export default async function Home({
   const sort = params.sort === "new" ? "new" : "hot";
   const page = Number.isFinite(Number(params.page)) ? Math.max(1, Math.floor(Number(params.page))) : 1;
   const result = await listLobsters({ sort, tag: params.tag, q: params.q, page, per_page: 12 });
-  const sessionUser = await getSessionUser();
   const githubLoginUrl = `${apiOrigin}/api/v1/auth/github/start?next=/publish`;
   const isTagResults = Boolean(params.tag);
+  const featuredItems = !isTagResults && !params.q?.trim() && page === 1 ? result.items.slice(0, 5) : [];
   const buildPageHref = (nextPage: number) => {
     const search = new URLSearchParams();
     if (params.q?.trim()) search.set("q", params.q.trim());
@@ -100,11 +99,9 @@ export default async function Home({
                 <a className="btn" href={siteConfig.npmCliUrl} target="_blank" rel="noreferrer">
                   Install CLI
                 </a>
-                {!sessionUser ? (
-                  <a className="btn" href={githubLoginUrl}>
-                    Login with GitHub
-                  </a>
-                ) : null}
+                <a className="btn" href={githubLoginUrl}>
+                  Login with GitHub
+                </a>
               </div>
             </div>
 
@@ -130,6 +127,31 @@ export default async function Home({
           </div>
         </section>
       )}
+
+      {featuredItems.length ? (
+        <section className="section section-tight">
+          <div className="shell page-panel p-5 md:p-6">
+            <h2 className="section-title">Start With These Popular OpenClaw Workspaces</h2>
+            <p className="section-subtitle">
+              These pages are the strongest entry points for discovering real OpenClaw configs, skills, and workflows.
+            </p>
+            <div className="stack-md">
+              {featuredItems.map((item) => (
+                <div key={item.slug} className="flex flex-col gap-2 border-b border-[var(--line)] pb-4 last:border-b-0 last:pb-0">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <Link className="inline-link text-lg font-semibold" href={`/lobsters/${item.slug}`}>
+                      {item.name}
+                    </Link>
+                    <span className="muted text-sm">v{item.latest_version ?? "latest"}</span>
+                    <span className="muted text-sm">{item.download_count} downloads</span>
+                  </div>
+                  <p className="muted">{item.summary}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       <section className={`section ${isTagResults ? "section-tight section-topless" : ""}`}>
         <h2 className="section-title">
