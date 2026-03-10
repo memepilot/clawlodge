@@ -189,115 +189,107 @@ function openDatabase() {
 }
 
 function syncMirrorTables(db: DatabaseSync, state: DbState) {
-  db.exec("BEGIN IMMEDIATE");
-  try {
-    db.exec(`
-      DELETE FROM users_mirror;
-      DELETE FROM lobsters_mirror;
-      DELETE FROM lobster_versions_mirror;
-      DELETE FROM comments_mirror;
-    `);
+  db.exec(`
+    DELETE FROM users_mirror;
+    DELETE FROM lobsters_mirror;
+    DELETE FROM lobster_versions_mirror;
+    DELETE FROM comments_mirror;
+  `);
 
-    const insertUser = db.prepare(`
-      INSERT INTO users_mirror (
-        id, handle, display_name, avatar_url, bio, email, github_id, favorite_slugs_json, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    for (const user of state.users) {
-      insertUser.run(
-        user.id,
-        user.handle,
-        user.displayName,
-        user.avatarUrl,
-        user.bio,
-        user.email,
-        user.githubId,
-        JSON.stringify(user.favoriteSlugs),
-        user.createdAt,
-        user.updatedAt,
-      );
-    }
+  const insertUser = db.prepare(`
+    INSERT INTO users_mirror (
+      id, handle, display_name, avatar_url, bio, email, github_id, favorite_slugs_json, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  for (const user of state.users) {
+    insertUser.run(
+      user.id,
+      user.handle,
+      user.displayName,
+      user.avatarUrl,
+      user.bio,
+      user.email,
+      user.githubId,
+      JSON.stringify(user.favoriteSlugs),
+      user.createdAt,
+      user.updatedAt,
+    );
+  }
 
-    const insertLobster = db.prepare(`
-      INSERT INTO lobsters_mirror (
-        id, slug, owner_id, name, summary, license, source_type, source_url, original_author, verified,
-        curation_note, seeded_at, status, report_penalty, search_document, tags_json, recommendation_score,
-        github_stars, favorite_count, download_count, share_count, comment_count, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    for (const lobster of state.lobsters) {
-      insertLobster.run(
-        lobster.id,
-        lobster.slug,
-        lobster.ownerId,
-        lobster.name,
-        lobster.summary,
-        lobster.license,
-        lobster.sourceType,
-        lobster.sourceUrl,
-        lobster.originalAuthor,
-        lobster.verified ? 1 : 0,
-        lobster.curationNote,
-        lobster.seededAt,
-        lobster.status,
-        lobster.reportPenalty,
-        lobster.searchDocument,
-        JSON.stringify(lobster.tags),
-        lobster.recommendationScore,
-        lobster.githubStars,
-        lobster.favoriteCount,
-        lobster.downloadCount,
-        lobster.shareCount,
-        lobster.commentCount,
-        lobster.createdAt,
-        lobster.updatedAt,
-      );
-    }
+  const insertLobster = db.prepare(`
+    INSERT INTO lobsters_mirror (
+      id, slug, owner_id, name, summary, license, source_type, source_url, original_author, verified,
+      curation_note, seeded_at, status, report_penalty, search_document, tags_json, recommendation_score,
+      github_stars, favorite_count, download_count, share_count, comment_count, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  for (const lobster of state.lobsters) {
+    insertLobster.run(
+      lobster.id,
+      lobster.slug,
+      lobster.ownerId,
+      lobster.name,
+      lobster.summary,
+      lobster.license,
+      lobster.sourceType,
+      lobster.sourceUrl,
+      lobster.originalAuthor,
+      lobster.verified ? 1 : 0,
+      lobster.curationNote,
+      lobster.seededAt,
+      lobster.status,
+      lobster.reportPenalty,
+      lobster.searchDocument,
+      JSON.stringify(lobster.tags),
+      lobster.recommendationScore,
+      lobster.githubStars,
+      lobster.favoriteCount,
+      lobster.downloadCount,
+      lobster.shareCount,
+      lobster.commentCount,
+      lobster.createdAt,
+      lobster.updatedAt,
+    );
+  }
 
-    const insertVersion = db.prepare(`
-      INSERT INTO lobster_versions_mirror (
-        id, lobster_id, created_by, version, changelog, readme_text, manifest_url, readme_url, skills_bundle_url,
-        icon_url, icon_seed, icon_spec_version, source_repo, source_commit, workspace_files_json, publish_client,
-        masked_secrets_count, blocked_files_count, skills_json, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    for (const version of state.lobsterVersions) {
-      insertVersion.run(
-        version.id,
-        version.lobsterId,
-        version.createdBy,
-        version.version,
-        version.changelog,
-        version.readmeText,
-        version.manifestUrl,
-        version.readmeUrl,
-        version.skillsBundleUrl,
-        version.iconUrl,
-        version.iconSeed,
-        version.iconSpecVersion,
-        version.sourceRepo,
-        version.sourceCommit,
-        JSON.stringify(version.workspaceFiles),
-        version.publishClient,
-        version.maskedSecretsCount,
-        version.blockedFilesCount,
-        JSON.stringify(version.skills),
-        version.createdAt,
-      );
-    }
+  const insertVersion = db.prepare(`
+    INSERT INTO lobster_versions_mirror (
+      id, lobster_id, created_by, version, changelog, readme_text, manifest_url, readme_url, skills_bundle_url,
+      icon_url, icon_seed, icon_spec_version, source_repo, source_commit, workspace_files_json, publish_client,
+      masked_secrets_count, blocked_files_count, skills_json, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  for (const version of state.lobsterVersions) {
+    insertVersion.run(
+      version.id,
+      version.lobsterId,
+      version.createdBy,
+      version.version,
+      version.changelog,
+      version.readmeText,
+      version.manifestUrl,
+      version.readmeUrl,
+      version.skillsBundleUrl,
+      version.iconUrl,
+      version.iconSeed,
+      version.iconSpecVersion,
+      version.sourceRepo,
+      version.sourceCommit,
+      JSON.stringify(version.workspaceFiles),
+      version.publishClient,
+      version.maskedSecretsCount,
+      version.blockedFilesCount,
+      JSON.stringify(version.skills),
+      version.createdAt,
+    );
+  }
 
-    const insertComment = db.prepare(`
-      INSERT INTO comments_mirror (id, user_id, lobster_id, content, created_at)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-    for (const comment of state.comments) {
-      insertComment.run(comment.id, comment.userId, comment.lobsterId, comment.content, comment.createdAt);
-    }
-
-    db.exec("COMMIT");
-  } catch (error) {
-    db.exec("ROLLBACK");
-    throw error;
+  const insertComment = db.prepare(`
+    INSERT INTO comments_mirror (id, user_id, lobster_id, content, created_at)
+    VALUES (?, ?, ?, ?, ?)
+  `);
+  for (const comment of state.comments) {
+    insertComment.run(comment.id, comment.userId, comment.lobsterId, comment.content, comment.createdAt);
   }
 }
 
