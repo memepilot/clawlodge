@@ -8,7 +8,14 @@ import { enqueueIconGenerationJob, kickIconJobWorker } from "./icon-jobs";
 import { generateProceduralLobsterIcon, iconExtensionForContentType } from "./lobster-icon";
 import { parseAndValidateManifest } from "./manifest";
 import { allowRate } from "./rate-limit";
-import { mutateDb, readDb } from "./store";
+import {
+  mutateDb,
+  readDb,
+  readMirroredComments,
+  readMirroredLobsterDetail,
+  readMirroredLobsterSummaries,
+  readMirroredLobsterVersion,
+} from "./store";
 import { getStoredObject, putObject, resolvePublicAssetUrl } from "./storage";
 import { DbLobster, DbLobsterVersion, DbUser } from "./types";
 import {
@@ -516,25 +523,36 @@ export async function listLobsters(params?: { sort?: string; tag?: string; q?: s
     ? Math.floor(Number(params?.per_page))
     : 12;
   const perPage = Math.min(Math.max(perPageRaw, 1), 48);
-  const db = await readDb();
-  let items = db.lobsters.filter((item) => item.status === "active");
+  let items = await readMirroredLobsterSummaries();
   if (params?.tag?.trim()) {
     const tag = params.tag.trim().toLowerCase();
-    items = items.filter((item) => item.tags.includes(tag));
+    items = items.filter(({ lobster }) => lobster.tags.includes(tag));
   }
   if (params?.q?.trim()) {
     const q = params.q.trim().toLowerCase();
-    items = items.filter((item) => item.searchDocument.toLowerCase().includes(q));
+    items = items.filter(({ lobster }) => lobster.searchDocument.toLowerCase().includes(q));
   }
 
-  const summaries = items.map((item) => {
-    const owner = db.users.find((user) => user.id === item.ownerId)!;
-    const versions = db.lobsterVersions.filter((version) => version.lobsterId === item.id);
-    return {
-      item,
-      summary: attachLatestVersion(toSummary(item, owner), versions),
-    };
-  });
+  const summaries = items.map(({ lobster, owner, latestVersion, latestSourceRepo, latestIconUrl }) => ({
+    item: lobster,
+    summary: {
+      ...toSummary(lobster, {
+        id: lobster.ownerId,
+        handle: owner.handle,
+        displayName: owner.displayName,
+        avatarUrl: null,
+        bio: null,
+        email: null,
+        githubId: null,
+        favoriteSlugs: [],
+        createdAt: lobster.createdAt,
+        updatedAt: lobster.updatedAt,
+      }),
+      latest_version: latestVersion,
+      latest_source_repo: latestSourceRepo,
+      icon_url: resolvePublicAssetUrl(latestIconUrl) ?? latestIconUrl ?? null,
+    },
+  }));
 
   summaries.sort((a, b) => {
     if (params?.sort === "new") return +new Date(b.summary.created_at) - +new Date(a.summary.created_at);
@@ -566,31 +584,20 @@ export async function listLobsters(params?: { sort?: string; tag?: string; q?: s
 
 export async function getLobsterBySlug(slug: string): Promise<LobsterDetail> {
   void kickIconJobWorker();
-  const db = await readDb();
-  const lobster = db.lobsters.find((item) => item.slug === slug && item.status === "active");
-  if (!lobster) {
-    throw new ApiError(404, "Lobster not found");
-  }
-  const owner = db.users.find((user) => user.id === lobster.ownerId)!;
-  const versions = db.lobsterVersions
-    .filter((item) => item.lobsterId === lobster.id)
-    .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+  const detail = await readMirroredLobsterDetail(slug);
+  if (!detail) throw new ApiError(404, "Lobster not found");
 
   return {
-    ...attachLatestVersion(toSummary(lobster, owner), versions),
-    versions: versions.map((version) => toVersion(version, { includeWorkspaceContent: false })),
+    ...attachLatestVersion(toSummary(detail.lobster, detail.owner), detail.versions),
+    versions: detail.versions.map((version) => toVersion(version, { includeWorkspaceContent: false })),
   };
 }
 
 export async function getWorkspaceFilePreview(slug: string, version: string, filePath: string) {
-  const db = await readDb();
-  const lobster = db.lobsters.find((item) => item.slug === slug && item.status === "active");
-  if (!lobster) throw new ApiError(404, "Lobster not found");
-
-  const found = db.lobsterVersions.find((item) => item.lobsterId === lobster.id && item.version === version);
+  const found = await readMirroredLobsterVersion(slug, version);
   if (!found) throw new ApiError(404, "Version not found");
 
-  const file = (found.workspaceFiles ?? []).find((item) => item.path === filePath);
+  const file = (found.version.workspaceFiles ?? []).find((item) => item.path === filePath);
   if (!file) throw new ApiError(404, "Workspace file not found");
 
   return {
@@ -604,12 +611,9 @@ export async function getWorkspaceFilePreview(slug: string, version: string, fil
 }
 
 export async function getLobsterVersion(slug: string, version: string) {
-  const db = await readDb();
-  const lobster = db.lobsters.find((item) => item.slug === slug);
-  if (!lobster) throw new ApiError(404, "Lobster not found");
-  const found = db.lobsterVersions.find((item) => item.lobsterId === lobster.id && item.version === version);
+  const found = await readMirroredLobsterVersion(slug, version, true);
   if (!found) throw new ApiError(404, "Version not found");
-  return toVersion(found);
+  return toVersion(found.version);
 }
 
 export async function recordLobsterDownload(slug: string) {
@@ -952,23 +956,16 @@ export async function createVersion(
 }
 
 export async function getComments(slug: string): Promise<CommentItem[]> {
-  const db = await readDb();
-  const lobster = db.lobsters.find((item) => item.slug === slug);
-  if (!lobster) throw new ApiError(404, "Lobster not found");
-  return db.comments
-    .filter((item) => item.lobsterId === lobster.id)
-    .sort((a, b) => +new Date(a.createdAt) - +new Date(b.createdAt))
-    .map((comment) => {
-      const user = db.users.find((item) => item.id === comment.userId)!;
-      return {
-        id: comment.id,
-        lobster_slug: slug,
-        user_handle: user.handle,
-        user_display_name: user.displayName,
-        content: comment.content,
-        created_at: comment.createdAt,
-      };
-    });
+  const rows = await readMirroredComments(slug);
+  if (!rows) throw new ApiError(404, "Lobster not found");
+  return rows.map(({ comment, userHandle, userDisplayName }) => ({
+    id: comment.id,
+    lobster_slug: slug,
+    user_handle: userHandle,
+    user_display_name: userDisplayName,
+    content: comment.content,
+    created_at: comment.createdAt,
+  }));
 }
 
 export async function addComment(userId: number, slug: string, content: string) {

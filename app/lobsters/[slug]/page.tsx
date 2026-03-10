@@ -65,6 +65,8 @@ export default async function LobsterDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const commentsPromise = getComments(slug);
+  const localePromise = getRequestLocale();
   let lobster;
   try {
     lobster = await getLobsterBySlug(slug);
@@ -74,9 +76,8 @@ export default async function LobsterDetailPage({
     }
     throw error;
   }
-  const comments = await getComments(slug);
+  const [comments, locale] = await Promise.all([commentsPromise, localePromise]);
   const latest = lobster.versions[0];
-  const locale = await getRequestLocale();
   const t = getTranslations(locale);
   const displayName = getDetailDisplayLobsterName(lobster);
   const author = getDisplayAuthor(lobster, latest?.source_repo);
