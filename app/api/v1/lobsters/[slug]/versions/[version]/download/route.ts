@@ -16,6 +16,7 @@ export async function GET(
       headers: {
         "Content-Type": "application/zip",
         "Content-Disposition": `attachment; filename="${archive.filename}"`,
+        "Content-Length": String(archive.body.byteLength),
         "Cache-Control": "no-store",
       },
     });

@@ -160,7 +160,7 @@ export function LobsterActions({
                     {formatCommentTime(comment.created_at)}
                   </time>
                 </div>
-                <div className="muted">{comment.content}</div>
+                <div className="muted comment-content">{comment.content}</div>
               </article>
             ))
           ) : (

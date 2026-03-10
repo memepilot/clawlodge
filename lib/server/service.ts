@@ -953,7 +953,11 @@ export async function getComments(slug: string): Promise<CommentItem[]> {
 
 export async function addComment(userId: number, slug: string, content: string) {
   if (!(await allowRate(`comment:${userId}`, 20, 60))) throw new ApiError(429, "Too many comments");
-  const clean = sanitizeText(content);
+  const clean = sanitizeText(content)
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n");
   if (!clean) throw new ApiError(400, "Invalid payload");
 
   return mutateDb((db) => {

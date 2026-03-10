@@ -721,6 +721,11 @@ main {
   white-space: nowrap;
 }
 
+.comment-content {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .report-link {
   border: none;
   padding: 0;
