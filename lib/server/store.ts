@@ -5,8 +5,9 @@ import { DbState } from "./types";
 
 const dataDir = path.resolve(process.env.CLAWLODGE_DATA_DIR || path.join(process.cwd(), "data"));
 const dbPath = path.join(dataDir, "app-db.json");
+const dbTempPath = `${dbPath}.tmp`;
 
-let writeChain = Promise.resolve();
+let ioChain: Promise<unknown> = Promise.resolve();
 
 function emptyState(): DbState {
   return {
@@ -42,10 +43,7 @@ async function ensureDbFile() {
   }
 }
 
-export async function readDb(): Promise<DbState> {
-  await ensureDbFile();
-  const raw = await fs.readFile(dbPath, "utf8");
-  const parsed = JSON.parse(raw) as DbState;
+function normalizeState(parsed: DbState) {
   parsed.lobsters = parsed.lobsters.map((lobster) => ({
     ...lobster,
     recommendationScore: lobster.recommendationScore ?? null,
@@ -81,15 +79,42 @@ export async function readDb(): Promise<DbState> {
   return parsed;
 }
 
-export async function writeDb(next: DbState) {
+async function loadDb() {
   await ensureDbFile();
-  writeChain = writeChain.then(() => fs.writeFile(dbPath, JSON.stringify(next, null, 2), "utf8"));
-  await writeChain;
+  const raw = await fs.readFile(dbPath, "utf8");
+  return normalizeState(JSON.parse(raw) as DbState);
+}
+
+async function persistDb(next: DbState) {
+  await ensureDbFile();
+  const payload = JSON.stringify(next, null, 2);
+  await fs.writeFile(dbTempPath, payload, "utf8");
+  await fs.rename(dbTempPath, dbPath);
+}
+
+function enqueueExclusive<T>(task: () => Promise<T>): Promise<T> {
+  const run = ioChain.then(task, task);
+  ioChain = run.then(
+    () => undefined,
+    () => undefined,
+  );
+  return run;
+}
+
+export async function readDb(): Promise<DbState> {
+  await ioChain;
+  return loadDb();
+}
+
+export async function writeDb(next: DbState) {
+  await enqueueExclusive(() => persistDb(next));
 }
 
 export async function mutateDb<T>(fn: (state: DbState) => T | Promise<T>): Promise<T> {
-  const state = await readDb();
-  const result = await fn(state);
-  await writeDb(state);
-  return result;
+  return enqueueExclusive(async () => {
+    const state = await loadDb();
+    const result = await fn(state);
+    await persistDb(state);
+    return result;
+  });
 }
