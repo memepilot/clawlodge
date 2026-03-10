@@ -6,11 +6,13 @@ import { useEffect, useState } from "react";
 
 import Link from "next/link";
 
+import { useTranslations } from "@/components/locale-provider";
 import { apiOrigin, getMe, logout } from "@/lib/api";
 import { MeProfile } from "@/lib/types";
 
 export function HeaderAuth() {
   const pathname = usePathname();
+  const t = useTranslations();
 
   const [profile, setProfile] = useState<MeProfile | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -32,7 +34,7 @@ export function HeaderAuth() {
     const githubLoginUrl = `${apiOrigin}/api/v1/auth/github/start?next=${encodeURIComponent(nextPath)}`;
     return (
       <a className="btn" href={githubLoginUrl}>
-        Login with GitHub
+        {t.auth.loginWithGithub}
       </a>
     );
   }
@@ -65,7 +67,7 @@ export function HeaderAuth() {
         <span className="text-sm font-semibold">@{handle}</span>
       </Link>
       <button className="btn btn-quiet" type="button" onClick={onLogout}>
-        Logout
+        {t.auth.logout}
       </button>
     </div>
   );

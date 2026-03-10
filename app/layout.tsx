@@ -4,6 +4,9 @@ import Link from "next/link";
 import { Bricolage_Grotesque, IBM_Plex_Mono, Manrope } from "next/font/google";
 
 import { HeaderAuth } from "@/components/header-auth";
+import { LocaleProvider } from "@/components/locale-provider";
+import { LocaleSwitcher } from "@/components/locale-switcher";
+import { getRequestLocale, getTranslations } from "@/lib/i18n";
 import { absoluteUrl, siteConfig } from "@/lib/site";
 
 import "./globals.css";
@@ -40,51 +43,57 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getRequestLocale();
+  const t = getTranslations(locale);
+
   return (
-    <html lang="en" className={`${displayFont.variable} ${bodyFont.variable} ${monoFont.variable}`}>
+    <html lang={locale === "zh" ? "zh-CN" : "en"} className={`${displayFont.variable} ${bodyFont.variable} ${monoFont.variable}`}>
       <body style={{ fontFamily: "var(--font-body)" }}>
-        <header className="navbar">
-          <div className="navbar-inner">
-            <Link href="/" className="brand-name">
-              <span className="brand-mark" aria-hidden="true">
-                <Image src="/logo-mark.svg" alt="" width={36} height={36} className="brand-mark-image" priority />
-              </span>
-              <span className="brand-copy">ClawLodge</span>
-            </Link>
-            <nav className="nav-links">
-              <Link href="/publish">Publish</Link>
-              <Link href="/mcp">Plugin Upload</Link>
-              <Link href="/settings">Settings</Link>
-              <a href={siteConfig.githubUrl} target="_blank" rel="noreferrer">
-                GitHub
-              </a>
-            </nav>
-            <div className="nav-actions">
-              <HeaderAuth />
-            </div>
-          </div>
-        </header>
-        <main>{children}</main>
-        <footer className="shell page-panel mt-8 mb-8 p-5 md:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-            <div className="muted">ClawLodge is the OpenClaw Agent Zoo for sharing and discovering real setups.</div>
-            <div className="flex flex-wrap gap-4">
-              <Link className="inline-link" href="/about">
-                About
+        <LocaleProvider locale={locale} messages={t}>
+          <header className="navbar">
+            <div className="navbar-inner">
+              <Link href="/" className="brand-name">
+                <span className="brand-mark" aria-hidden="true">
+                  <Image src="/logo-mark.svg" alt="" width={36} height={36} className="brand-mark-image" priority />
+                </span>
+                <span className="brand-copy">{t.brand.name}</span>
               </Link>
-              <Link className="inline-link" href="/privacy">
-                Privacy
-              </Link>
-              <a className="inline-link" href={siteConfig.githubUrl} target="_blank" rel="noreferrer">
-                GitHub
-              </a>
-              <a className="inline-link" href={siteConfig.npmCliUrl} target="_blank" rel="noreferrer">
-                Install CLI
-              </a>
+              <nav className="nav-links">
+                <Link href="/publish">{t.nav.publish}</Link>
+                <Link href="/mcp">{t.nav.pluginUpload}</Link>
+                <Link href="/settings">{t.nav.settings}</Link>
+                <a href={siteConfig.githubUrl} target="_blank" rel="noreferrer">
+                  {t.nav.github}
+                </a>
+              </nav>
+              <div className="nav-actions">
+                <LocaleSwitcher />
+                <HeaderAuth />
+              </div>
             </div>
-          </div>
-        </footer>
+          </header>
+          <main>{children}</main>
+          <footer className="shell page-panel mt-8 mb-8 p-5 md:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+              <div className="muted">{t.brand.footer}</div>
+              <div className="flex flex-wrap gap-4">
+                <Link className="inline-link" href="/about">
+                  {t.nav.about}
+                </Link>
+                <Link className="inline-link" href="/privacy">
+                  {t.nav.privacy}
+                </Link>
+                <a className="inline-link" href={siteConfig.githubUrl} target="_blank" rel="noreferrer">
+                  {t.nav.github}
+                </a>
+                <a className="inline-link" href={siteConfig.npmCliUrl} target="_blank" rel="noreferrer">
+                  {t.nav.installCli}
+                </a>
+              </div>
+            </div>
+          </footer>
+        </LocaleProvider>
       </body>
     </html>
   );

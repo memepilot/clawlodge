@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
+import { useTranslations } from "@/components/locale-provider";
 import { apiOrigin, getMe, getSeeds, rotateToken, saveSeed, updateHireProfile } from "@/lib/api";
 import { MeProfile, SeedRecord } from "@/lib/types";
 
 export default function SettingsPage() {
+  const t = useTranslations();
   const [profile, setProfile] = useState<MeProfile | null>(null);
   const [seeds, setSeeds] = useState<SeedRecord[]>([]);
   const [token, setToken] = useState("");
@@ -15,9 +17,9 @@ export default function SettingsPage() {
   useEffect(() => {
     getMe()
       .then(setProfile)
-      .catch((error) => setMessage(error instanceof Error ? error.message : "Failed to fetch profile"));
+      .catch((error) => setMessage(error instanceof Error ? error.message : t.settings.failedToFetchProfile));
     getSeeds().then(setSeeds).catch(() => {});
-  }, []);
+  }, [t.settings.failedToFetchProfile]);
 
   const githubLoginUrl = useMemo(() => `${apiOrigin}/api/v1/auth/github/start?next=${encodeURIComponent("/settings")}`, []);
 
@@ -29,7 +31,7 @@ export default function SettingsPage() {
       const updated = await getMe();
       setProfile(updated);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Rotate token failed");
+      setMessage(error instanceof Error ? error.message : t.settings.rotateFailed);
     }
   }
 
@@ -45,10 +47,10 @@ export default function SettingsPage() {
         timezone: String(fd.get("timezone") || "").trim() || undefined,
         response_sla_hours: Number(fd.get("response_sla_hours") || 0) || undefined,
       });
-      setMessage("Saved hire profile");
+      setMessage(t.settings.savedHireProfile);
       setProfile(await getMe());
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Save failed");
+      setMessage(error instanceof Error ? error.message : t.settings.saveFailed);
     }
   }
 
@@ -66,10 +68,10 @@ export default function SettingsPage() {
         curation_note: String(fd.get("curation_note") || "").trim() || undefined,
         seeded: true,
       });
-      setMessage("Saved seed metadata");
+      setMessage(t.settings.savedSeedMetadata);
       setSeeds(await getSeeds());
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Seed save failed");
+      setMessage(error instanceof Error ? error.message : t.settings.seedSaveFailed);
     }
   }
 
@@ -77,35 +79,35 @@ export default function SettingsPage() {
     <div className="page-shell stack-lg">
       <section className="shell page-panel p-5 md:p-6">
         <h1 className="page-title">
-          Settings
+          {t.settings.title}
         </h1>
-        <p className="page-subtitle">Manage login, MCP token, and hire profile.</p>
+        <p className="page-subtitle">{t.settings.subtitle}</p>
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <Link className="btn btn-primary" href={githubLoginUrl}>
-            {profile ? "Reconnect GitHub" : "Connect GitHub"}
+            {profile ? t.auth.reconnectGithub : t.auth.connectGithub}
           </Link>
-          {profile ? <span className="text-sm muted">Linked as @{profile.user.handle}</span> : null}
+          {profile ? <span className="text-sm muted">{t.settings.linkedAs} @{profile.user.handle}</span> : null}
         </div>
       </section>
 
       <section className="shell page-panel p-5 md:p-6">
-        <h2 className="panel-title">MCP Token</h2>
+        <h2 className="panel-title">{t.settings.mcpToken}</h2>
         <p className="page-subtitle">
-          Active prefix: {profile?.active_token_prefix ?? "none"} / last used: {profile?.active_token_last_used_at ?? "-"}
+          {t.settings.activePrefix}: {profile?.active_token_prefix ?? t.settings.none} / {t.settings.lastUsed}: {profile?.active_token_last_used_at ?? "-"}
         </p>
         <button className="btn mt-3" onClick={onRotate}>
-          Rotate Token
+          {t.settings.rotateToken}
         </button>
         {token ? (
           <div className="callout mt-3 text-sm">
-            <strong>Copy now:</strong> {token}
+            <strong>{t.settings.copyNow}</strong> {token}
           </div>
         ) : null}
       </section>
 
       <section className="shell page-panel p-5 md:p-6">
-        <h2 className="panel-title">Hire Profile</h2>
+        <h2 className="panel-title">{t.settings.hireProfile}</h2>
         <form className="form-grid mt-3" onSubmit={onSaveHire}>
           <select className="select" name="status" defaultValue={profile?.hire_profile?.status ?? "closed"}>
             <option value="closed">closed</option>
@@ -116,20 +118,20 @@ export default function SettingsPage() {
           <input className="input" name="timezone" placeholder="timezone" defaultValue={profile?.hire_profile?.timezone ?? ""} />
           <input className="input" type="number" min={1} max={720} name="response_sla_hours" placeholder="response SLA (hours)" defaultValue={profile?.hire_profile?.response_sla_hours ?? ""} />
           <button className="btn btn-primary" type="submit">
-            Save
+            {t.settings.save}
           </button>
         </form>
       </section>
 
       <section className="shell page-panel p-5 md:p-6">
-        <h2 className="panel-title">Seed Content</h2>
-        <p className="page-subtitle">Curate official, demo, and imported starter content for cold start.</p>
+        <h2 className="panel-title">{t.settings.seedContent}</h2>
+        <p className="page-subtitle">{t.settings.seedHint}</p>
         <div className="seed-list mt-4">
           {seeds.map((seed) => (
             <div key={seed.slug} className="subcard">
-              <div className="font-medium">{seed.slug}</div>
-              <div className="muted text-sm">
-                {seed.source_type} {seed.verified ? "· verified" : ""}
+                <div className="font-medium">{seed.slug}</div>
+                <div className="muted text-sm">
+                {seed.source_type} {seed.verified ? `· ${t.settings.verified}` : ""}
               </div>
             </div>
           ))}
@@ -147,10 +149,10 @@ export default function SettingsPage() {
           <textarea className="textarea min-h-24" name="curation_note" placeholder="curation note" />
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" name="verified" />
-            Verified
+            {t.settings.verified}
           </label>
           <button className="btn btn-primary" type="submit">
-            Save Seed Metadata
+            {t.settings.saveSeedMetadata}
           </button>
         </form>
       </section>

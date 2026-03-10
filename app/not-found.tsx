@@ -1,20 +1,24 @@
 import Link from "next/link";
 
-export default function NotFound() {
+import { getRequestLocale, getTranslations } from "@/lib/i18n";
+
+export default async function NotFound() {
+  const locale = await getRequestLocale();
+  const t = getTranslations(locale);
   return (
     <div className="page-shell">
       <section className="shell page-panel p-6 md:p-8">
-        <p className="field-label">404</p>
-        <h1 className="page-title mt-3">Page not found</h1>
+        <p className="field-label">{t.notFound.label}</p>
+        <h1 className="page-title mt-3">{t.notFound.title}</h1>
         <p className="page-subtitle mt-3">
-          The link may be stale, the setup may have moved, or the page was never published here.
+          {t.notFound.body}
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link className="btn btn-primary" href="/">
-            Back to home
+            {t.notFound.home}
           </Link>
           <Link className="btn" href="/publish">
-            Publish your setup
+            {t.notFound.publish}
           </Link>
         </div>
       </section>

@@ -6,6 +6,7 @@ import { LobsterActions } from "@/components/lobster-actions";
 import { getLobsterAvatarSrc, LobsterAvatar } from "@/components/lobster-avatar";
 import { MarkdownContent } from "@/components/markdown-content";
 import { WorkspaceBrowser } from "@/components/workspace-browser";
+import { getRequestLocale, getTranslations } from "@/lib/i18n";
 import { getDetailDisplayLobsterName, getDisplayAuthor } from "@/lib/lobster-display";
 import { ApiError } from "@/lib/server/errors";
 import { getComments, getLobsterBySlug } from "@/lib/server/service";
@@ -74,6 +75,8 @@ export default async function LobsterDetailPage({
   }
   const comments = await getComments(slug);
   const latest = lobster.versions[0];
+  const locale = await getRequestLocale();
+  const t = getTranslations(locale);
   const displayName = getDetailDisplayLobsterName(lobster);
   const author = getDisplayAuthor(lobster, latest?.source_repo);
 
@@ -82,8 +85,8 @@ export default async function LobsterDetailPage({
       <section className="shell page-panel detail-hero">
         <div className="detail-hero-main">
           <div className="detail-kickers">
-            {lobster.source_type ? <span className="tag tag-source">{lobster.source_type === "community" ? "community upload" : lobster.source_type}</span> : null}
-            {lobster.verified ? <span className="tag tag-verified">verified</span> : null}
+            {lobster.source_type ? <span className="tag tag-source">{lobster.source_type === "community" ? t.detail.communityUpload : lobster.source_type}</span> : null}
+            {lobster.verified ? <span className="tag tag-verified">{t.detail.verified}</span> : null}
           </div>
           <div className="detail-head">
             <LobsterAvatar iconUrl={lobster.icon_url} alt="" size={112} className="detail-lobster-avatar" />
@@ -92,7 +95,7 @@ export default async function LobsterDetailPage({
                 {displayName}
               </h1>
               <p className="page-subtitle">
-                by{" "}
+                {t.detail.by}{" "}
                 {author.href ? (
                   <Link className="inline-link" href={author.href}>
                     {author.label}
@@ -113,31 +116,31 @@ export default async function LobsterDetailPage({
             ))}
           </div>
           <div className="detail-jump-links">
-            <a className="detail-jump-link" href="#readme">README</a>
-            <a className="detail-jump-link" href="#workspace">Workspace</a>
-            {lobster.source_url ? <a className="detail-jump-link" href="#source-repository">Source</a> : null}
-            <a className="detail-jump-link" href="#community">Community</a>
+            <a className="detail-jump-link" href="#readme">{t.detail.readme}</a>
+            <a className="detail-jump-link" href="#workspace">{t.detail.workspace}</a>
+            {lobster.source_url ? <a className="detail-jump-link" href="#source-repository">{t.detail.source}</a> : null}
+            <a className="detail-jump-link" href="#community">{t.detail.community}</a>
           </div>
         </div>
         <aside className="detail-hero-aside">
           <div className="detail-aside-card">
-            <span className="detail-aside-label">Latest release</span>
-            <strong className="detail-aside-value mono">{latest ? `v${latest.version}` : "No version"}</strong>
+            <span className="detail-aside-label">{t.detail.latestRelease}</span>
+            <strong className="detail-aside-value mono">{latest ? `v${latest.version}` : t.detail.noVersion}</strong>
             <div className="detail-aside-grid">
               <div>
-                <span className="detail-aside-label">License</span>
+                <span className="detail-aside-label">{t.detail.license}</span>
                 <strong className="detail-aside-meta">{lobster.license}</strong>
               </div>
               <div>
-                <span className="detail-aside-label">Files</span>
+                <span className="detail-aside-label">{t.detail.files}</span>
                 <strong className="detail-aside-meta">{latest?.workspace_files?.length ?? 0}</strong>
               </div>
               <div>
-                <span className="detail-aside-label">Downloads</span>
+                <span className="detail-aside-label">{t.detail.downloads}</span>
                 <strong className="detail-aside-meta">{lobster.download_count}</strong>
               </div>
               <div>
-                <span className="detail-aside-label">Favorites</span>
+                <span className="detail-aside-label">{t.detail.favorites}</span>
                 <strong className="detail-aside-meta">{lobster.favorite_count}</strong>
               </div>
             </div>
@@ -147,12 +150,12 @@ export default async function LobsterDetailPage({
                   className="btn btn-primary"
                   href={`/api/v1/lobsters/${encodeURIComponent(slug)}/versions/${encodeURIComponent(latest.version)}/download`}
                 >
-                  Download .zip
+                  {t.detail.downloadZip}
                 </a>
               ) : null}
               {lobster.source_url ? (
                 <a className="btn" href={lobster.source_url} target="_blank" rel="noreferrer">
-                  View on GitHub
+                  {t.detail.viewOnGithub}
                 </a>
               ) : null}
             </div>
@@ -162,20 +165,20 @@ export default async function LobsterDetailPage({
 
       <section id="readme" className="shell page-panel p-5 md:p-6">
         <div className="detail-section-head flex flex-wrap items-center justify-between gap-3">
-          <h2 className="panel-title">README</h2>
+          <h2 className="panel-title">{t.detail.readme}</h2>
           {latest ? (
             <a
               className="btn"
               href={`/api/v1/lobsters/${encodeURIComponent(slug)}/versions/${encodeURIComponent(latest.version)}/download`}
             >
-              Download workspace .zip
+              {t.detail.downloadWorkspaceZip}
             </a>
           ) : null}
         </div>
         {latest ? (
           <MarkdownContent value={latest.readme_text} />
         ) : (
-          <p className="muted mt-2">No version published yet.</p>
+          <p className="muted mt-2">{t.detail.noVersionYet}</p>
         )}
       </section>
 
@@ -195,9 +198,9 @@ export default async function LobsterDetailPage({
       {lobster.source_url ? (
         <section id="source-repository" className="shell page-panel p-5 md:p-6">
           <div className="stack-sm source-card">
-            <h2 className="panel-title">Source Repository</h2>
+            <h2 className="panel-title">{t.detail.sourceRepo}</h2>
             <p className="muted text-sm">
-              Original GitHub repository for this workspace.
+              {t.detail.sourceRepoHint}
             </p>
             <div className="source-card-link">
               <a

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 
+import { useLocale, useTranslations } from "@/components/locale-provider";
 import type { LobsterVersion } from "@/lib/types";
 
 type WorkspaceFile = NonNullable<LobsterVersion["workspace_files"]>[number];
@@ -47,10 +48,10 @@ function formatWorkspaceSize(size: number) {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function formatPublishedAt(value: string) {
+function formatPublishedAt(value: string, locale: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("en-CA", {
+  return new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en-CA", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -83,6 +84,8 @@ export function WorkspaceBrowser({
   blockedFilesCount?: number;
   downloadHref: string;
 }) {
+  const locale = useLocale();
+  const t = useTranslations();
   const [currentDir, setCurrentDir] = useState("");
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
 
@@ -97,18 +100,18 @@ export function WorkspaceBrowser({
     <>
       <div className="workspace-browser-head">
         <div className="workspace-browser-copy">
-          <h2 className="panel-title">Workspace</h2>
-          <p className="page-subtitle mt-2">Current published snapshot. New publishes overwrite this view.</p>
+          <h2 className="panel-title">{t.workspace.title}</h2>
+          <p className="page-subtitle mt-2">{t.workspace.snapshotHint}</p>
         </div>
         <div className="workspace-browser-aside">
           <a className="btn" href={downloadHref}>
-            Download .zip
+            {t.workspace.downloadZip}
           </a>
           <div className="workspace-browser-meta">
-            <span className="workspace-meta-pill">{files.length} files</span>
-            <span className="workspace-meta-pill">Updated {formatPublishedAt(publishedAt)} UTC</span>
-            {maskedSecretsCount ? <span className="workspace-meta-pill">{maskedSecretsCount} redactions</span> : null}
-            {blockedFilesCount ? <span className="workspace-meta-pill">{blockedFilesCount} blocked</span> : null}
+            <span className="workspace-meta-pill">{files.length} {t.detail.files}</span>
+            <span className="workspace-meta-pill">{t.workspace.updated} {formatPublishedAt(publishedAt, locale)} UTC</span>
+            {maskedSecretsCount ? <span className="workspace-meta-pill">{maskedSecretsCount} {t.workspace.redactions}</span> : null}
+            {blockedFilesCount ? <span className="workspace-meta-pill">{blockedFilesCount} {t.workspace.blocked}</span> : null}
           </div>
         </div>
       </div>
@@ -117,7 +120,7 @@ export function WorkspaceBrowser({
         <div className="workspace-browser-toolbar">
           <div className="workspace-breadcrumbs">
             <button type="button" className="workspace-crumb workspace-crumb-button" onClick={() => setCurrentDir("")}>
-              root
+              {t.workspace.root}
             </button>
             {breadcrumbParts.map((part, index) => {
               const joined = breadcrumbParts.slice(0, index + 1).join("/");
@@ -133,7 +136,7 @@ export function WorkspaceBrowser({
               );
             })}
           </div>
-          {publishClient ? <span className="workspace-toolbar-note">Published via {publishClient}</span> : null}
+          {publishClient ? <span className="workspace-toolbar-note">{t.workspace.publishedVia} {publishClient}</span> : null}
         </div>
 
         <div className="workspace-table">
@@ -143,11 +146,11 @@ export function WorkspaceBrowser({
               className="workspace-row workspace-row-back"
               onClick={() => setCurrentDir(breadcrumbParts.slice(0, -1).join("/"))}
             >
-              <span className="workspace-namecell">
-                <span className="workspace-icon">..</span>
-                <span>Parent directory</span>
-              </span>
-              <span className="workspace-row-meta muted text-xs">Up</span>
+                <span className="workspace-namecell">
+                  <span className="workspace-icon">..</span>
+                  <span>{t.workspace.parentDirectory}</span>
+                </span>
+              <span className="workspace-row-meta muted text-xs">{t.workspace.up}</span>
             </button>
           ) : null}
 
@@ -163,7 +166,7 @@ export function WorkspaceBrowser({
                   <span className="workspace-icon workspace-icon-dir" />
                   <span>{entry.name}</span>
                 </span>
-                <span className="workspace-row-meta muted text-xs">{entry.count} items</span>
+                <span className="workspace-row-meta muted text-xs">{entry.count} {t.workspace.items}</span>
               </button>
             ) : (
               <button
@@ -184,7 +187,7 @@ export function WorkspaceBrowser({
 
         <div id="workspace-preview" className="workspace-preview">
           <div className="workspace-preview-head">
-            <strong className="mono workspace-path">{previewFile?.path ?? "No preview selected"}</strong>
+            <strong className="mono workspace-path">{previewFile?.path ?? t.workspace.noPreview}</strong>
             {previewFile ? (
               <span className="muted text-xs">
                 {previewFile.kind} · {formatWorkspaceSize(previewFile.size)}
@@ -195,10 +198,10 @@ export function WorkspaceBrowser({
             previewFile.kind === "text" ? (
               <pre className="workspace-excerpt">{previewFile.content_text ?? previewFile.content_excerpt ?? ""}</pre>
             ) : (
-              <p className="muted text-sm">Binary file preview omitted.</p>
+              <p className="muted text-sm">{t.workspace.binaryOmitted}</p>
             )
           ) : (
-            <p className="muted text-sm">Select a file from the tree to preview its shared content.</p>
+            <p className="muted text-sm">{t.workspace.selectFile}</p>
           )}
         </div>
       </div>

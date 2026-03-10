@@ -3,6 +3,7 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { useTranslations } from "@/components/locale-provider";
 import { apiOrigin, createLobster, createVersion, getMe } from "@/lib/api";
 
 const TEXT_FILE_EXTENSIONS = [
@@ -111,6 +112,7 @@ async function toWorkspaceDraft(file: File): Promise<WorkspaceDraftFile> {
 }
 
 export default function PublishPage() {
+  const t = useTranslations();
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -213,8 +215,8 @@ export default function PublishPage() {
     return (
       <div className="page-shell">
         <section className="shell page-panel publish-wrap">
-          <h1 className="page-title">Publish your setup</h1>
-          <p className="page-subtitle">Checking your login status...</p>
+          <h1 className="page-title">{t.publish.shortTitle}</h1>
+          <p className="page-subtitle">{t.auth.checkingLogin}</p>
         </section>
       </div>
     );
@@ -224,11 +226,11 @@ export default function PublishPage() {
     return (
       <div className="page-shell">
         <section className="shell page-panel publish-wrap">
-          <h1 className="page-title">Publish your setup</h1>
-          <p className="page-subtitle">Login first, then we will bring you straight back here.</p>
+          <h1 className="page-title">{t.publish.shortTitle}</h1>
+          <p className="page-subtitle">{t.publish.loginHint}</p>
           <div className="hero-actions mt-4">
             <a className="btn btn-primary" href={githubLoginUrl}>
-              Login with GitHub
+              {t.auth.loginWithGithub}
             </a>
           </div>
         </section>
@@ -240,22 +242,20 @@ export default function PublishPage() {
     <div className="page-shell">
       <section className="publish-hero">
         <div>
-          <h1 className="page-title">Publish your OpenClaw setup</h1>
-          <p className="page-subtitle publish-lede">
-            Drop in the essentials. We will turn them into a clean public setup page with a generated first release.
-          </p>
+          <h1 className="page-title">{t.publish.title}</h1>
+          <p className="page-subtitle publish-lede">{t.publish.lede}</p>
         </div>
         <div className="publish-mini-note">
-          <span className="publish-mini-kicker">Tiny checklist</span>
-          <span>Name gets you live. README can be generated from your uploaded workspace files.</span>
+          <span className="publish-mini-kicker">{t.publish.checklistTitle}</span>
+          <span>{t.publish.checklistBody}</span>
         </div>
       </section>
 
       <form className="publish-layout" onSubmit={onSubmit}>
         <section className="shell page-panel publish-main">
           <div className="publish-panel-head">
-            <h2 className="panel-title">Core info</h2>
-            <p className="page-subtitle">Keep it light. Start with the setup basics and refine it later.</p>
+            <h2 className="panel-title">{t.publish.coreInfo}</h2>
+            <p className="page-subtitle">{t.publish.coreInfoHint}</p>
           </div>
 
           <div className="form-grid">

@@ -1,40 +1,43 @@
 import Link from "next/link";
 
 import { LobsterAvatar } from "@/components/lobster-avatar";
+import { Locale, getTranslations } from "@/lib/i18n";
 import { getDisplayAuthor, getDisplayLobsterName, getDisplaySummary } from "@/lib/lobster-display";
 import { LobsterSummary } from "@/lib/types";
 
-function sourceTypeLabel(value: LobsterSummary["source_type"]) {
+function sourceTypeLabel(value: LobsterSummary["source_type"], locale: Locale) {
+  const t = getTranslations(locale);
   switch (value) {
     case "official":
-      return "official";
+      return t.card.official;
     case "curated":
-      return "curated";
+      return t.card.curated;
     case "community":
-      return "community upload";
+      return t.card.communityUpload;
     case "demo":
-      return "demo";
+      return t.card.demo;
     default:
       return value;
   }
 }
 
-export function LobsterCard({ item }: { item: LobsterSummary }) {
+export function LobsterCard({ item, locale = "en" }: { item: LobsterSummary; locale?: Locale }) {
+  const t = getTranslations(locale);
   const displayName = getDisplayLobsterName(item, item.latest_source_repo);
   const author = getDisplayAuthor(item, item.latest_source_repo);
   const summary = getDisplaySummary(item, item.latest_source_repo);
   return (
     <article className="card lobster-card">
       {item.recommended ? (
-        <div className="lobster-card-ribbon" aria-label="Recommended">
-          <span>Recommended</span>
+        <div className="lobster-card-ribbon" aria-label={t.card.recommended}>
+          <span>{t.card.recommended}</span>
         </div>
       ) : null}
       <div className="flex items-start justify-between gap-3">
         <div className="lobster-card-main">
           <div className="lobster-card-meta">
-            {item.source_type ? <span className={`tag tag-source`}>{sourceTypeLabel(item.source_type)}</span> : null}
-            {item.verified ? <span className="tag tag-verified">verified</span> : null}
+            {item.source_type ? <span className={`tag tag-source`}>{sourceTypeLabel(item.source_type, locale)}</span> : null}
+            {item.verified ? <span className="tag tag-verified">{t.detail.verified}</span> : null}
           </div>
           <div className="lobster-card-header">
             <LobsterAvatar iconUrl={item.icon_url} alt="" size={56} className="lobster-card-avatar" />
@@ -43,7 +46,7 @@ export function LobsterCard({ item }: { item: LobsterSummary }) {
                 <Link href={`/lobsters/${item.slug}`}>{displayName}</Link>
               </h3>
               <p className="muted text-sm">
-                by{" "}
+                {t.card.by}{" "}
                 {author.href ? (
                   <Link className="inline-link" href={author.href}>
                     {author.label}
@@ -57,7 +60,7 @@ export function LobsterCard({ item }: { item: LobsterSummary }) {
           </div>
         </div>
         <div className="lobster-card-side">
-          <div className="mono">{item.latest_version ? `v${item.latest_version}` : "no version"}</div>
+          <div className="mono">{item.latest_version ? `v${item.latest_version}` : t.card.noVersion}</div>
           <div>{item.license}</div>
         </div>
       </div>

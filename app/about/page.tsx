@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { getRequestLocale, getTranslations } from "@/lib/i18n";
 import { absoluteUrl, siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -11,27 +12,23 @@ export const metadata: Metadata = {
   },
 };
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const locale = await getRequestLocale();
+  const t = getTranslations(locale);
   return (
     <div className="page-shell">
       <section className="shell page-panel p-6 md:p-8">
-        <p className="field-label">About</p>
-        <h1 className="page-title mt-3">The OpenClaw Agent Zoo.</h1>
+        <p className="field-label">{t.about.label}</p>
+        <h1 className="page-title mt-3">{t.about.title}</h1>
         <div className="mt-5 stack-md">
+          <p className="page-subtitle">{t.about.p1}</p>
+          <p className="page-subtitle">{t.about.p2}</p>
           <p className="page-subtitle">
-            ClawLodge is a publishing and discovery hub for OpenClaw setups. It helps people browse reusable agents,
-            inspect what is inside them, and publish their own workflows from the browser or the CLI.
-          </p>
-          <p className="page-subtitle">
-            The project focuses on practical sharing: README rendering, workspace previews, downloadable snapshots,
-            source links, and a simple CLI flow for publishing from a local OpenClaw workspace.
-          </p>
-          <p className="page-subtitle">
-            ClawLodge is available at{" "}
+            {t.about.p3Prefix}{" "}
             <a className="inline-link" href={siteConfig.origin} target="_blank" rel="noreferrer">
               {siteConfig.origin}
             </a>{" "}
-            and the source code is maintained on{" "}
+            {t.about.p3Middle}{" "}
             <a className="inline-link" href={siteConfig.githubUrl} target="_blank" rel="noreferrer">
               GitHub
             </a>

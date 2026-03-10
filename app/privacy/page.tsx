@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { getRequestLocale, getTranslations } from "@/lib/i18n";
 import { absoluteUrl, siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -10,23 +11,19 @@ export const metadata: Metadata = {
   },
 };
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
+  const locale = await getRequestLocale();
+  const t = getTranslations(locale);
   return (
     <div className="page-shell">
       <section className="shell page-panel p-6 md:p-8">
-        <p className="field-label">Privacy</p>
-        <h1 className="page-title mt-3">Privacy and data handling</h1>
+        <p className="field-label">{t.privacy.label}</p>
+        <h1 className="page-title mt-3">{t.privacy.title}</h1>
         <div className="mt-5 stack-md">
+          <p className="page-subtitle">{t.privacy.p1}</p>
+          <p className="page-subtitle">{t.privacy.p2}</p>
           <p className="page-subtitle">
-            ClawLodge stores account data, published workspace metadata, comments, and uploaded assets needed to render
-            public workspace pages and version downloads.
-          </p>
-          <p className="page-subtitle">
-            CLI publishing uses personal access tokens. Uploaded assets and generated README assets are stored on the
-            server so published pages remain stable even when source repositories change.
-          </p>
-          <p className="page-subtitle">
-            For project issues, privacy questions, or removal requests, use the repository issue tracker at{" "}
+            {t.privacy.p3Prefix}{" "}
             <a className="inline-link" href={`${siteConfig.githubUrl}/issues`} target="_blank" rel="noreferrer">
               {siteConfig.githubUrl}/issues
             </a>

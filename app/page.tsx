@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { LobsterCard } from "@/components/lobster-card";
 import { apiOrigin } from "@/lib/api";
+import { getRequestLocale, getTranslations } from "@/lib/i18n";
 import { listLobsters } from "@/lib/server/service";
 import { absoluteUrl, siteConfig } from "@/lib/site";
 
@@ -17,6 +18,8 @@ export default async function Home({
   const sort = params.sort === "new" ? "new" : "hot";
   const page = Number.isFinite(Number(params.page)) ? Math.max(1, Math.floor(Number(params.page))) : 1;
   const result = await listLobsters({ sort, tag: params.tag, q: params.q, page, per_page: 12 });
+  const locale = await getRequestLocale();
+  const t = getTranslations(locale);
   const githubLoginUrl = `${apiOrigin}/api/v1/auth/github/start?next=/publish`;
   const isTagResults = Boolean(params.tag);
   const buildPageHref = (nextPage: number) => {
@@ -68,16 +71,16 @@ export default async function Home({
                   className="search-input"
                   name="q"
                   defaultValue={params.q ?? ""}
-                  placeholder="Search name, tags, README..."
+                  placeholder={t.home.searchPlaceholder}
                 />
               </div>
               <select className="select" defaultValue={sort} name="sort">
                 <option value="hot">Hot</option>
                 <option value="new">New</option>
               </select>
-              <input className="input" name="tag" defaultValue={params.tag ?? ""} placeholder="Tag filter" />
+              <input className="input" name="tag" defaultValue={params.tag ?? ""} placeholder={t.home.tagPlaceholder} />
               <button className="btn btn-primary" type="submit">
-                Search
+                {t.home.searchButton}
               </button>
             </form>
           </div>
@@ -86,39 +89,37 @@ export default async function Home({
         <section className="hero">
           <div className="hero-inner">
             <div className="hero-copy">
-              <span className="hero-badge">The OpenClaw Agent Zoo</span>
-            <h1 className="hero-title">Discover and share powerful OpenClaw setups.</h1>
-            <p className="hero-subtitle">
-                Browse real agent setups, inspect what is inside them, and publish your own prompts, skills, workflows, and integrations.
-            </p>
+              <span className="hero-badge">{t.home.badge}</span>
+            <h1 className="hero-title">{t.home.title}</h1>
+            <p className="hero-subtitle">{t.home.subtitle}</p>
               <div className="hero-actions">
                 <Link className="btn btn-primary" href="/publish">
-                  Publish your setup
+                  {t.home.publishCta}
                 </Link>
                 <a className="btn" href={siteConfig.npmCliUrl} target="_blank" rel="noreferrer">
-                  Install CLI
+                  {t.nav.installCli}
                 </a>
                 <a className="btn" href={githubLoginUrl}>
-                  Login with GitHub
+                  {t.auth.loginWithGithub}
                 </a>
               </div>
             </div>
 
             <div className="hero-card hero-search-card">
-              <div className="stat">Search published setups by name, tag, and README.</div>
+              <div className="stat">{t.home.searchStat}</div>
               <form className="search-stack" method="get">
                 <div className="search-bar">
                   <span className="mono">/</span>
-                  <input className="search-input" name="q" defaultValue={params.q ?? ""} placeholder="Search name, tags, README..." />
+                  <input className="search-input" name="q" defaultValue={params.q ?? ""} placeholder={t.home.searchPlaceholder} />
                 </div>
                 <div className="filters-row">
                   <select className="select" defaultValue={sort} name="sort">
                     <option value="hot">Hot</option>
                     <option value="new">New</option>
                   </select>
-                  <input className="input" name="tag" defaultValue={params.tag ?? ""} placeholder="Tag filter" />
+                  <input className="input" name="tag" defaultValue={params.tag ?? ""} placeholder={t.home.tagPlaceholder} />
                   <button className="btn btn-primary" type="submit">
-                    Search
+                    {t.home.searchButton}
                   </button>
                 </div>
               </form>
@@ -129,45 +130,45 @@ export default async function Home({
 
       <section className={`section ${isTagResults ? "section-tight section-topless" : ""}`}>
         <h2 className="section-title">
-          {params.tag ? `Results for #${params.tag}` : "Seeded examples and community uploads"}
+          {params.tag ? `${t.home.tagResultsPrefix}${params.tag}` : t.home.seededTitle}
         </h2>
         <p className="section-subtitle">
           {params.tag
-            ? "Related lobsters grouped by the selected hashtag."
-            : "A gallery of community setups, starter agents, and reusable OpenClaw workflows."}
+            ? t.home.tagResultsSubtitle
+            : t.home.seededSubtitle}
         </p>
         <div className="grid">
           {result.items.length ? (
-            result.items.map((item) => <LobsterCard key={item.slug} item={item} />)
+            result.items.map((item) => <LobsterCard key={item.slug} item={item} locale={locale} />)
           ) : (
-            <div className="card muted">No lobster found.</div>
+            <div className="card muted">{t.home.noResults}</div>
           )}
         </div>
         {result.total_pages > 1 ? (
           <div className="pagination-bar">
             <p className="pagination-summary muted">
-              Showing {(result.page - 1) * result.per_page + 1}-{Math.min(result.page * result.per_page, result.total)} of {result.total}
+              {t.home.showing} {(result.page - 1) * result.per_page + 1}-{Math.min(result.page * result.per_page, result.total)} / {result.total}
             </p>
             <div className="pagination-actions">
               {result.has_prev ? (
                 <Link className="btn" href={buildPageHref(result.page - 1)}>
-                  Previous
+                  {t.home.previous}
                 </Link>
               ) : (
                 <span className="btn pagination-disabled" aria-disabled="true">
-                  Previous
+                  {t.home.previous}
                 </span>
               )}
               <span className="pagination-current">
-                Page {result.page} / {result.total_pages}
+                {t.home.page} {result.page} / {result.total_pages}
               </span>
               {result.has_next ? (
                 <Link className="btn btn-primary" href={buildPageHref(result.page + 1)}>
-                  Next
+                  {t.home.next}
                 </Link>
               ) : (
                 <span className="btn btn-primary pagination-disabled" aria-disabled="true">
-                  Next
+                  {t.home.next}
                 </span>
               )}
             </div>
