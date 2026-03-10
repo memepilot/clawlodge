@@ -3,7 +3,8 @@ import Link from "next/link";
 
 import { LobsterCard } from "@/components/lobster-card";
 import { apiOrigin } from "@/lib/api";
-import { getRequestLocale, getTranslations } from "@/lib/i18n";
+import { getTranslations } from "@/lib/i18n";
+import { getRequestLocale } from "@/lib/server/locale";
 import { listLobsters } from "@/lib/server/service";
 import { absoluteUrl, siteConfig } from "@/lib/site";
 

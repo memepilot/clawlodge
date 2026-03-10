@@ -6,7 +6,8 @@ import { Bricolage_Grotesque, IBM_Plex_Mono, Manrope } from "next/font/google";
 import { HeaderAuth } from "@/components/header-auth";
 import { LocaleProvider } from "@/components/locale-provider";
 import { LocaleSwitcher } from "@/components/locale-switcher";
-import { getRequestLocale, getTranslations } from "@/lib/i18n";
+import { getTranslations } from "@/lib/i18n";
+import { getRequestLocale } from "@/lib/server/locale";
 import { absoluteUrl, siteConfig } from "@/lib/site";
 
 import "./globals.css";

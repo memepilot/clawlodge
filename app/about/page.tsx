@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
-import { getRequestLocale, getTranslations } from "@/lib/i18n";
+import { getTranslations } from "@/lib/i18n";
+import { getRequestLocale } from "@/lib/server/locale";
 import { absoluteUrl, siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = {

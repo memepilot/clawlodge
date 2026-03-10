@@ -1,5 +1,6 @@
 import { LobsterCard } from "@/components/lobster-card";
-import { getRequestLocale, getTranslations } from "@/lib/i18n";
+import { getTranslations } from "@/lib/i18n";
+import { getRequestLocale } from "@/lib/server/locale";
 import { getUserProfile } from "@/lib/server/service";
 
 export default async function UserPage({ params }: { params: Promise<{ handle: string }> }) {

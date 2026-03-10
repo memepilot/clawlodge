@@ -1,4 +1,5 @@
-import { getRequestLocale, getTranslations } from "@/lib/i18n";
+import { getTranslations } from "@/lib/i18n";
+import { getRequestLocale } from "@/lib/server/locale";
 
 export default async function MCPPage() {
   const locale = await getRequestLocale();

@@ -1,11 +1,9 @@
-import { cookies, headers } from "next/headers";
-
 export const locales = ["en", "zh"] as const;
 export const localeCookieName = "clawlodge_locale";
 
 export type Locale = (typeof locales)[number];
 
-export type Messages = typeof messages.en;
+export type Messages = (typeof messages)[Locale];
 
 export const messages = {
   en: {
@@ -413,14 +411,6 @@ export const messages = {
 export function detectLocale(input?: string | null): Locale {
   const value = (input || "").toLowerCase();
   return value.includes("zh") ? "zh" : "en";
-}
-
-export async function getRequestLocale(): Promise<Locale> {
-  const cookieStore = await cookies();
-  const saved = cookieStore.get(localeCookieName)?.value;
-  if (saved === "en" || saved === "zh") return saved;
-  const requestHeaders = await headers();
-  return detectLocale(requestHeaders.get("accept-language"));
 }
 
 export function getTranslations(locale: Locale): Messages {
