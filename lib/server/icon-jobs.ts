@@ -7,7 +7,7 @@ const MAX_ICON_JOB_ATTEMPTS = 3;
 let workerRunning = false;
 
 function hasAiIconConfig() {
-  return Boolean(process.env.OPENROUTER_API_KEY?.trim());
+  return Boolean(process.env.LLM_API_KEY?.trim() || process.env.OPENROUTER_API_KEY?.trim());
 }
 
 function iconStorageKey(slug: string, version: string, contentType: string) {

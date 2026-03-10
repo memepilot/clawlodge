@@ -5,6 +5,7 @@ const PROCEDURAL_ICON_SPEC_VERSION = "procedural-v1";
 const NANOBANA_ICON_SPEC_VERSION = "nanobana-v1";
 const ICON_SIZE = 256;
 const MAX_README_PROMPT_CHARS = 200;
+const DEFAULT_CHAT_COMPLETIONS_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 type IconSourceType = "official" | "curated" | "community" | "demo";
 
@@ -112,14 +113,22 @@ function buildImageDirection(signals: IconSignals) {
   return cues.join(", ");
 }
 
+function getLlmApiKey() {
+  return process.env.LLM_API_KEY?.trim() || process.env.OPENROUTER_API_KEY?.trim() || "";
+}
+
+function getLlmApiUrl() {
+  return process.env.LLM_API_URL?.trim() || DEFAULT_CHAT_COMPLETIONS_URL;
+}
+
 async function generateOpenRouterIconPrompt(signals: IconSignals) {
-  const apiKey = process.env.OPENROUTER_API_KEY?.trim();
+  const apiKey = getLlmApiKey();
   if (!apiKey) {
-    throw new ApiError(500, "OpenRouter prompt generation is unavailable because OPENROUTER_API_KEY is not configured");
+    throw new ApiError(500, "Icon prompt generation is unavailable because no LLM API key is configured");
   }
 
   const readmeExcerpt = sanitizeReadmeExcerpt(signals.readmeText);
-  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+  const response = await fetch(getLlmApiUrl(), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -146,7 +155,7 @@ async function generateOpenRouterIconPrompt(signals: IconSignals) {
             signals.summary ? `Summary: ${signals.summary}` : "",
             readmeExcerpt ? `README excerpt: ${readmeExcerpt}` : "",
             "",
-            "Write a prompt for a distinct square icon: one stylized lobster, transparent or clean plain background, suitable for a product card, crisp edges, readable at small size, bold silhouette, no text.",
+            "Write a prompt for a distinct square icon: one stylized lobster, solid white background, suitable for a product card, crisp edges, readable at small size, bold silhouette, no text. Target a compact 256x256 app-icon source image.",
           ].filter(Boolean).join("\n"),
         },
       ],
@@ -366,12 +375,12 @@ export function iconExtensionForContentType(contentType: string) {
 }
 
 async function renderNanobanaIcon(prompt: string) {
-  const apiKey = process.env.OPENROUTER_API_KEY?.trim();
+  const apiKey = getLlmApiKey();
   if (!apiKey) {
-    throw new ApiError(500, "Nanobana image generation is unavailable because OPENROUTER_API_KEY is not configured");
+    throw new ApiError(500, "Nanobana image generation is unavailable because no LLM API key is configured");
   }
 
-  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+  const response = await fetch(getLlmApiUrl(), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -389,7 +398,8 @@ async function renderNanobanaIcon(prompt: string) {
           content: [
             prompt,
             "Format: square 1:1 icon.",
-            "Background: transparent or clean plain backdrop.",
+            "Target size: a compact 256x256 source image intended for 56px, 84px, and 112px UI rendering.",
+            "Background: solid white background only.",
             "Output: one polished lobster icon only.",
             "Do not render any text or letters.",
           ].join("\n"),
