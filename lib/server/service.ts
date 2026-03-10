@@ -499,7 +499,6 @@ function iconStorageKey(slug: string, version: string, contentType: string) {
 }
 
 export async function listLobsters(params?: { sort?: string; tag?: string; q?: string; page?: number; per_page?: number }) {
-  void kickIconJobWorker();
   if (params?.sort !== "new") {
     await mutateDb(async (db) => {
       const pending = db.lobsters.filter(
@@ -583,7 +582,6 @@ export async function listLobsters(params?: { sort?: string; tag?: string; q?: s
 }
 
 export async function getLobsterBySlug(slug: string): Promise<LobsterDetail> {
-  void kickIconJobWorker();
   const detail = await readMirroredLobsterDetail(slug);
   if (!detail) throw new ApiError(404, "Lobster not found");
 
