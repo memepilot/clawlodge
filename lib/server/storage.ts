@@ -64,15 +64,18 @@ export async function getStoredObject(key: string) {
   }
 
   try {
-    const [body, metaRaw] = await Promise.all([
+    const [body, metaRaw, stats] = await Promise.all([
       fs.readFile(fullPath),
       fs.readFile(metaPathFor(fullPath), 'utf8').catch(() => null),
+      fs.stat(fullPath),
     ]);
     const meta = metaRaw ? (JSON.parse(metaRaw) as { contentType?: string }) : null;
     return {
       body,
       contentType: meta?.contentType || inferContentType(normalized),
       filename: path.basename(normalized),
+      size: stats.size,
+      lastModified: stats.mtime.toUTCString(),
     };
   } catch {
     throw new ApiError(404, 'Stored object not found');
