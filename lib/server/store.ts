@@ -1,13 +1,18 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { DatabaseSync } from "node:sqlite";
 
-import { DbState } from "./types";
+import type { DbState } from "./types";
 
 const dataDir = path.resolve(process.env.CLAWLODGE_DATA_DIR || path.join(process.cwd(), "data"));
-const dbPath = path.join(dataDir, "app-db.json");
-const dbTempPath = `${dbPath}.tmp`;
+const dbFilePath = process.env.CLAWLODGE_DB_PATH
+  ? path.resolve(process.env.CLAWLODGE_DB_PATH)
+  : path.join(dataDir, "app.db");
+const legacyJsonPath = path.join(dataDir, "app-db.json");
 
 let ioChain: Promise<unknown> = Promise.resolve();
+let database: DatabaseSync | null = null;
+let initialized = false;
 
 function emptyState(): DbState {
   return {
@@ -32,15 +37,6 @@ function emptyState(): DbState {
     reports: [],
     iconJobs: [],
   };
-}
-
-async function ensureDbFile() {
-  await fs.mkdir(dataDir, { recursive: true });
-  try {
-    await fs.access(dbPath);
-  } catch {
-    await fs.writeFile(dbPath, JSON.stringify(emptyState(), null, 2), "utf8");
-  }
 }
 
 function normalizeState(parsed: DbState) {
@@ -79,17 +75,66 @@ function normalizeState(parsed: DbState) {
   return parsed;
 }
 
+async function ensureDataDir() {
+  await fs.mkdir(path.dirname(dbFilePath), { recursive: true });
+}
+
+async function loadLegacyState() {
+  try {
+    const raw = await fs.readFile(legacyJsonPath, "utf8");
+    return normalizeState(JSON.parse(raw) as DbState);
+  } catch {
+    return emptyState();
+  }
+}
+
+function openDatabase() {
+  if (!database) {
+    database = new DatabaseSync(dbFilePath);
+    database.exec(`
+      PRAGMA journal_mode = WAL;
+      PRAGMA synchronous = NORMAL;
+      CREATE TABLE IF NOT EXISTS app_state (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        payload TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+    `);
+  }
+  return database;
+}
+
+async function ensureDatabase() {
+  if (initialized) return;
+  await ensureDataDir();
+  const db = openDatabase();
+  const existing = db.prepare("SELECT 1 FROM app_state WHERE id = 1").get() as { 1: number } | undefined;
+  if (!existing) {
+    const state = await loadLegacyState();
+    db.prepare("INSERT INTO app_state (id, payload, updated_at) VALUES (1, ?, ?)")
+      .run(JSON.stringify(state), new Date().toISOString());
+  }
+  initialized = true;
+}
+
 async function loadDb() {
-  await ensureDbFile();
-  const raw = await fs.readFile(dbPath, "utf8");
-  return normalizeState(JSON.parse(raw) as DbState);
+  await ensureDatabase();
+  const db = openDatabase();
+  const row = db.prepare("SELECT payload FROM app_state WHERE id = 1").get() as { payload: string } | undefined;
+  if (!row) {
+    const state = emptyState();
+    db.prepare("INSERT INTO app_state (id, payload, updated_at) VALUES (1, ?, ?)")
+      .run(JSON.stringify(state), new Date().toISOString());
+    return state;
+  }
+  return normalizeState(JSON.parse(row.payload) as DbState);
 }
 
 async function persistDb(next: DbState) {
-  await ensureDbFile();
-  const payload = JSON.stringify(next, null, 2);
-  await fs.writeFile(dbTempPath, payload, "utf8");
-  await fs.rename(dbTempPath, dbPath);
+  await ensureDatabase();
+  const db = openDatabase();
+  db.prepare("UPDATE app_state SET payload = ?, updated_at = ? WHERE id = 1")
+    .run(JSON.stringify(next), new Date().toISOString());
 }
 
 function enqueueExclusive<T>(task: () => Promise<T>): Promise<T> {
