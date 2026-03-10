@@ -578,7 +578,6 @@ export async function getLobsterBySlug(slug: string): Promise<LobsterDetail> {
 
   return {
     ...attachLatestVersion(toSummary(lobster, owner), versions),
-    search_document: lobster.searchDocument,
     versions: versions.map((version) => toVersion(version, { includeWorkspaceContent: false })),
   };
 }
@@ -768,7 +767,6 @@ export async function createLobster(
     const owner = db.users.find((user) => user.id === userId)!;
     return {
       ...attachLatestVersion(toSummary(lobster, owner), []),
-      search_document: lobster.searchDocument,
       versions: [],
     };
   });

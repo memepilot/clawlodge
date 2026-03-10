@@ -70,7 +70,6 @@ export type LobsterVersion = {
 };
 
 export type LobsterDetail = LobsterSummary & {
-  search_document: string;
   versions: LobsterVersion[];
 };
 
