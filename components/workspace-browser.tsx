@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useLocale, useTranslations } from "@/components/locale-provider";
 import type { LobsterVersion } from "@/lib/types";
 
 type WorkspaceFile = NonNullable<LobsterVersion["workspace_files"]>[number];
+type WorkspaceFilePreview = Pick<WorkspaceFile, "path" | "size" | "kind" | "content_excerpt" | "content_text" | "masked_count">;
 
 type WorkspaceEntry =
   | { type: "dir"; name: string; path: string; count: number }
@@ -88,13 +89,51 @@ export function WorkspaceBrowser({
   const t = useTranslations();
   const [currentDir, setCurrentDir] = useState("");
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const [preview, setPreview] = useState<{ path: string; payload: WorkspaceFilePreview | null } | null>(null);
+  const previewBaseUrl = useMemo(() => downloadHref.replace(/\/download$/, "/workspace-file"), [downloadHref]);
 
   const breadcrumbParts = currentDir ? currentDir.split("/") : [];
   const entries = useMemo(() => listWorkspaceEntries(files, currentDir), [files, currentDir]);
-  const previewFile = useMemo(
-    () => files.find((file) => file.path === selectedPath) ?? findPreviewFile(files, currentDir),
-    [files, currentDir, selectedPath],
-  );
+  const fallbackPreviewFile = useMemo(() => findPreviewFile(files, currentDir), [files, currentDir]);
+  const selectedFile = useMemo(() => {
+    const explicit = selectedPath ? files.find((file) => file.path === selectedPath) : null;
+    if (explicit) {
+      const prefix = currentDir ? `${currentDir}/` : "";
+      if (!prefix || explicit.path.startsWith(prefix)) {
+        return explicit;
+      }
+    }
+    return fallbackPreviewFile;
+  }, [currentDir, fallbackPreviewFile, files, selectedPath]);
+
+  useEffect(() => {
+    if (!selectedFile || selectedFile.kind !== "text") {
+      return;
+    }
+
+    let cancelled = false;
+    fetch(`${previewBaseUrl}?path=${encodeURIComponent(selectedFile.path)}`)
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`preview ${response.status}`);
+        }
+        return response.json() as Promise<WorkspaceFilePreview>;
+      })
+      .then((payload) => {
+        if (!cancelled) {
+          setPreview({ path: selectedFile.path, payload });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPreview({ path: selectedFile.path, payload: null });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [previewBaseUrl, selectedFile]);
 
   return (
     <>
@@ -172,7 +211,7 @@ export function WorkspaceBrowser({
               <button
                 key={entry.path}
                 type="button"
-                className={`workspace-row ${previewFile?.path === entry.path ? "workspace-row-active" : ""}`}
+                className={`workspace-row ${selectedFile?.path === entry.path ? "workspace-row-active" : ""}`}
                 onClick={() => setSelectedPath(entry.path)}
               >
                 <span className="workspace-namecell">
@@ -187,16 +226,20 @@ export function WorkspaceBrowser({
 
         <div id="workspace-preview" className="workspace-preview">
           <div className="workspace-preview-head">
-            <strong className="mono workspace-path">{previewFile?.path ?? t.workspace.noPreview}</strong>
-            {previewFile ? (
+            <strong className="mono workspace-path">{selectedFile?.path ?? t.workspace.noPreview}</strong>
+            {selectedFile ? (
               <span className="muted text-xs">
-                {previewFile.kind} · {formatWorkspaceSize(previewFile.size)}
+                {selectedFile.kind} · {formatWorkspaceSize(selectedFile.size)}
               </span>
             ) : null}
           </div>
-          {previewFile ? (
-            previewFile.kind === "text" ? (
-              <pre className="workspace-excerpt">{previewFile.content_text ?? previewFile.content_excerpt ?? ""}</pre>
+          {selectedFile ? (
+            selectedFile.kind === "text" ? (
+              <pre className="workspace-excerpt">
+                {preview?.path === selectedFile.path
+                  ? preview.payload?.content_text ?? preview.payload?.content_excerpt ?? ""
+                  : ""}
+              </pre>
             ) : (
               <p className="muted text-sm">{t.workspace.binaryOmitted}</p>
             )

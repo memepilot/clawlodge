@@ -4,8 +4,17 @@ import path from "node:path";
 import readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
 
-const BLOCKED_DIRS = new Set([".git", ".next", "node_modules", "dist", "build", "coverage", ".idea", ".vscode", "tmp", "temp", "logs", "data"]);
-const BLOCKED_FILE_NAMES = [/^\.env(\..+)?$/i, /^id_(rsa|dsa|ecdsa|ed25519)(\.pub)?$/i];
+const BLOCKED_DIRS = new Set([".git", ".github", ".next", ".vite", "node_modules", "dist", "build", "coverage", ".idea", ".vscode", "tmp", "temp", "logs", "data"]);
+const BLOCKED_FILE_NAMES = [
+  /^\.env(\..+)?$/i,
+  /^id_(rsa|dsa|ecdsa|ed25519)(\.pub)?$/i,
+  /^\.gitignore$/i,
+  /^\.dockerignore$/i,
+  /^\.gitattributes$/i,
+  /^\.gitmodules$/i,
+  /^\.prettier(?:ignore|rc)?(?:\..+)?$/i,
+  /^\.editorconfig$/i,
+];
 const BLOCKED_FILE_EXTENSIONS = new Set([".pem", ".key", ".p12", ".pfx", ".db", ".sqlite", ".sqlite3", ".log"]);
 const TEXT_EXTENSIONS = new Set([".md", ".mdx", ".txt", ".json", ".jsonc", ".yaml", ".yml", ".toml", ".ini", ".cfg", ".conf", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".py", ".rb", ".go", ".rs", ".java", ".kt", ".sh", ".zsh", ".bash", ".html", ".css", ".scss", ".sql"]);
 const ALLOWED_LICENSES = new Set(["MIT", "Apache-2.0", "CC-BY-4.0", "BSD-3-Clause", "GPL-3.0-only"]);

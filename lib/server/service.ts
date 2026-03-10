@@ -420,7 +420,8 @@ function toSummary(item: DbLobster, owner: DbUser): LobsterSummary {
   };
 }
 
-function toVersion(version: DbLobsterVersion): LobsterVersion {
+function toVersion(version: DbLobsterVersion, options?: { includeWorkspaceContent?: boolean }): LobsterVersion {
+  const includeWorkspaceContent = options?.includeWorkspaceContent ?? true;
   return {
     version: version.version,
     changelog: version.changelog,
@@ -441,8 +442,8 @@ function toVersion(version: DbLobsterVersion): LobsterVersion {
       path: file.path,
       size: file.size,
       kind: file.kind,
-      content_excerpt: file.contentExcerpt,
-      content_text: file.contentText,
+      content_excerpt: includeWorkspaceContent ? file.contentExcerpt : null,
+      content_text: includeWorkspaceContent ? file.contentText : null,
       masked_count: file.maskedCount,
     })),
     skills: version.skills.map((skill) => ({
@@ -578,7 +579,28 @@ export async function getLobsterBySlug(slug: string): Promise<LobsterDetail> {
   return {
     ...attachLatestVersion(toSummary(lobster, owner), versions),
     search_document: lobster.searchDocument,
-    versions: versions.map(toVersion),
+    versions: versions.map((version) => toVersion(version, { includeWorkspaceContent: false })),
+  };
+}
+
+export async function getWorkspaceFilePreview(slug: string, version: string, filePath: string) {
+  const db = await readDb();
+  const lobster = db.lobsters.find((item) => item.slug === slug && item.status === "active");
+  if (!lobster) throw new ApiError(404, "Lobster not found");
+
+  const found = db.lobsterVersions.find((item) => item.lobsterId === lobster.id && item.version === version);
+  if (!found) throw new ApiError(404, "Version not found");
+
+  const file = (found.workspaceFiles ?? []).find((item) => item.path === filePath);
+  if (!file) throw new ApiError(404, "Workspace file not found");
+
+  return {
+    path: file.path,
+    size: file.size,
+    kind: file.kind,
+    content_excerpt: file.contentExcerpt,
+    content_text: file.contentText,
+    masked_count: file.maskedCount,
   };
 }
 

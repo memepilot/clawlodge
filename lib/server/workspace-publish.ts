@@ -5,7 +5,9 @@ import { allowedLicenses, semverRe, slugify } from "./utils";
 
 const BLOCKED_DIRS = new Set([
   ".git",
+  ".github",
   ".next",
+  ".vite",
   "node_modules",
   "dist",
   "build",
@@ -17,7 +19,16 @@ const BLOCKED_DIRS = new Set([
   "logs",
   "data",
 ]);
-const BLOCKED_FILE_NAMES = [/^\.env(\..+)?$/i, /^id_(rsa|dsa|ecdsa|ed25519)(\.pub)?$/i];
+const BLOCKED_FILE_NAMES = [
+  /^\.env(\..+)?$/i,
+  /^id_(rsa|dsa|ecdsa|ed25519)(\.pub)?$/i,
+  /^\.gitignore$/i,
+  /^\.dockerignore$/i,
+  /^\.gitattributes$/i,
+  /^\.gitmodules$/i,
+  /^\.prettier(?:ignore|rc)?(?:\..+)?$/i,
+  /^\.editorconfig$/i,
+];
 const BLOCKED_FILE_EXTENSIONS = new Set([".pem", ".key", ".p12", ".pfx", ".db", ".sqlite", ".sqlite3", ".log"]);
 const TEXT_EXTENSIONS = new Set([
   ".md",
