@@ -237,6 +237,10 @@ main {
   padding: 32px 28px 0;
 }
 
+.page-shell > * {
+  min-width: 0;
+}
+
 .stack-lg {
   display: grid;
   gap: 20px;
@@ -1196,6 +1200,7 @@ main {
   grid-template-columns: minmax(0, 1.3fr) minmax(290px, 0.55fr);
   gap: 24px;
   padding: 28px;
+  min-width: 0;
 }
 
 .detail-hero-main {
@@ -1264,6 +1269,7 @@ main {
 
 .detail-hero-aside {
   display: grid;
+  min-width: 0;
 }
 
 .detail-aside-card {
@@ -1519,6 +1525,8 @@ main {
 }
 
 .markdown pre {
+  width: 100%;
+  max-width: 100%;
   overflow-x: auto;
   border: 1px solid rgba(255, 107, 74, 0.2);
   border-radius: 12px;
@@ -1535,6 +1543,7 @@ main {
   font-variant-ligatures: none;
   font-feature-settings: "liga" 0, "calt" 0;
   text-rendering: optimizeSpeed;
+  box-sizing: border-box;
 }
 
 .markdown pre code {
