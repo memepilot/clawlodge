@@ -8,20 +8,10 @@ import { MarkdownContent } from "@/components/markdown-content";
 import { WorkspaceBrowser } from "@/components/workspace-browser";
 import { getDetailDisplayLobsterName, getDisplayAuthor } from "@/lib/lobster-display";
 import { ApiError } from "@/lib/server/errors";
-import { readDb } from "@/lib/server/store";
 import { getComments, getLobsterBySlug } from "@/lib/server/service";
 import { absoluteUrl } from "@/lib/site";
 
-export const revalidate = 300;
-
-export async function generateStaticParams() {
-  const db = await readDb();
-  return db.lobsters
-    .filter((item) => item.status === "active")
-    .sort((a, b) => (b.downloadCount ?? 0) - (a.downloadCount ?? 0))
-    .slice(0, 24)
-    .map((item) => ({ slug: item.slug }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
