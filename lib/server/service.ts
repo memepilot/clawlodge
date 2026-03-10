@@ -499,20 +499,27 @@ function iconStorageKey(slug: string, version: string, contentType: string) {
 }
 
 export async function listLobsters(params?: { sort?: string; tag?: string; q?: string; page?: number; per_page?: number }) {
+  let items = await readMirroredLobsterSummaries();
   if (params?.sort !== "new") {
-    await mutateDb(async (db) => {
-      const pending = db.lobsters.filter(
-        (item) => item.status === "active" && item.sourceUrl && parseGithubRepoRef(item.sourceUrl) && item.githubStars == null,
-      );
-      if (!pending.length) return;
+    const hasPendingGithubStars = items.some(
+      ({ lobster }) => lobster.status === "active" && lobster.sourceUrl && parseGithubRepoRef(lobster.sourceUrl) && lobster.githubStars == null,
+    );
+    if (hasPendingGithubStars) {
+      await mutateDb(async (db) => {
+        const pending = db.lobsters.filter(
+          (item) => item.status === "active" && item.sourceUrl && parseGithubRepoRef(item.sourceUrl) && item.githubStars == null,
+        );
+        if (!pending.length) return;
 
-      await Promise.all(
-        pending.map(async (item) => {
-          const signals = await fetchGithubRepoSignals(item.sourceUrl);
-          item.githubStars = signals?.stars ?? 0;
-        }),
-      );
-    });
+        await Promise.all(
+          pending.map(async (item) => {
+            const signals = await fetchGithubRepoSignals(item.sourceUrl);
+            item.githubStars = signals?.stars ?? 0;
+          }),
+        );
+      });
+      items = await readMirroredLobsterSummaries();
+    }
   }
 
   const page = Number.isFinite(Number(params?.page))
@@ -522,7 +529,6 @@ export async function listLobsters(params?: { sort?: string; tag?: string; q?: s
     ? Math.floor(Number(params?.per_page))
     : 12;
   const perPage = Math.min(Math.max(perPageRaw, 1), 48);
-  let items = await readMirroredLobsterSummaries();
   if (params?.tag?.trim()) {
     const tag = params.tag.trim().toLowerCase();
     items = items.filter(({ lobster }) => lobster.tags.includes(tag));

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cache } from "react";
 
 import { LobsterActions } from "@/components/lobster-actions";
 import { getLobsterAvatarSrc, LobsterAvatar } from "@/components/lobster-avatar";
@@ -15,6 +16,8 @@ import { absoluteUrl } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
+const getCachedLobster = cache(async (slug: string) => getLobsterBySlug(slug));
+
 export async function generateMetadata({
   params,
 }: {
@@ -22,7 +25,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   try {
-    const lobster = await getLobsterBySlug(slug);
+    const lobster = await getCachedLobster(slug);
     const displayName = getDetailDisplayLobsterName(lobster);
     return {
       title: displayName,
@@ -69,7 +72,7 @@ export default async function LobsterDetailPage({
   const localePromise = getRequestLocale();
   let lobster;
   try {
-    lobster = await getLobsterBySlug(slug);
+    lobster = await getCachedLobster(slug);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
       notFound();
