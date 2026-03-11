@@ -36,19 +36,17 @@ export function SearchBand({
             <span className="mono">/</span>
             <input className="search-input" name="q" defaultValue={defaultQuery} placeholder={placeholder} />
           </div>
+          {includeSort ? (
+            <select className="select search-sort-select" defaultValue={sortValue} name="sort">
+              <option value="hot">Hot</option>
+              <option value="new">New</option>
+            </select>
+          ) : null}
           <button className="btn btn-primary search-submit" type="submit">
             {buttonLabel}
           </button>
         </div>
-        {includeSort ? (
-          <div className="search-controls-row">
-            <select className="select" defaultValue={sortValue} name="sort">
-              <option value="hot">Hot</option>
-              <option value="new">New</option>
-            </select>
-            {hiddenTag?.trim() ? <input type="hidden" name="tag" value={hiddenTag.trim()} /> : null}
-          </div>
-        ) : null}
+        {hiddenTag?.trim() ? <input type="hidden" name="tag" value={hiddenTag.trim()} /> : null}
       </form>
     </div>
   );
