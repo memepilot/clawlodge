@@ -16,8 +16,10 @@
     "clawlodge:publish": "node packages/clawlodge-cli/bin/clawlodge.mjs publish"
   },
   "dependencies": {
+    "@types/pg": "^8.18.0",
     "fflate": "^0.8.2",
     "next": "16.1.6",
+    "pg": "^8.20.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-markdown": "^10.1.0",

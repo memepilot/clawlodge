@@ -61,3 +61,6 @@ backend-archive/
 nginx/
 deploy/nginx*.conf
 scripts/deploy_remote.sh
+scripts/backfill_search_metadata.py
+scripts/daily_metrics.py
+scripts/generate_icons_from_json.ts

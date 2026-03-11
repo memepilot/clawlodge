@@ -72,6 +72,18 @@ These write actions require a PAT:
    - `latest_version`
 3. If several matches look close, follow up with `clawlodge show <slug>` on the best few candidates.
 
+Hard rules:
+
+- Limit search expansion to at most 3 search rounds for one user request.
+- Do not keep firing loosely related synonym searches once a strong candidate is found.
+- If one result clearly matches the user intent, switch to `show` instead of continuing to search.
+- Prefer one focused multi-term search over many single-word searches.
+- Do not use old local extraction directories as search evidence. Only use:
+  - current `clawlodge search` output
+  - current `clawlodge show` output
+  - files extracted from the current request's downloaded zip
+- Ignore stale directories under `/tmp` unless they were created by the current task after the current download step.
+
 Examples:
 
 ```bash
@@ -101,6 +113,7 @@ Hard rules:
 - `show` and `get` do not create files or directories.
 - Never pass output-style arguments such as `--out`, `--dir`, or extraction paths to `show` or `get`.
 - If the user asks for a local copy, switch to `download`.
+- Before `download`, use `show` to confirm the chosen slug unless the user already named an exact slug and asked only to download it.
 
 ## Download workflow
 
@@ -121,6 +134,11 @@ Hard rules:
 - Always use `download` for saved artifacts.
 - Use `--out` only with `download`.
 - If the user asks to inspect the downloaded package, download first, then unzip into a temporary directory.
+- After every successful `download`, explicitly report the zip path you wrote.
+- After a successful `download`, stop and report the zip path unless the user explicitly asked for extraction, inspection, installation, or agent creation.
+- Do not start process polling, long-running child workflows, or extra shell orchestration after `download` unless the user explicitly asked for those next steps.
+- Use a fresh task-specific extraction directory under `/tmp` for the current slug and version.
+- Do not read from unrelated old `/tmp/*inspect*` directories.
 
 Example:
 
@@ -157,6 +175,37 @@ Rules:
 - Never delete the current workspace before the backup exists.
 - Prefer side-by-side comparison over in-place replacement.
 - If the user asks to merge or replace files, summarize which directories will change first.
+
+## Install into a new agent
+
+When the user wants to try a workspace without disturbing the current setup, use a new isolated OpenClaw agent.
+
+Preferred sequence:
+
+1. Confirm the candidate with `clawlodge show <slug>`.
+2. Download to `/tmp/<slug>.zip`.
+3. Extract into `/tmp/<slug>-<version>/`.
+4. Inspect the extracted files and verify the package looks usable.
+5. Create a new agent with `openclaw agents add`.
+6. Report the new agent name, workspace path, zip path, and any setup prerequisites.
+
+Example:
+
+```bash
+clawlodge show openclaw-config
+clawlodge download openclaw-config --out /tmp/openclaw-config.zip
+mkdir -p /tmp/openclaw-config-0.13.1
+unzip -o /tmp/openclaw-config.zip -d /tmp/openclaw-config-0.13.1
+openclaw agents add openclaw-config-test --workspace /tmp/openclaw-config-0.13.1 --non-interactive
+```
+
+Rules:
+
+- Do not create or modify a new agent until the download and extraction steps have succeeded.
+- Do not point a new agent at a stale directory from an earlier task.
+- Prefer a descriptive temporary agent name such as `<slug>-test` or `<role>-test`.
+- If the package needs extra environment variables or install steps, report them before claiming the agent is ready.
+- If the user only asked to compare or inspect, stop before `openclaw agents add`.
 
 ## Feedback workflow
 

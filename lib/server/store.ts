@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
+import * as pgStore from "./store-pg";
 import type {
   DbComment,
   DbLobster,
@@ -16,6 +17,7 @@ const dbFilePath = process.env.CLAWLODGE_DB_PATH
   ? path.resolve(process.env.CLAWLODGE_DB_PATH)
   : path.join(dataDir, "app.db");
 const legacyJsonPath = path.join(dataDir, "app-db.json");
+const usePostgres = Boolean(process.env.DATABASE_URL?.trim());
 
 let ioChain: Promise<unknown> = Promise.resolve();
 let database: DatabaseSync | null = null;
@@ -555,16 +557,16 @@ function enqueueExclusive<T>(task: () => Promise<T>): Promise<T> {
   return run;
 }
 
-export async function readDb(): Promise<DbState> {
+async function readDbSqlite(): Promise<DbState> {
   await ioChain;
   return loadDb();
 }
 
-export async function writeDb(next: DbState) {
+async function writeDbSqlite(next: DbState) {
   await enqueueExclusive(() => persistDb(next));
 }
 
-export async function mutateDb<T>(fn: (state: DbState) => T | Promise<T>): Promise<T> {
+async function mutateDbSqlite<T>(fn: (state: DbState) => T | Promise<T>): Promise<T> {
   return enqueueExclusive(async () => {
     const state = await loadDb();
     const result = await fn(state);
@@ -573,7 +575,7 @@ export async function mutateDb<T>(fn: (state: DbState) => T | Promise<T>): Promi
   });
 }
 
-export async function readMirroredLobsterSummaries() {
+async function readMirroredLobsterSummariesSqlite() {
   await ensureDatabase();
   const db = openDatabase();
   const rows = db.prepare(`
@@ -610,7 +612,7 @@ export async function readMirroredLobsterSummaries() {
   }));
 }
 
-export async function readMirroredLobsterDetail(slug: string): Promise<MirrorDetailRow | null> {
+async function readMirroredLobsterDetailSqlite(slug: string): Promise<MirrorDetailRow | null> {
   await ensureDatabase();
   const db = openDatabase();
   const row = db.prepare(`
@@ -690,7 +692,7 @@ export async function readMirroredLobsterDetail(slug: string): Promise<MirrorDet
   };
 }
 
-export async function readMirroredLobsterVersion(slug: string, version: string, includeHidden = false) {
+async function readMirroredLobsterVersionSqlite(slug: string, version: string, includeHidden = false) {
   await ensureDatabase();
   const db = openDatabase();
   const row = db.prepare(`
@@ -726,7 +728,7 @@ export async function readMirroredLobsterVersion(slug: string, version: string, 
   };
 }
 
-export async function readWorkspaceEntriesForVersionId(versionId: number) {
+async function readWorkspaceEntriesForVersionIdSqlite(versionId: number) {
   await ensureDatabase();
   const db = openDatabase();
   const rows = db.prepare(`
@@ -747,7 +749,7 @@ export async function readWorkspaceEntriesForVersionId(versionId: number) {
   }));
 }
 
-export async function readMirroredComments(slug: string) {
+async function readMirroredCommentsSqlite(slug: string) {
   await ensureDatabase();
   const db = openDatabase();
   const lobsterRow = db.prepare(`
@@ -774,4 +776,38 @@ export async function readMirroredComments(slug: string) {
     userHandle: String(row.handle),
     userDisplayName: row.display_name == null ? null : String(row.display_name),
   }));
+}
+
+export async function readDb(): Promise<DbState> {
+  return usePostgres ? pgStore.readDb() : readDbSqlite();
+}
+
+export async function writeDb(next: DbState) {
+  return usePostgres ? pgStore.writeDb(next) : writeDbSqlite(next);
+}
+
+export async function mutateDb<T>(fn: (state: DbState) => T | Promise<T>): Promise<T> {
+  return usePostgres ? pgStore.mutateDb(fn) : mutateDbSqlite(fn);
+}
+
+export async function readMirroredLobsterSummaries() {
+  return usePostgres ? pgStore.readMirroredLobsterSummaries() : readMirroredLobsterSummariesSqlite();
+}
+
+export async function readMirroredLobsterDetail(slug: string): Promise<MirrorDetailRow | null> {
+  return usePostgres ? pgStore.readMirroredLobsterDetail(slug) : readMirroredLobsterDetailSqlite(slug);
+}
+
+export async function readMirroredLobsterVersion(slug: string, version: string, includeHidden = false) {
+  return usePostgres
+    ? pgStore.readMirroredLobsterVersion(slug, version, includeHidden)
+    : readMirroredLobsterVersionSqlite(slug, version, includeHidden);
+}
+
+export async function readWorkspaceEntriesForVersionId(versionId: number) {
+  return usePostgres ? pgStore.readWorkspaceEntriesForVersionId(versionId) : readWorkspaceEntriesForVersionIdSqlite(versionId);
+}
+
+export async function readMirroredComments(slug: string) {
+  return usePostgres ? pgStore.readMirroredComments(slug) : readMirroredCommentsSqlite(slug);
 }
