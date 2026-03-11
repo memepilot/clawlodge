@@ -23,7 +23,7 @@ const MAX_FILE_BYTES = 128 * 1024;
 const MAX_EXCERPT_CHARS = 1600;
 const MAX_BINARY_EMBED_BYTES = 8 * 1024 * 1024;
 const DEFAULT_ORIGIN = "https://clawlodge.com";
-const CLI_VERSION = "0.1.7";
+const CLI_VERSION = "0.1.8";
 const CONFIG_PATH = path.join(os.homedir(), ".config", "clawlodge", "config.json");
 const REDACTION_RULES = [
   [/\bsk-[A-Za-z0-9]{20,}\b/g, "[REDACTED_OPENAI_KEY]"],
@@ -407,10 +407,13 @@ async function buildPayload(options) {
 
   const tags = [...new Set(String(options.tags ?? "").split(",").map((item) => item.trim().toLowerCase()).filter(Boolean))];
   const explicitReadmePath = options.readme?.trim();
+  const workspaceReadme = shared.find((file) => file.path === "README.md" && file.kind === "text")?.content_text?.trim() || "";
 
   let readme = "";
   if (explicitReadmePath) {
     readme = await readExplicitReadme(explicitReadmePath);
+  } else {
+    readme = workspaceReadme;
   }
 
   return {

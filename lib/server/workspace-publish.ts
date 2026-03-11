@@ -352,19 +352,6 @@ async function collectFiles(
   }
 }
 
-function buildFallbackReadme(name: string, files: WorkspaceSharedFile[]) {
-  const lines = [
-    `# ${name}`,
-    "",
-    "Published from an OpenClaw workspace via ClawLodge.",
-    "",
-    "## Shared files",
-    "",
-    ...files.map((file) => `- \`${file.path}\``),
-  ];
-  return lines.join("\n");
-}
-
 export async function buildWorkspacePublishPayload(
   input: BuildWorkspacePublishInput,
 ): Promise<WorkspacePublishPayload> {
@@ -398,8 +385,8 @@ export async function buildWorkspacePublishPayload(
   stats.blocked_files_count = blocked.length;
 
   const readmeRecord = shared.find((file) => file.path === "README.md");
-  const readmeMarkdown = readmeRecord?.content_text || buildFallbackReadme(name, shared);
-  const summary = deriveSummary(name, input.summary, readmeMarkdown, shared.length);
+  const readmeMarkdown = readmeRecord?.content_text?.trim() || undefined;
+  const summary = deriveSummary(name, input.summary, readmeMarkdown || "", shared.length);
   const tags = [...new Set((input.tags ?? []).map((tag) => tag.trim().toLowerCase()).filter(Boolean))];
 
   return {
