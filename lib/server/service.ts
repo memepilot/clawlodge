@@ -5,6 +5,7 @@ import { zipSync, strToU8 } from "fflate";
 
 import { ApiError } from "./errors";
 import { enqueueIconGenerationJob, kickIconJobWorker } from "./icon-jobs";
+import { classifyLobsterCategory } from "./lobster-category";
 import { generateProceduralLobsterIcon, iconExtensionForContentType } from "./lobster-icon";
 import { parseAndValidateManifest } from "./manifest";
 import { allowRate } from "./rate-limit";
@@ -495,6 +496,7 @@ function toSummary(item: DbLobster, owner: DbUser): LobsterSummary {
     slug: item.slug,
     name: item.name,
     summary: normalizeStoredSummary(item.summary),
+    category: item.category,
     icon_url: null,
     license: item.license,
     source_type: item.sourceType,
@@ -855,6 +857,12 @@ export async function createLobster(
       ownerId: userId,
       name: payload.name.trim(),
       summary: payload.summary.trim(),
+      category: classifyLobsterCategory({
+        slug,
+        name: payload.name.trim(),
+        summary: payload.summary.trim(),
+        tags,
+      }),
       license: payload.license,
       sourceType: "community",
       sourceUrl: null,
@@ -1048,6 +1056,14 @@ export async function createVersion(
     createdId = created.id;
     shouldQueueIcon = !(payload.icon_base64?.trim() && payload.icon_content_type?.trim());
     lobster.summary = generatedSummary;
+    lobster.category = classifyLobsterCategory({
+      slug: lobster.slug,
+      name: lobster.name,
+      summary: generatedSummary,
+      tags: lobster.tags,
+      sourceUrl: lobster.sourceUrl,
+      sourceRepo: payload.source_repo,
+    });
     lobster.updatedAt = now;
     lobster.githubStars = repoSignals?.stars ?? lobster.githubStars ?? null;
     lobster.searchDocument = buildLobsterSearchDocument({
@@ -1426,6 +1442,12 @@ export async function uploadViaMcp(
         ownerId: userId,
         name: manifest.name,
         summary: manifest.summary,
+        category: classifyLobsterCategory({
+          slug: slugify(manifest.lobster_slug),
+          name: manifest.name,
+          summary: manifest.summary,
+          sourceUrl: manifest.source?.repo_url ?? null,
+        }),
         license: manifest.license,
         sourceType: "community",
         sourceUrl: manifest.source?.repo_url ?? null,
@@ -1580,6 +1602,13 @@ export async function publishWorkspace(userId: number, payload: WorkspacePublish
       if (!lobster) return;
       lobster.name = payload.name.trim();
       lobster.summary = payload.summary.trim();
+      lobster.category = classifyLobsterCategory({
+        slug: lobster.slug,
+        name: lobster.name,
+        summary: lobster.summary,
+        tags: payload.tags,
+        sourceUrl: lobster.sourceUrl,
+      });
       lobster.license = payload.license;
       lobster.tags = [...new Set(payload.tags.map((tag) => tag.trim().toLowerCase()).filter(Boolean))];
       lobster.updatedAt = new Date().toISOString();

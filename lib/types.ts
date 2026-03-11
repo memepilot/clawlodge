@@ -1,7 +1,16 @@
+export type LobsterCategory =
+  | "workspace"
+  | "skill"
+  | "agent"
+  | "tooling"
+  | "workflow"
+  | "memory";
+
 export type LobsterSummary = {
   slug: string;
   name: string;
   summary: string;
+  category?: LobsterCategory | null;
   icon_url?: string | null;
   license: string;
   source_type?: "official" | "curated" | "community" | "demo";

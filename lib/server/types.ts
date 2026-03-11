@@ -1,3 +1,11 @@
+export type LobsterCategory =
+  | "workspace"
+  | "skill"
+  | "agent"
+  | "tooling"
+  | "workflow"
+  | "memory";
+
 export type DbUser = {
   id: number;
   handle: string;
@@ -48,6 +56,7 @@ export type DbLobster = {
   ownerId: number;
   name: string;
   summary: string;
+  category: LobsterCategory | null;
   license: string;
   sourceType: "official" | "curated" | "community" | "demo";
   sourceUrl: string | null;

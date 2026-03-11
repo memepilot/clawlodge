@@ -55,6 +55,7 @@ function emptyState(): DbState {
 function normalizeState(parsed: DbState) {
   parsed.lobsters = parsed.lobsters.map((lobster) => ({
     ...lobster,
+    category: lobster.category ?? null,
     recommendationScore: lobster.recommendationScore ?? null,
     githubStars: lobster.githubStars ?? null,
     downloadCount: lobster.downloadCount ?? 0,
@@ -149,6 +150,7 @@ function openDatabase() {
         owner_id INTEGER NOT NULL,
         name TEXT NOT NULL,
         summary TEXT NOT NULL,
+        category TEXT,
         license TEXT NOT NULL,
         source_type TEXT NOT NULL,
         source_url TEXT,
@@ -216,6 +218,10 @@ function openDatabase() {
       CREATE INDEX IF NOT EXISTS idx_workspace_entries_version_path ON workspace_entries(version_id, path);
       CREATE INDEX IF NOT EXISTS idx_comments_mirror_lobster_created ON comments_mirror(lobster_id, created_at ASC);
     `);
+    const lobsterColumns = database.prepare("PRAGMA table_info(lobsters_mirror)").all() as Array<{ name: string }>;
+    if (!lobsterColumns.some((column) => column.name === "category")) {
+      database.exec("ALTER TABLE lobsters_mirror ADD COLUMN category TEXT;");
+    }
   }
   return database;
 }
@@ -316,10 +322,10 @@ function syncMirrorTables(db: DatabaseSync, state: DbState) {
 
   const insertLobster = db.prepare(`
     INSERT INTO lobsters_mirror (
-      id, slug, owner_id, name, summary, license, source_type, source_url, original_author, verified,
+      id, slug, owner_id, name, summary, category, license, source_type, source_url, original_author, verified,
       curation_note, seeded_at, status, report_penalty, search_document, tags_json, recommendation_score,
       github_stars, favorite_count, download_count, share_count, comment_count, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   for (const lobster of state.lobsters) {
     insertLobster.run(
@@ -328,6 +334,7 @@ function syncMirrorTables(db: DatabaseSync, state: DbState) {
       lobster.ownerId,
       lobster.name,
       lobster.summary ?? "",
+      lobster.category ?? null,
       lobster.license,
       lobster.sourceType,
       lobster.sourceUrl ?? null,
@@ -403,6 +410,7 @@ function toMirrorLobster(row: Record<string, unknown>): DbLobster {
     ownerId: Number(row.owner_id),
     name: String(row.name),
     summary: String(row.summary),
+    category: row.category == null ? null : String(row.category) as DbLobster["category"],
     license: String(row.license),
     sourceType: row.source_type as DbLobster["sourceType"],
     sourceUrl: row.source_url == null ? null : String(row.source_url),
