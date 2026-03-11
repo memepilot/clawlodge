@@ -93,6 +93,9 @@ export default async function LobsterDetailPage({
         defaultQuery={displayName}
         placeholder={t.home.searchPlaceholder}
         buttonLabel={t.home.searchButton}
+        helperText={t.home.searchStat}
+        includeSort
+        sortValue="hot"
       />
 
       <section className="shell page-panel detail-hero">
