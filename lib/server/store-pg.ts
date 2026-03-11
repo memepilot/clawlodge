@@ -13,9 +13,6 @@ import type {
 } from "./types";
 
 const dataDir = path.resolve(process.env.CLAWLODGE_DATA_DIR || path.join(process.cwd(), "data"));
-const sqliteFallbackPath = process.env.CLAWLODGE_DB_PATH
-  ? path.resolve(process.env.CLAWLODGE_DB_PATH)
-  : path.join(dataDir, "app.db");
 const legacyJsonPath = path.join(dataDir, "app-db.json");
 
 let pool: Pool | null = null;
@@ -166,7 +163,7 @@ async function query<T extends QueryResultRow = Record<string, unknown>>(text: s
 }
 
 async function ensureDataDir() {
-  await fs.mkdir(path.dirname(sqliteFallbackPath), { recursive: true });
+  await fs.mkdir(path.dirname(legacyJsonPath), { recursive: true });
 }
 
 async function loadLegacyStateFromJson() {
@@ -180,42 +177,6 @@ async function loadLegacyStateFromJson() {
 
 async function loadSeedState() {
   await ensureDataDir();
-  try {
-    const { DatabaseSync } = await import("node:sqlite");
-    const sqlite = new DatabaseSync(sqliteFallbackPath, { readOnly: true });
-    const row = sqlite.prepare("SELECT payload FROM app_state WHERE id = 1").get() as { payload?: string } | undefined;
-    if (row?.payload) {
-      const state = normalizeState(JSON.parse(row.payload) as DbState);
-      const entryRows = sqlite.prepare(`
-        SELECT version_id, path, size, kind, content_excerpt, content_text, content_type, storage_url, masked_count
-        FROM workspace_entries
-        ORDER BY version_id ASC, path ASC
-      `).all() as Array<Record<string, unknown>>;
-      if (entryRows.length) {
-        const byVersionId = new Map<number, DbWorkspaceFile[]>();
-        for (const entry of entryRows) {
-          const versionId = Number(entry.version_id);
-          const bucket = byVersionId.get(versionId) ?? [];
-          bucket.push({
-            path: String(entry.path),
-            size: Number(entry.size),
-            kind: entry.kind as DbWorkspaceFile["kind"],
-            contentExcerpt: entry.content_excerpt == null ? null : String(entry.content_excerpt),
-            contentText: entry.content_text == null ? null : String(entry.content_text),
-            contentType: entry.content_type == null ? null : String(entry.content_type),
-            storageUrl: entry.storage_url == null ? null : String(entry.storage_url),
-            maskedCount: Number(entry.masked_count),
-          });
-          byVersionId.set(versionId, bucket);
-        }
-        state.lobsterVersions = state.lobsterVersions.map((version) => ({
-          ...version,
-          workspaceFiles: byVersionId.get(version.id) ?? version.workspaceFiles,
-        }));
-      }
-      return state;
-    }
-  } catch {}
   return loadLegacyStateFromJson();
 }
 
