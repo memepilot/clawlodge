@@ -318,6 +318,8 @@ main {
 }
 
 .hero-search-band {
+  max-width: 1200px;
+  margin: 28px auto 0;
   margin-top: 28px;
   padding: 20px 22px;
   display: grid;
