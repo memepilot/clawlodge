@@ -2,6 +2,7 @@ import Script from "next/script";
 import Link from "next/link";
 
 import { LobsterCard } from "@/components/lobster-card";
+import { SearchBand } from "@/components/search-band";
 import { apiOrigin } from "@/lib/api";
 import { getTranslations } from "@/lib/i18n";
 import { getRequestLocale } from "@/lib/server/locale";
@@ -108,26 +109,14 @@ export default async function Home({
               </div>
             </div>
           </div>
-          <div className="hero-search-band shell">
-            <div className="hero-search-meta">
-              <div className="stat">{t.home.searchStat}</div>
-            </div>
-            <form className="search-stack" method="get">
-              <div className="search-bar">
-                <span className="mono">/</span>
-                <input className="search-input" name="q" defaultValue={params.q ?? ""} placeholder={t.home.searchPlaceholder} />
-              </div>
-              <div className="search-controls-row">
-                <select className="select" defaultValue={sort} name="sort">
-                  <option value="hot">Hot</option>
-                  <option value="new">New</option>
-                </select>
-                <button className="btn btn-primary search-submit" type="submit">
-                  {t.home.searchButton}
-                </button>
-              </div>
-            </form>
-          </div>
+          <SearchBand
+            defaultQuery={params.q ?? ""}
+            placeholder={t.home.searchPlaceholder}
+            buttonLabel={t.home.searchButton}
+            helperText={t.home.searchStat}
+            includeSort
+            sortValue={sort}
+          />
         </section>
       )}
 
