@@ -36,6 +36,31 @@ const MAX_README_CONTEXT_FILES = 24;
 const MAX_GITHUB_README_ASSET_BYTES = 8 * 1024 * 1024;
 const MAX_SUMMARY_LENGTH = 160;
 
+function buildLobsterSearchDocument(input: {
+  slug: string;
+  name: string;
+  summary?: string | null;
+  tags?: string[];
+  readmeText?: string | null;
+  sourceUrl?: string | null;
+  originalAuthor?: string | null;
+  workspaceFiles?: Array<{ path: string; content_excerpt?: string | null }>;
+}) {
+  return [
+    input.slug,
+    input.slug.replace(/-/g, " "),
+    input.name,
+    input.summary ?? "",
+    (input.tags ?? []).join(" "),
+    input.readmeText ?? "",
+    input.sourceUrl ?? "",
+    input.originalAuthor ?? "",
+    ...((input.workspaceFiles ?? []).map((file) => `${file.path}\n${file.content_excerpt ?? ""}`)),
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 function parseGithubRepoRef(sourceRepo: string | null | undefined) {
   const raw = sourceRepo?.trim();
   if (!raw) return null;
@@ -758,7 +783,12 @@ export async function createLobster(
       seededAt: null,
       status: "active",
       reportPenalty: 0,
-      searchDocument: [payload.name.trim(), payload.summary.trim(), tags.join(" ")].join("\n"),
+      searchDocument: buildLobsterSearchDocument({
+        slug,
+        name: payload.name.trim(),
+        summary: payload.summary.trim(),
+        tags,
+      }),
       tags,
       recommendationScore: null,
       githubStars: null,
@@ -939,13 +969,16 @@ export async function createVersion(
     lobster.summary = generatedSummary;
     lobster.updatedAt = now;
     lobster.githubStars = repoSignals?.stars ?? lobster.githubStars ?? null;
-    lobster.searchDocument = [
-      lobster.name,
-      generatedSummary,
-      migratedReadmeMarkdown,
-      lobster.tags.join(" "),
-      ...(payload.workspace_files ?? []).map((file) => `${file.path}\n${file.content_excerpt ?? ""}`),
-    ].join("\n");
+    lobster.searchDocument = buildLobsterSearchDocument({
+      slug: lobster.slug,
+      name: lobster.name,
+      summary: generatedSummary,
+      tags: lobster.tags,
+      readmeText: migratedReadmeMarkdown,
+      sourceUrl: lobster.sourceUrl,
+      originalAuthor: lobster.originalAuthor,
+      workspaceFiles: payload.workspace_files ?? [],
+    });
     return toVersion(created);
   });
 
@@ -1321,7 +1354,12 @@ export async function uploadViaMcp(
         seededAt: null,
         status: "active",
         reportPenalty: 0,
-        searchDocument: `${manifest.name}\n${manifest.summary}`,
+        searchDocument: buildLobsterSearchDocument({
+          slug: slugify(manifest.lobster_slug),
+          name: manifest.name,
+          summary: manifest.summary,
+          sourceUrl: manifest.source?.repo_url ?? null,
+        }),
         tags: [],
         recommendationScore: null,
         githubStars: null,
@@ -1405,7 +1443,15 @@ export async function uploadViaMcp(
     if (Array.isArray(tagSetting?.value)) {
       lobster.tags = [...new Set(tagSetting.value.map((item) => String(item).trim().toLowerCase()).filter(Boolean))];
     }
-    lobster.searchDocument = `${lobster.name}\n${lobster.summary}\n${migratedReadmeText}`;
+    lobster.searchDocument = buildLobsterSearchDocument({
+      slug: lobster.slug,
+      name: lobster.name,
+      summary: lobster.summary,
+      tags: lobster.tags,
+      readmeText: migratedReadmeText,
+      sourceUrl: lobster.sourceUrl,
+      originalAuthor: lobster.originalAuthor,
+    });
     lobster.updatedAt = now;
 
     return {
@@ -1456,7 +1502,14 @@ export async function publishWorkspace(userId: number, payload: WorkspacePublish
       lobster.license = payload.license;
       lobster.tags = [...new Set(payload.tags.map((tag) => tag.trim().toLowerCase()).filter(Boolean))];
       lobster.updatedAt = new Date().toISOString();
-      lobster.searchDocument = [lobster.name, lobster.summary, lobster.tags.join(" ")].join("\n");
+      lobster.searchDocument = buildLobsterSearchDocument({
+        slug: lobster.slug,
+        name: lobster.name,
+        summary: lobster.summary,
+        tags: lobster.tags,
+        sourceUrl: lobster.sourceUrl,
+        originalAuthor: lobster.originalAuthor,
+      });
     });
   }
 
