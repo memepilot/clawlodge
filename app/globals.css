@@ -1282,12 +1282,9 @@ main {
   margin-top: 0;
 }
 
-.detail-search-form {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 4px;
+.detail-search-band {
+  padding-top: 18px;
+  padding-bottom: 18px;
 }
 
 .detail-jump-links {
@@ -1669,10 +1666,6 @@ main {
   .detail-head,
   .detail-section-head {
     align-items: stretch;
-  }
-
-  .detail-search-form {
-    grid-template-columns: 1fr;
   }
 
   .detail-head {

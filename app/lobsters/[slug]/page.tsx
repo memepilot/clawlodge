@@ -87,9 +87,9 @@ export default async function LobsterDetailPage({
 
   return (
     <div className="page-shell stack-lg">
-      <section className="shell page-panel detail-hero">
-        <div className="detail-hero-main">
-          <form className="detail-search-form" method="get" action="/">
+      <section className="shell page-panel hero-search-band detail-search-band">
+        <form className="search-stack" method="get" action="/">
+          <div className="search-primary-row">
             <div className="search-bar">
               <span className="mono">/</span>
               <input
@@ -99,10 +99,15 @@ export default async function LobsterDetailPage({
                 placeholder={t.home.searchPlaceholder}
               />
             </div>
-            <button className="btn btn-primary" type="submit">
+            <button className="btn btn-primary search-submit" type="submit">
               {t.home.searchButton}
             </button>
-          </form>
+          </div>
+        </form>
+      </section>
+
+      <section className="shell page-panel detail-hero">
+        <div className="detail-hero-main">
           <div className="detail-kickers">
             {lobster.source_type ? <span className="tag tag-source">{lobster.source_type === "community" ? t.detail.communityUpload : lobster.source_type}</span> : null}
             {lobster.verified ? <span className="tag tag-verified">{t.detail.verified}</span> : null}
