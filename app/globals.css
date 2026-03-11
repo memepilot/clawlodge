@@ -336,7 +336,7 @@ main {
 
 .search-primary-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 132px auto;
+  grid-template-columns: minmax(0, 1fr) 108px auto;
   gap: 12px;
   align-items: center;
 }
@@ -365,8 +365,8 @@ main {
 }
 
 .search-sort-select {
-  width: 132px;
-  min-width: 132px;
+  width: 108px;
+  min-width: 108px;
   height: 100%;
 }
 
@@ -1800,13 +1800,13 @@ main {
   }
 
   .search-primary-row {
-    grid-template-columns: minmax(0, 1fr) 96px auto;
+    grid-template-columns: minmax(0, 1fr) 84px auto;
     gap: 10px;
   }
 
   .search-sort-select {
-    width: 96px;
-    min-width: 96px;
+    width: 84px;
+    min-width: 84px;
   }
 
   .search-submit {
