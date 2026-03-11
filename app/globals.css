@@ -318,6 +318,7 @@ main {
 }
 
 .hero-search-band {
+  width: 100%;
   max-width: 1200px;
   margin: 28px auto 0;
   margin-top: 28px;
@@ -1284,6 +1285,7 @@ main {
 }
 
 .detail-search-band {
+  margin-top: 0;
   padding-top: 18px;
   padding-bottom: 18px;
 }
