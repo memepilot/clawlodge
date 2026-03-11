@@ -61,6 +61,72 @@ function buildLobsterSearchDocument(input: {
     .join("\n");
 }
 
+function normalizeSearchText(value: string | null | undefined) {
+  return (value ?? "").toLowerCase();
+}
+
+function tokenizeSearchText(value: string | null | undefined) {
+  return normalizeSearchText(value)
+    .split(/[^a-z0-9\u4e00-\u9fff]+/i)
+    .map((token) => token.trim())
+    .filter(Boolean);
+}
+
+function includesAllTokens(haystack: string, tokens: string[]) {
+  return tokens.every((token) => haystack.includes(token));
+}
+
+function computeSearchRelevance(params: {
+  query: string;
+  slug: string;
+  name: string;
+  tags: string[];
+  summary?: string | null;
+  sourceUrl?: string | null;
+  originalAuthor?: string | null;
+}) {
+  const query = normalizeSearchText(params.query).trim();
+  if (!query) return 0;
+
+  const queryTokens = tokenizeSearchText(query);
+  const slug = normalizeSearchText(params.slug);
+  const slugWords = slug.replace(/-/g, " ");
+  const name = normalizeSearchText(params.name);
+  const summary = normalizeSearchText(params.summary);
+  const tags = params.tags.map((tag) => normalizeSearchText(tag));
+  const sourceUrl = normalizeSearchText(params.sourceUrl);
+  const originalAuthor = normalizeSearchText(params.originalAuthor);
+
+  let score = 0;
+
+  if (slug === query) score += 10000;
+  else if (slug.startsWith(query)) score += 6000;
+  else if (slug.includes(query)) score += 5000;
+
+  if (slugWords === query) score += 5000;
+  else if (slugWords.includes(query)) score += 3200;
+
+  if (name === query) score += 9000;
+  else if (name.startsWith(query)) score += 5200;
+  else if (name.includes(query)) score += 4200;
+
+  if (tags.some((tag) => tag === query)) score += 3600;
+  else if (tags.some((tag) => tag.includes(query))) score += 2200;
+
+  if (summary.includes(query)) score += 1200;
+  if (sourceUrl.includes(query) || originalAuthor.includes(query)) score += 800;
+
+  if (queryTokens.length) {
+    if (includesAllTokens(slugWords, queryTokens)) score += 1800;
+    if (includesAllTokens(name, queryTokens)) score += 1600;
+    if (tags.some((tag) => includesAllTokens(tag, queryTokens))) score += 1200;
+    if (includesAllTokens(summary, queryTokens)) score += 500;
+    if (includesAllTokens(sourceUrl, queryTokens) || includesAllTokens(originalAuthor, queryTokens)) score += 300;
+  }
+
+  return score;
+}
+
 function parseGithubRepoRef(sourceRepo: string | null | undefined) {
   const raw = sourceRepo?.trim();
   if (!raw) return null;
@@ -558,13 +624,21 @@ export async function listLobsters(params?: { sort?: string; tag?: string; q?: s
     const tag = params.tag.trim().toLowerCase();
     items = items.filter(({ lobster }) => lobster.tags.includes(tag));
   }
-  if (params?.q?.trim()) {
-    const q = params.q.trim().toLowerCase();
-    items = items.filter(({ lobster }) => lobster.searchDocument.toLowerCase().includes(q));
-  }
+  const query = params?.q?.trim() ?? "";
 
   const summaries = items.map(({ lobster, owner, latestVersion, latestSourceRepo, latestIconUrl }) => ({
     item: lobster,
+    searchScore: query
+      ? computeSearchRelevance({
+          query,
+          slug: lobster.slug,
+          name: lobster.name,
+          tags: lobster.tags,
+          summary: lobster.summary,
+          sourceUrl: lobster.sourceUrl,
+          originalAuthor: lobster.originalAuthor,
+        })
+      : 0,
     summary: {
       ...toSummary(lobster, {
         id: lobster.ownerId,
@@ -584,7 +658,14 @@ export async function listLobsters(params?: { sort?: string; tag?: string; q?: s
     },
   }));
 
-  summaries.sort((a, b) => {
+  const filteredSummaries = query ? summaries.filter((entry) => entry.searchScore > 0) : summaries;
+
+  filteredSummaries.sort((a, b) => {
+    if (query) {
+      const relevanceDiff = b.searchScore - a.searchScore;
+      if (relevanceDiff !== 0) return relevanceDiff;
+      return +new Date(b.summary.created_at) - +new Date(a.summary.created_at);
+    }
     if (params?.sort === "new") return +new Date(b.summary.created_at) - +new Date(a.summary.created_at);
     const scoreDiff = rankingScore(b.item, b.summary) - rankingScore(a.item, a.summary);
     if (scoreDiff !== 0) return scoreDiff;
@@ -592,9 +673,9 @@ export async function listLobsters(params?: { sort?: string; tag?: string; q?: s
     return +new Date(b.summary.created_at) - +new Date(a.summary.created_at);
   });
 
-  const ranked = summaries.map((entry, index) => ({
+  const ranked = filteredSummaries.map((entry, index) => ({
     ...entry.summary,
-    recommended: params?.sort !== "new" && index < 3,
+    recommended: !query && params?.sort !== "new" && index < 3,
   }));
   const total = ranked.length;
   const totalPages = Math.max(1, Math.ceil(total / perPage));
