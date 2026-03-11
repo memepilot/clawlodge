@@ -121,6 +121,9 @@ function openDatabase() {
   if (!database) {
     database = new DatabaseSync(dbFilePath);
     database.exec(`
+      PRAGMA busy_timeout = 5000;
+    `);
+    database.exec(`
       PRAGMA journal_mode = WAL;
       PRAGMA synchronous = NORMAL;
       CREATE TABLE IF NOT EXISTS app_state (
