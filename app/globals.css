@@ -338,6 +338,14 @@ main {
   align-items: center;
 }
 
+.search-controls-row {
+  display: grid;
+  grid-template-columns: 130px auto;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
 .search-bar {
   display: flex;
   align-items: center;
@@ -356,18 +364,9 @@ main {
   font-size: 1rem;
 }
 
-.filters-row {
-  display: grid;
-  grid-template-columns: 130px minmax(0, 1fr) auto;
-  gap: 12px;
-}
-
-.filters-row-compact {
-  grid-template-columns: 130px minmax(0, 1fr);
-}
-
 .search-submit {
   min-width: 112px;
+  justify-self: end;
 }
 
 .tag-results-bar {

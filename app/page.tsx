@@ -66,26 +66,24 @@ export default async function Home({
         <section className="section section-tight">
           <div className="tag-results-bar hero-card">
             <form className="tag-results-form" method="get">
-              <div className="search-primary-row">
-                <div className="search-bar">
-                  <span className="mono">/</span>
-                  <input
-                    className="search-input"
-                    name="q"
-                    defaultValue={params.q ?? ""}
-                    placeholder={t.home.searchPlaceholder}
-                  />
-                </div>
-                <button className="btn btn-primary search-submit" type="submit">
-                  {t.home.searchButton}
-                </button>
+              <div className="search-bar">
+                <span className="mono">/</span>
+                <input
+                  className="search-input"
+                  name="q"
+                  defaultValue={params.q ?? ""}
+                  placeholder={t.home.searchPlaceholder}
+                />
               </div>
-              <div className="filters-row filters-row-compact">
+              <div className="search-controls-row">
                 <select className="select" defaultValue={sort} name="sort">
                   <option value="hot">Hot</option>
                   <option value="new">New</option>
                 </select>
-                <input className="input" name="tag" defaultValue={params.tag ?? ""} placeholder={t.home.tagPlaceholder} />
+                {params.tag?.trim() ? <input type="hidden" name="tag" value={params.tag.trim()} /> : null}
+                <button className="btn btn-primary search-submit" type="submit">
+                  {t.home.searchButton}
+                </button>
               </div>
             </form>
           </div>
@@ -115,21 +113,18 @@ export default async function Home({
               <div className="stat">{t.home.searchStat}</div>
             </div>
             <form className="search-stack" method="get">
-              <div className="search-primary-row">
-                <div className="search-bar">
-                  <span className="mono">/</span>
-                  <input className="search-input" name="q" defaultValue={params.q ?? ""} placeholder={t.home.searchPlaceholder} />
-                </div>
-                <button className="btn btn-primary search-submit" type="submit">
-                  {t.home.searchButton}
-                </button>
+              <div className="search-bar">
+                <span className="mono">/</span>
+                <input className="search-input" name="q" defaultValue={params.q ?? ""} placeholder={t.home.searchPlaceholder} />
               </div>
-              <div className="filters-row filters-row-compact">
+              <div className="search-controls-row">
                 <select className="select" defaultValue={sort} name="sort">
                   <option value="hot">Hot</option>
                   <option value="new">New</option>
                 </select>
-                <input className="input" name="tag" defaultValue={params.tag ?? ""} placeholder={t.home.tagPlaceholder} />
+                <button className="btn btn-primary search-submit" type="submit">
+                  {t.home.searchButton}
+                </button>
               </div>
             </form>
           </div>
