@@ -65,13 +65,15 @@ function normalizeState(parsed: DbState) {
     iconUrl: version.iconUrl ?? null,
     iconSeed: version.iconSeed ?? null,
     iconSpecVersion: version.iconSpecVersion ?? null,
-    workspaceFiles: (version.workspaceFiles ?? []).map((file) => ({
-      ...file,
-      contentText: file.contentText ?? null,
-      contentType: file.contentType ?? null,
-      storageUrl: file.storageUrl ?? null,
-      maskedCount: file.maskedCount ?? 0,
-    })),
+    workspaceFiles: Array.isArray(version.workspaceFiles)
+      ? version.workspaceFiles.map((file) => ({
+          ...file,
+          contentText: file.contentText ?? null,
+          contentType: file.contentType ?? null,
+          storageUrl: file.storageUrl ?? null,
+          maskedCount: file.maskedCount ?? 0,
+        }))
+      : undefined,
     publishClient: version.publishClient ?? null,
     maskedSecretsCount: version.maskedSecretsCount ?? 0,
     blockedFilesCount: version.blockedFilesCount ?? 0,
