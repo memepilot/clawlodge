@@ -341,6 +341,10 @@ main {
   align-items: center;
 }
 
+.search-primary-row > * {
+  min-width: 0;
+}
+
 .search-controls-row {
   display: grid;
   grid-template-columns: 130px auto;
@@ -357,6 +361,7 @@ main {
   border-radius: var(--radius-md);
   background: var(--surface);
   padding: 12px 14px;
+  min-width: 0;
 }
 
 .search-sort-select {
@@ -367,6 +372,8 @@ main {
 
 .search-input {
   flex: 1;
+  width: 100%;
+  min-width: 0;
   border: none;
   background: transparent;
   outline: none;
@@ -1793,13 +1800,13 @@ main {
   }
 
   .search-primary-row {
-    grid-template-columns: minmax(0, 1fr) 112px auto;
+    grid-template-columns: minmax(0, 1fr) 96px auto;
     gap: 10px;
   }
 
   .search-sort-select {
-    width: 112px;
-    min-width: 112px;
+    width: 96px;
+    min-width: 96px;
   }
 
   .search-submit {
