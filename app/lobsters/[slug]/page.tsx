@@ -112,14 +112,6 @@ export default async function LobsterDetailPage({
               </p>
             </div>
           </div>
-          <p className="detail-summary">{lobster.summary}</p>
-          <div className="lobster-card-tags detail-tags">
-            {lobster.tags.map((tag) => (
-              <Link key={tag} className="tag" href={`/?tag=${encodeURIComponent(tag)}`}>
-                #{tag}
-              </Link>
-            ))}
-          </div>
           <form className="detail-search-form" method="get" action="/">
             <div className="search-bar">
               <span className="mono">/</span>
@@ -134,6 +126,14 @@ export default async function LobsterDetailPage({
               {t.home.searchButton}
             </button>
           </form>
+          <p className="detail-summary">{lobster.summary}</p>
+          <div className="lobster-card-tags detail-tags">
+            {lobster.tags.map((tag) => (
+              <Link key={tag} className="tag" href={`/?tag=${encodeURIComponent(tag)}`}>
+                #{tag}
+              </Link>
+            ))}
+          </div>
           <div className="detail-jump-links">
             <a className="detail-jump-link" href="#readme">{t.detail.readme}</a>
             <a className="detail-jump-link" href="#workspace">{t.detail.workspace}</a>
