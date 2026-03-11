@@ -120,6 +120,20 @@ export default async function LobsterDetailPage({
               </Link>
             ))}
           </div>
+          <form className="detail-search-form" method="get" action="/">
+            <div className="search-bar">
+              <span className="mono">/</span>
+              <input
+                className="search-input"
+                name="q"
+                defaultValue={displayName}
+                placeholder={t.home.searchPlaceholder}
+              />
+            </div>
+            <button className="btn btn-primary" type="submit">
+              {t.home.searchButton}
+            </button>
+          </form>
           <div className="detail-jump-links">
             <a className="detail-jump-link" href="#readme">{t.detail.readme}</a>
             <a className="detail-jump-link" href="#workspace">{t.detail.workspace}</a>
