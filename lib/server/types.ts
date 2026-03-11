@@ -104,7 +104,7 @@ export type DbLobsterVersion = {
   iconSpecVersion: string | null;
   sourceRepo: string | null;
   sourceCommit: string | null;
-  workspaceFiles: DbWorkspaceFile[];
+  workspaceFiles?: DbWorkspaceFile[];
   publishClient: string | null;
   maskedSecretsCount: number;
   blockedFilesCount: number;

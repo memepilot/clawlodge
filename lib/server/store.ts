@@ -88,6 +88,20 @@ function normalizeState(parsed: DbState) {
   return parsed;
 }
 
+function versionsWithInlineWorkspaceFiles(state: DbState) {
+  return state.lobsterVersions.filter((version) => Array.isArray(version.workspaceFiles));
+}
+
+function stripWorkspaceFilesFromState(state: DbState): DbState {
+  return {
+    ...state,
+    lobsterVersions: state.lobsterVersions.map((version) => ({
+      ...version,
+      workspaceFiles: undefined,
+    })),
+  };
+}
+
 async function ensureDataDir() {
   await fs.mkdir(path.dirname(dbFilePath), { recursive: true });
 }
@@ -172,6 +186,18 @@ function openDatabase() {
         skills_json TEXT NOT NULL,
         created_at TEXT NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS workspace_entries (
+        version_id INTEGER NOT NULL,
+        path TEXT NOT NULL,
+        size INTEGER NOT NULL,
+        kind TEXT NOT NULL,
+        content_excerpt TEXT,
+        content_text TEXT,
+        content_type TEXT,
+        storage_url TEXT,
+        masked_count INTEGER NOT NULL,
+        PRIMARY KEY (version_id, path)
+      );
       CREATE TABLE IF NOT EXISTS comments_mirror (
         id INTEGER PRIMARY KEY,
         user_id INTEGER NOT NULL,
@@ -182,10 +208,77 @@ function openDatabase() {
       CREATE INDEX IF NOT EXISTS idx_lobsters_mirror_status_slug ON lobsters_mirror(status, slug);
       CREATE INDEX IF NOT EXISTS idx_lobsters_mirror_owner ON lobsters_mirror(owner_id);
       CREATE INDEX IF NOT EXISTS idx_versions_mirror_lobster_created ON lobster_versions_mirror(lobster_id, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_workspace_entries_version_path ON workspace_entries(version_id, path);
       CREATE INDEX IF NOT EXISTS idx_comments_mirror_lobster_created ON comments_mirror(lobster_id, created_at ASC);
     `);
   }
   return database;
+}
+
+function syncWorkspaceEntries(db: DatabaseSync, state: DbState) {
+  const versions = versionsWithInlineWorkspaceFiles(state);
+  if (!versions.length) return;
+
+  const deleteEntries = db.prepare(`DELETE FROM workspace_entries WHERE version_id = ?`);
+  const insertEntry = db.prepare(`
+    INSERT INTO workspace_entries (
+      version_id, path, size, kind, content_excerpt, content_text, content_type, storage_url, masked_count
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  for (const version of versions) {
+    deleteEntries.run(version.id);
+    for (const file of version.workspaceFiles ?? []) {
+      insertEntry.run(
+        version.id,
+        file.path,
+        file.size,
+        file.kind,
+        file.contentExcerpt ?? null,
+        file.contentText ?? null,
+        file.contentType ?? null,
+        file.storageUrl ?? null,
+        file.maskedCount ?? 0,
+      );
+    }
+  }
+}
+
+function workspaceEntriesCount(db: DatabaseSync) {
+  const row = db.prepare("SELECT COUNT(*) AS count FROM workspace_entries").get() as { count: number };
+  return Number(row.count || 0);
+}
+
+function backfillWorkspaceEntriesFromMirrorJson(db: DatabaseSync) {
+  const rows = db.prepare(`
+    SELECT id, workspace_files_json
+    FROM lobster_versions_mirror
+    WHERE workspace_files_json IS NOT NULL AND workspace_files_json != '[]'
+  `).all() as Array<{ id: number; workspace_files_json: string }>;
+  if (!rows.length) return;
+
+  const insertEntry = db.prepare(`
+    INSERT INTO workspace_entries (
+      version_id, path, size, kind, content_excerpt, content_text, content_type, storage_url, masked_count
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  for (const row of rows) {
+    const files = parseJsonArray<DbWorkspaceFile>(row.workspace_files_json);
+    for (const file of files) {
+      insertEntry.run(
+        row.id,
+        file.path,
+        file.size,
+        file.kind,
+        file.contentExcerpt ?? null,
+        file.contentText ?? null,
+        file.contentType ?? null,
+        file.storageUrl ?? null,
+        file.maskedCount ?? 0,
+      );
+    }
+  }
 }
 
 function syncMirrorTables(db: DatabaseSync, state: DbState) {
@@ -205,12 +298,12 @@ function syncMirrorTables(db: DatabaseSync, state: DbState) {
     insertUser.run(
       user.id,
       user.handle,
-      user.displayName,
-      user.avatarUrl,
-      user.bio,
-      user.email,
-      user.githubId,
-      JSON.stringify(user.favoriteSlugs),
+      user.displayName ?? null,
+      user.avatarUrl ?? null,
+      user.bio ?? null,
+      user.email ?? null,
+      user.githubId ?? null,
+      JSON.stringify(user.favoriteSlugs ?? []),
       user.createdAt,
       user.updatedAt,
     );
@@ -229,20 +322,20 @@ function syncMirrorTables(db: DatabaseSync, state: DbState) {
       lobster.slug,
       lobster.ownerId,
       lobster.name,
-      lobster.summary,
+      lobster.summary ?? "",
       lobster.license,
       lobster.sourceType,
-      lobster.sourceUrl,
-      lobster.originalAuthor,
+      lobster.sourceUrl ?? null,
+      lobster.originalAuthor ?? null,
       lobster.verified ? 1 : 0,
-      lobster.curationNote,
-      lobster.seededAt,
+      lobster.curationNote ?? null,
+      lobster.seededAt ?? null,
       lobster.status,
       lobster.reportPenalty,
-      lobster.searchDocument,
-      JSON.stringify(lobster.tags),
-      lobster.recommendationScore,
-      lobster.githubStars,
+      lobster.searchDocument ?? "",
+      JSON.stringify(lobster.tags ?? []),
+      lobster.recommendationScore ?? null,
+      lobster.githubStars ?? null,
       lobster.favoriteCount,
       lobster.downloadCount,
       lobster.shareCount,
@@ -269,17 +362,17 @@ function syncMirrorTables(db: DatabaseSync, state: DbState) {
       version.readmeText,
       version.manifestUrl,
       version.readmeUrl,
-      version.skillsBundleUrl,
-      version.iconUrl,
-      version.iconSeed,
-      version.iconSpecVersion,
-      version.sourceRepo,
-      version.sourceCommit,
-      JSON.stringify(version.workspaceFiles),
-      version.publishClient,
+      version.skillsBundleUrl ?? null,
+      version.iconUrl ?? null,
+      version.iconSeed ?? null,
+      version.iconSpecVersion ?? null,
+      version.sourceRepo ?? null,
+      version.sourceCommit ?? null,
+      "[]",
+      version.publishClient ?? null,
       version.maskedSecretsCount,
       version.blockedFilesCount,
-      JSON.stringify(version.skills),
+      JSON.stringify(version.skills ?? []),
       version.createdAt,
     );
   }
@@ -369,12 +462,42 @@ async function ensureDatabase() {
   const existing = db.prepare("SELECT 1 FROM app_state WHERE id = 1").get() as { 1: number } | undefined;
   if (!existing) {
     const state = await loadLegacyState();
-    db.prepare("INSERT INTO app_state (id, payload, updated_at) VALUES (1, ?, ?)")
-      .run(JSON.stringify(state), new Date().toISOString());
-    syncMirrorTables(db, state);
+    const persisted = stripWorkspaceFilesFromState(state);
+    db.exec("BEGIN IMMEDIATE");
+    try {
+      syncWorkspaceEntries(db, state);
+      db.prepare("INSERT INTO app_state (id, payload, updated_at) VALUES (1, ?, ?)")
+        .run(JSON.stringify(persisted), new Date().toISOString());
+      syncMirrorTables(db, persisted);
+      db.exec("COMMIT");
+    } catch (error) {
+      db.exec("ROLLBACK");
+      throw error;
+    }
   } else {
     const row = db.prepare("SELECT payload FROM app_state WHERE id = 1").get() as { payload: string };
-    syncMirrorTables(db, normalizeState(JSON.parse(row.payload) as DbState));
+    const state = normalizeState(JSON.parse(row.payload) as DbState);
+    const persisted = stripWorkspaceFilesFromState(state);
+    db.exec("BEGIN IMMEDIATE");
+    try {
+      if (workspaceEntriesCount(db) === 0) {
+        syncWorkspaceEntries(db, state);
+        if (workspaceEntriesCount(db) === 0) {
+          backfillWorkspaceEntriesFromMirrorJson(db);
+        }
+      } else {
+        syncWorkspaceEntries(db, state);
+      }
+      if (versionsWithInlineWorkspaceFiles(state).length) {
+        db.prepare("UPDATE app_state SET payload = ?, updated_at = ? WHERE id = 1")
+          .run(JSON.stringify(persisted), new Date().toISOString());
+      }
+      syncMirrorTables(db, persisted);
+      db.exec("COMMIT");
+    } catch (error) {
+      db.exec("ROLLBACK");
+      throw error;
+    }
   }
   initialized = true;
 }
@@ -396,11 +519,13 @@ async function persistDb(next: DbState) {
   await ensureDatabase();
   const db = openDatabase();
   const now = new Date().toISOString();
+  const persisted = stripWorkspaceFilesFromState(next);
   db.exec("BEGIN IMMEDIATE");
   try {
     db.prepare("UPDATE app_state SET payload = ?, updated_at = ? WHERE id = 1")
-      .run(JSON.stringify(next), now);
-    syncMirrorTables(db, next);
+      .run(JSON.stringify(persisted), now);
+    syncWorkspaceEntries(db, next);
+    syncMirrorTables(db, persisted);
     db.exec("COMMIT");
   } catch (error) {
     db.exec("ROLLBACK");
@@ -516,10 +641,39 @@ export async function readMirroredLobsterDetail(slug: string): Promise<MirrorDet
     ORDER BY datetime(created_at) DESC, id DESC
   `).all(lobster.id) as Record<string, unknown>[];
 
+  const versions = versionRows.map(toMirrorVersion);
+  const workspaceEntryRows = versions.length
+    ? db.prepare(`
+      SELECT *
+      FROM workspace_entries
+      WHERE version_id IN (${versions.map(() => "?").join(",")})
+      ORDER BY path ASC
+    `).all(...versions.map((version) => version.id)) as Record<string, unknown>[]
+    : [];
+  const filesByVersionId = new Map<number, DbWorkspaceFile[]>();
+  for (const rowEntry of workspaceEntryRows) {
+    const versionId = Number(rowEntry.version_id);
+    const bucket = filesByVersionId.get(versionId) ?? [];
+    bucket.push({
+      path: String(rowEntry.path),
+      size: Number(rowEntry.size),
+      kind: rowEntry.kind as DbWorkspaceFile["kind"],
+      contentExcerpt: rowEntry.content_excerpt == null ? null : String(rowEntry.content_excerpt),
+      contentText: rowEntry.content_text == null ? null : String(rowEntry.content_text),
+      contentType: rowEntry.content_type == null ? null : String(rowEntry.content_type),
+      storageUrl: rowEntry.storage_url == null ? null : String(rowEntry.storage_url),
+      maskedCount: Number(rowEntry.masked_count),
+    });
+    filesByVersionId.set(versionId, bucket);
+  }
+  for (const version of versions) {
+    version.workspaceFiles = filesByVersionId.get(version.id) ?? [];
+  }
+
   return {
     lobster,
     owner,
-    versions: versionRows.map(toMirrorVersion),
+    versions,
   };
 }
 
@@ -536,10 +690,48 @@ export async function readMirroredLobsterVersion(slug: string, version: string, 
     LIMIT 1
   `).get(slug, version) as Record<string, unknown> | undefined;
   if (!row) return null;
+  const mirroredVersion = toMirrorVersion(row);
+  const workspaceEntryRows = db.prepare(`
+    SELECT *
+    FROM workspace_entries
+    WHERE version_id = ?
+    ORDER BY path ASC
+  `).all(mirroredVersion.id) as Record<string, unknown>[];
+  mirroredVersion.workspaceFiles = workspaceEntryRows.map((entry) => ({
+    path: String(entry.path),
+    size: Number(entry.size),
+    kind: entry.kind as DbWorkspaceFile["kind"],
+    contentExcerpt: entry.content_excerpt == null ? null : String(entry.content_excerpt),
+    contentText: entry.content_text == null ? null : String(entry.content_text),
+    contentType: entry.content_type == null ? null : String(entry.content_type),
+    storageUrl: entry.storage_url == null ? null : String(entry.storage_url),
+    maskedCount: Number(entry.masked_count),
+  }));
   return {
     lobster: toMirrorLobster(row),
-    version: toMirrorVersion(row),
+    version: mirroredVersion,
   };
+}
+
+export async function readWorkspaceEntriesForVersionId(versionId: number) {
+  await ensureDatabase();
+  const db = openDatabase();
+  const rows = db.prepare(`
+    SELECT *
+    FROM workspace_entries
+    WHERE version_id = ?
+    ORDER BY path ASC
+  `).all(versionId) as Record<string, unknown>[];
+  return rows.map((entry) => ({
+    path: String(entry.path),
+    size: Number(entry.size),
+    kind: entry.kind as DbWorkspaceFile["kind"],
+    contentExcerpt: entry.content_excerpt == null ? null : String(entry.content_excerpt),
+    contentText: entry.content_text == null ? null : String(entry.content_text),
+    contentType: entry.content_type == null ? null : String(entry.content_type),
+    storageUrl: entry.storage_url == null ? null : String(entry.storage_url),
+    maskedCount: Number(entry.masked_count),
+  }));
 }
 
 export async function readMirroredComments(slug: string) {

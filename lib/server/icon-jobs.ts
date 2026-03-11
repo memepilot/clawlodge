@@ -1,5 +1,5 @@
 import { generateWorkspaceLobsterIcon, iconExtensionForContentType } from "./lobster-icon";
-import { mutateDb, readDb } from "./store";
+import { mutateDb, readDb, readWorkspaceEntriesForVersionId } from "./store";
 import { putObject } from "./storage";
 
 const MAX_ICON_JOB_ATTEMPTS = 3;
@@ -92,12 +92,13 @@ async function processClaimedJob(job: { id: number; lobsterVersionId: number; at
     return;
   }
 
+  const workspaceFiles = await readWorkspaceEntriesForVersionId(version.id);
   const icon = await generateWorkspaceLobsterIcon({
     slug: lobster.slug,
     version: version.version,
     tags: lobster.tags,
     sourceType: lobster.sourceType,
-    workspacePaths: (version.workspaceFiles ?? []).map((file) => file.path),
+    workspacePaths: workspaceFiles.map((file) => file.path),
     readmeText: version.readmeText,
     summary: lobster.summary,
   });

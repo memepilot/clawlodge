@@ -630,28 +630,26 @@ export async function recordLobsterDownload(slug: string) {
 }
 
 export async function buildLobsterVersionZip(slug: string, version: string) {
-  const db = await readDb();
-  const lobster = db.lobsters.find((item) => item.slug === slug);
-  if (!lobster) throw new ApiError(404, "Lobster not found");
-
-  const found = db.lobsterVersions.find((item) => item.lobsterId === lobster.id && item.version === version);
+  const found = await readMirroredLobsterVersion(slug, version, true);
   if (!found) throw new ApiError(404, "Version not found");
+  const lobster = found.lobster;
+  const versionRecord = found.version;
 
   const entries: Record<string, Uint8Array> = {};
-  const root = `${lobster.slug}-${found.version}`;
+  const root = `${lobster.slug}-${versionRecord.version}`;
   const unrecoverable: string[] = [];
 
-  entries[`${root}/README.md`] = strToU8(found.readmeText);
+  entries[`${root}/README.md`] = strToU8(versionRecord.readmeText);
 
   const manifest = {
     schema_version: "1.0",
     lobster_slug: lobster.slug,
-    version: found.version,
+    version: versionRecord.version,
     name: lobster.name,
     summary: lobster.summary,
     license: lobster.license,
     readme_path: "README.md",
-    skills: found.skills.map((skill) => ({
+    skills: versionRecord.skills.map((skill) => ({
       id: skill.skillId,
       name: skill.name,
       entry: skill.entry,
@@ -660,18 +658,18 @@ export async function buildLobsterVersionZip(slug: string, version: string) {
       size: skill.size ?? undefined,
     })),
     settings: [
-      { key: "blocked_files_count", value: found.blockedFilesCount },
-      { key: "masked_secrets_count", value: found.maskedSecretsCount },
+      { key: "blocked_files_count", value: versionRecord.blockedFilesCount },
+      { key: "masked_secrets_count", value: versionRecord.maskedSecretsCount },
     ],
     source: {
-      repo_url: found.sourceRepo,
-      commit: found.sourceCommit,
+      repo_url: versionRecord.sourceRepo,
+      commit: versionRecord.sourceCommit,
     },
-    publish_client: found.publishClient,
+    publish_client: versionRecord.publishClient,
   };
   entries[`${root}/manifest.json`] = strToU8(JSON.stringify(manifest, null, 2));
 
-  for (const file of found.workspaceFiles) {
+  for (const file of versionRecord.workspaceFiles ?? []) {
     if (file.path === "README.md") continue;
     if (file.kind === "text" && file.contentText) {
       entries[`${root}/${file.path}`] = strToU8(file.contentText);
@@ -686,8 +684,8 @@ export async function buildLobsterVersionZip(slug: string, version: string) {
     }
 
     const githubRaw = await fetchGithubRawWorkspaceFile({
-      sourceRepo: found.sourceRepo,
-      sourceCommit: found.sourceCommit,
+      sourceRepo: versionRecord.sourceRepo,
+      sourceCommit: versionRecord.sourceCommit,
       filePath: file.path,
     });
     if (githubRaw) {
@@ -698,7 +696,7 @@ export async function buildLobsterVersionZip(slug: string, version: string) {
     unrecoverable.push(file.path);
   }
 
-  const skillsBundleKey = decodeStorageKeyFromUrl(found.skillsBundleUrl);
+  const skillsBundleKey = decodeStorageKeyFromUrl(versionRecord.skillsBundleUrl);
   if (skillsBundleKey) {
     const stored = await getStoredObject(skillsBundleKey);
     entries[`${root}/skills_bundle.zip`] = new Uint8Array(stored.body);
