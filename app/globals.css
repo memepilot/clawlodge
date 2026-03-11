@@ -1263,6 +1263,7 @@ main {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
+  margin-bottom: 4px;
 }
 
 .detail-jump-links {

@@ -89,6 +89,20 @@ export default async function LobsterDetailPage({
     <div className="page-shell stack-lg">
       <section className="shell page-panel detail-hero">
         <div className="detail-hero-main">
+          <form className="detail-search-form" method="get" action="/">
+            <div className="search-bar">
+              <span className="mono">/</span>
+              <input
+                className="search-input"
+                name="q"
+                defaultValue={displayName}
+                placeholder={t.home.searchPlaceholder}
+              />
+            </div>
+            <button className="btn btn-primary" type="submit">
+              {t.home.searchButton}
+            </button>
+          </form>
           <div className="detail-kickers">
             {lobster.source_type ? <span className="tag tag-source">{lobster.source_type === "community" ? t.detail.communityUpload : lobster.source_type}</span> : null}
             {lobster.verified ? <span className="tag tag-verified">{t.detail.verified}</span> : null}
@@ -112,20 +126,6 @@ export default async function LobsterDetailPage({
               </p>
             </div>
           </div>
-          <form className="detail-search-form" method="get" action="/">
-            <div className="search-bar">
-              <span className="mono">/</span>
-              <input
-                className="search-input"
-                name="q"
-                defaultValue={displayName}
-                placeholder={t.home.searchPlaceholder}
-              />
-            </div>
-            <button className="btn btn-primary" type="submit">
-              {t.home.searchButton}
-            </button>
-          </form>
           <p className="detail-summary">{lobster.summary}</p>
           <div className="lobster-card-tags detail-tags">
             {lobster.tags.map((tag) => (
