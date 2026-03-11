@@ -66,23 +66,27 @@ export default async function Home({
         <section className="section section-tight">
           <div className="tag-results-bar hero-card">
             <form className="tag-results-form" method="get">
-              <div className="search-bar">
-                <span className="mono">/</span>
-                <input
-                  className="search-input"
-                  name="q"
-                  defaultValue={params.q ?? ""}
-                  placeholder={t.home.searchPlaceholder}
-                />
+              <div className="search-primary-row">
+                <div className="search-bar">
+                  <span className="mono">/</span>
+                  <input
+                    className="search-input"
+                    name="q"
+                    defaultValue={params.q ?? ""}
+                    placeholder={t.home.searchPlaceholder}
+                  />
+                </div>
+                <button className="btn btn-primary search-submit" type="submit">
+                  {t.home.searchButton}
+                </button>
               </div>
-              <select className="select" defaultValue={sort} name="sort">
-                <option value="hot">Hot</option>
-                <option value="new">New</option>
-              </select>
-              <input className="input" name="tag" defaultValue={params.tag ?? ""} placeholder={t.home.tagPlaceholder} />
-              <button className="btn btn-primary" type="submit">
-                {t.home.searchButton}
-              </button>
+              <div className="filters-row filters-row-compact">
+                <select className="select" defaultValue={sort} name="sort">
+                  <option value="hot">Hot</option>
+                  <option value="new">New</option>
+                </select>
+                <input className="input" name="tag" defaultValue={params.tag ?? ""} placeholder={t.home.tagPlaceholder} />
+              </div>
             </form>
           </div>
         </section>
@@ -91,8 +95,8 @@ export default async function Home({
           <div className="hero-inner">
             <div className="hero-copy">
               <span className="hero-badge">{t.home.badge}</span>
-            <h1 className="hero-title">{t.home.title}</h1>
-            <p className="hero-subtitle">{t.home.subtitle}</p>
+              <h1 className="hero-title">{t.home.title}</h1>
+              <p className="hero-subtitle">{t.home.subtitle}</p>
               <div className="hero-actions">
                 <Link className="btn btn-primary" href="/publish">
                   {t.home.publishCta}
@@ -105,26 +109,29 @@ export default async function Home({
                 </a>
               </div>
             </div>
-
-            <div className="hero-card hero-search-card">
+          </div>
+          <div className="hero-search-band shell">
+            <div className="hero-search-meta">
               <div className="stat">{t.home.searchStat}</div>
-              <form className="search-stack" method="get">
+            </div>
+            <form className="search-stack" method="get">
+              <div className="search-primary-row">
                 <div className="search-bar">
                   <span className="mono">/</span>
                   <input className="search-input" name="q" defaultValue={params.q ?? ""} placeholder={t.home.searchPlaceholder} />
                 </div>
-                <div className="filters-row">
-                  <select className="select" defaultValue={sort} name="sort">
-                    <option value="hot">Hot</option>
-                    <option value="new">New</option>
-                  </select>
-                  <input className="input" name="tag" defaultValue={params.tag ?? ""} placeholder={t.home.tagPlaceholder} />
-                  <button className="btn btn-primary" type="submit">
-                    {t.home.searchButton}
-                  </button>
-                </div>
-              </form>
-            </div>
+                <button className="btn btn-primary search-submit" type="submit">
+                  {t.home.searchButton}
+                </button>
+              </div>
+              <div className="filters-row filters-row-compact">
+                <select className="select" defaultValue={sort} name="sort">
+                  <option value="hot">Hot</option>
+                  <option value="new">New</option>
+                </select>
+                <input className="input" name="tag" defaultValue={params.tag ?? ""} placeholder={t.home.tagPlaceholder} />
+              </div>
+            </form>
           </div>
         </section>
       )}
