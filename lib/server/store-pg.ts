@@ -424,7 +424,9 @@ async function persistState(client: PoolClient, state: DbState) {
   const now = new Date().toISOString();
   const persisted = stripWorkspaceFilesFromState(state);
   await client.query("UPDATE app_state SET payload = $1::jsonb, updated_at = $2 WHERE id = 1", [safeJsonStringify(persisted), now]);
-  await syncWorkspaceEntries(client, state);
+  if (versionsWithInlineWorkspaceFiles(state).length) {
+    await syncWorkspaceEntries(client, state);
+  }
   await syncMirrorTables(client, persisted);
 }
 
