@@ -84,8 +84,27 @@ function normalizeState(parsed: DbState) {
     startedAt: job.startedAt ?? null,
     completedAt: job.completedAt ?? null,
   }));
+  repairNextIds(parsed);
   parsed.nextIds.iconJob = parsed.nextIds.iconJob ?? 1;
   return parsed;
+}
+
+function repairNextIds(state: DbState) {
+  state.nextIds.user = Math.max(state.nextIds.user ?? 1, Math.max(...state.users.map((item) => item.id), 0) + 1);
+  state.nextIds.session = Math.max(state.nextIds.session ?? 1, Math.max(...state.sessions.map((item) => item.id), 0) + 1);
+  state.nextIds.apiToken = Math.max(state.nextIds.apiToken ?? 1, Math.max(...state.apiTokens.map((item) => item.id), 0) + 1);
+  state.nextIds.hireProfile = Math.max(
+    state.nextIds.hireProfile ?? 1,
+    Math.max(...state.hireProfiles.map((item) => item.id), 0) + 1,
+  );
+  state.nextIds.lobster = Math.max(state.nextIds.lobster ?? 1, Math.max(...state.lobsters.map((item) => item.id), 0) + 1);
+  state.nextIds.lobsterVersion = Math.max(
+    state.nextIds.lobsterVersion ?? 1,
+    Math.max(...state.lobsterVersions.map((item) => item.id), 0) + 1,
+  );
+  state.nextIds.comment = Math.max(state.nextIds.comment ?? 1, Math.max(...state.comments.map((item) => item.id), 0) + 1);
+  state.nextIds.report = Math.max(state.nextIds.report ?? 1, Math.max(...state.reports.map((item) => item.id), 0) + 1);
+  state.nextIds.iconJob = Math.max(state.nextIds.iconJob ?? 1, Math.max(...state.iconJobs.map((item) => item.id), 0) + 1);
 }
 
 function versionsWithInlineWorkspaceFiles(state: DbState) {
@@ -447,9 +466,19 @@ async function ensureDatabase() {
     } else {
       const row = await client.query<{ payload: DbState | string }>("SELECT payload FROM app_state WHERE id = 1");
       const payload = row.rows[0]?.payload;
-      const state = normalizeState(typeof payload === "string" ? JSON.parse(payload) as DbState : payload as DbState);
+      const rawState = typeof payload === "string" ? JSON.parse(payload) as DbState : payload as DbState;
+      const rawNextIds = JSON.stringify(rawState.nextIds ?? {});
+      const state = normalizeState(rawState);
+      const nextIdsChanged = rawNextIds !== JSON.stringify(state.nextIds ?? {});
       if (versionsWithInlineWorkspaceFiles(state).length) {
         await persistState(client, state);
+      } else if (nextIdsChanged) {
+        const persisted = stripWorkspaceFilesFromState(state);
+        await client.query("UPDATE app_state SET payload = $1::jsonb, updated_at = $2 WHERE id = 1", [
+          safeJsonStringify(persisted),
+          new Date().toISOString(),
+        ]);
+        await syncMirrorTables(client, persisted);
       }
     }
   });
