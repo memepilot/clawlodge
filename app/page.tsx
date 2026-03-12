@@ -2,34 +2,94 @@ import Script from "next/script";
 import Link from "next/link";
 
 import { LobsterCard } from "@/components/lobster-card";
-import { SearchBand } from "@/components/search-band";
 import { apiOrigin } from "@/lib/api";
 import { getTranslations } from "@/lib/i18n";
 import { getRequestLocale } from "@/lib/server/locale";
 import { listLobsters } from "@/lib/server/service";
+import { LobsterCategory } from "@/lib/types";
 import { absoluteUrl, siteConfig } from "@/lib/site";
 
 export const revalidate = 300;
 
+const categoryOptions: Array<{ value: LobsterCategory; icon: string }> = [
+  { value: "workspace", icon: "▣" },
+  { value: "skill", icon: "✦" },
+  { value: "agent", icon: "◉" },
+  { value: "tooling", icon: "⌘" },
+  { value: "workflow", icon: "⇄" },
+  { value: "memory", icon: "◌" },
+];
+
+function categoryLabel(category: LobsterCategory, locale: "en" | "zh") {
+  if (locale === "zh") {
+    switch (category) {
+      case "workspace":
+        return "工作区";
+      case "skill":
+        return "技能";
+      case "agent":
+        return "智能体";
+      case "tooling":
+        return "工具";
+      case "workflow":
+        return "工作流";
+      case "memory":
+        return "记忆";
+    }
+  }
+  switch (category) {
+    case "workspace":
+      return "Workspace";
+    case "skill":
+      return "Skill";
+    case "agent":
+      return "Agent";
+    case "tooling":
+      return "Tooling";
+    case "workflow":
+      return "Workflow";
+    case "memory":
+      return "Memory";
+  }
+}
+
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ sort?: string; tag?: string; q?: string; page?: string }>;
+  searchParams: Promise<{ sort?: string; tag?: string; q?: string; category?: string; page?: string }>;
 }) {
   const params = await searchParams;
   const sort = params.sort === "new" ? "new" : "hot";
   const page = Number.isFinite(Number(params.page)) ? Math.max(1, Math.floor(Number(params.page))) : 1;
-  const result = await listLobsters({ sort, tag: params.tag, q: params.q, page, per_page: 12 });
   const locale = await getRequestLocale();
   const t = getTranslations(locale);
+  const selectedCategory = categoryOptions.some((option) => option.value === params.category) ? (params.category as LobsterCategory) : undefined;
+  const result = await listLobsters({
+    sort,
+    tag: params.tag,
+    q: params.q,
+    category: selectedCategory,
+    page,
+    per_page: 12,
+  });
   const githubLoginUrl = `${apiOrigin}/api/v1/auth/github/start?next=/publish`;
   const isTagResults = Boolean(params.tag);
   const buildPageHref = (nextPage: number) => {
     const search = new URLSearchParams();
     if (params.q?.trim()) search.set("q", params.q.trim());
     if (params.tag?.trim()) search.set("tag", params.tag.trim());
+    if (selectedCategory) search.set("category", selectedCategory);
     if (sort !== "hot") search.set("sort", sort);
     if (nextPage > 1) search.set("page", String(nextPage));
+    const query = search.toString();
+    return query ? `/?${query}` : "/";
+  };
+  const buildCategoryHref = (category?: LobsterCategory) => {
+    const search = new URLSearchParams();
+    if (params.q?.trim()) search.set("q", params.q.trim());
+    if (params.tag?.trim()) search.set("tag", params.tag.trim());
+    if (sort !== "hot") search.set("sort", sort);
+    if (category) search.set("category", category);
     const query = search.toString();
     return query ? `/?${query}` : "/";
   };
@@ -109,29 +169,65 @@ export default async function Home({
               </div>
             </div>
           </div>
-          <SearchBand
-            defaultQuery={params.q ?? ""}
-            placeholder={t.home.searchPlaceholder}
-            buttonLabel={t.home.searchButton}
-            helperText={t.home.searchStat}
-            includeSort
-            sortValue={sort}
-          />
         </section>
       )}
 
       <section className={`section ${isTagResults ? "section-tight section-topless" : ""}`}>
-        <h2 className="section-title">
-          {params.tag ? `${t.home.tagResultsPrefix}${params.tag}` : t.home.seededTitle}
-        </h2>
-        <p className="section-subtitle">
-          {params.tag
-            ? t.home.tagResultsSubtitle
-            : t.home.seededSubtitle}
-        </p>
-        <div className="grid">
+        <div className="home-toolbar">
+          <div className="home-toolbar-copy">
+            <form className="home-inline-search" method="get" action="/">
+              <div className="search-bar home-inline-search-bar">
+                <span className="home-search-icon" aria-hidden="true">
+                  <svg viewBox="0 0 20 20">
+                    <circle cx="8.5" cy="8.5" r="5.4" fill="none" stroke="currentColor" strokeWidth="1.8" />
+                    <path d="m12.7 12.7 4 4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  </svg>
+                </span>
+                <input
+                  className="search-input"
+                  name="q"
+                  defaultValue={params.q ?? ""}
+                  placeholder={t.home.searchPlaceholder}
+                />
+              </div>
+              <input type="hidden" name="sort" value={sort} />
+              {params.tag?.trim() ? <input type="hidden" name="tag" value={params.tag.trim()} /> : null}
+              {selectedCategory ? <input type="hidden" name="category" value={selectedCategory} /> : null}
+            </form>
+          </div>
+          <div className="home-category-filter" aria-label="Category filter">
+            <Link
+              className={`home-category-pill ${!selectedCategory ? "is-active" : ""}`}
+              href={buildCategoryHref()}
+            >
+              <span className="home-category-icon">◍</span>
+              <span>{locale === "zh" ? "全部" : "All"}</span>
+            </Link>
+            {categoryOptions.map((option) => (
+              <Link
+                key={option.value}
+                className={`home-category-pill ${selectedCategory === option.value ? "is-active" : ""}`}
+                href={buildCategoryHref(option.value)}
+              >
+                <span className="home-category-icon">{option.icon}</span>
+                <span>{categoryLabel(option.value, locale)}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+        <div className="home-results-bar">
+          <p className="home-results-summary">
+            {t.home.showing} {result.total} {locale === "zh" ? "个" : "items"}
+          </p>
+          {(params.q?.trim() || params.tag?.trim() || selectedCategory || sort !== "hot") ? (
+            <Link className="home-clear-link" href="/">
+              {locale === "zh" ? "清除筛选" : "clear filters"}
+            </Link>
+          ) : null}
+        </div>
+        <div className="grid home-lobster-grid">
           {result.items.length ? (
-            result.items.map((item) => <LobsterCard key={item.slug} item={item} locale={locale} />)
+            result.items.map((item) => <LobsterCard key={item.slug} item={item} locale={locale} variant="home" />)
           ) : (
             <div className="card muted">{t.home.noResults}</div>
           )}

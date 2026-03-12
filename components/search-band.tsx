@@ -7,6 +7,7 @@ type SearchBandProps = {
   sortValue?: "hot" | "new";
   includeSort?: boolean;
   hiddenTag?: string;
+  hiddenCategory?: string;
   className?: string;
 };
 
@@ -19,6 +20,7 @@ export function SearchBand({
   sortValue = "hot",
   includeSort = false,
   hiddenTag,
+  hiddenCategory,
   className = "",
 }: SearchBandProps) {
   const rootClassName = ["hero-search-band", "shell", className].filter(Boolean).join(" ");
@@ -47,6 +49,7 @@ export function SearchBand({
           </button>
         </div>
         {hiddenTag?.trim() ? <input type="hidden" name="tag" value={hiddenTag.trim()} /> : null}
+        {hiddenCategory?.trim() ? <input type="hidden" name="category" value={hiddenCategory.trim()} /> : null}
       </form>
     </div>
   );

@@ -37,6 +37,16 @@ const MAX_README_CONTEXT_FILES = 24;
 const MAX_GITHUB_README_ASSET_BYTES = 8 * 1024 * 1024;
 const MAX_SUMMARY_LENGTH = 160;
 
+function getDerivedCategory(lobster: DbLobster) {
+  return lobster.category ?? classifyLobsterCategory({
+    slug: lobster.slug,
+    name: lobster.name,
+    summary: lobster.summary,
+    tags: lobster.tags,
+    sourceUrl: lobster.sourceUrl,
+  });
+}
+
 function buildLobsterSearchDocument(input: {
   slug: string;
   name: string;
@@ -591,7 +601,14 @@ function iconStorageKey(slug: string, version: string, contentType: string) {
   return `lobsters/${slug}/${version}/icon.${iconExtensionForContentType(contentType)}`;
 }
 
-export async function listLobsters(params?: { sort?: string; tag?: string; q?: string; page?: number; per_page?: number }) {
+export async function listLobsters(params?: {
+  sort?: string;
+  tag?: string;
+  q?: string;
+  category?: string;
+  page?: number;
+  per_page?: number;
+}) {
   let items = await readMirroredLobsterSummaries();
   if (params?.sort !== "new") {
     const hasPendingGithubStars = items.some(
@@ -626,6 +643,10 @@ export async function listLobsters(params?: { sort?: string; tag?: string; q?: s
     const tag = params.tag.trim().toLowerCase();
     items = items.filter(({ lobster }) => lobster.tags.includes(tag));
   }
+  if (params?.category?.trim()) {
+    const category = params.category.trim().toLowerCase();
+    items = items.filter(({ lobster }) => getDerivedCategory(lobster).toLowerCase() === category);
+  }
   const query = params?.q?.trim() ?? "";
 
   const summaries = items.map(({ lobster, owner, latestVersion, latestSourceRepo, latestIconUrl }) => ({
@@ -654,6 +675,7 @@ export async function listLobsters(params?: { sort?: string; tag?: string; q?: s
         createdAt: lobster.createdAt,
         updatedAt: lobster.updatedAt,
       }),
+      category: getDerivedCategory(lobster),
       latest_version: latestVersion,
       latest_source_repo: latestSourceRepo,
       icon_url: resolvePublicAssetUrl(latestIconUrl) ?? latestIconUrl ?? null,
