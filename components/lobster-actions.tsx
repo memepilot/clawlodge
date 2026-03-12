@@ -59,7 +59,12 @@ export function LobsterActions({
         setFavoriteCount((prev) => prev + 1);
       }
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : t.community.operationFailed);
+      const errorMessage = error instanceof Error ? error.message : t.community.operationFailed;
+      if (errorMessage.includes("Authentication required")) {
+        setShowLoginModal(true);
+        return;
+      }
+      setMessage(errorMessage);
     } finally {
       setBusy(false);
     }
@@ -109,7 +114,12 @@ export function LobsterActions({
       const result = await reportLobster(slug, "Spam or unsafe content");
       setMessage(result.message);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : t.community.reportFailed);
+      const errorMessage = error instanceof Error ? error.message : t.community.reportFailed;
+      if (errorMessage.includes("Authentication required")) {
+        setShowLoginModal(true);
+        return;
+      }
+      setMessage(errorMessage);
     }
   }
 

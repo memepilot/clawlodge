@@ -86,6 +86,9 @@ export async function requireApiUser(authorization?: string | null) {
   if (sessionUser) {
     return sessionUser;
   }
+  if (!authorization?.startsWith("Bearer ")) {
+    throw new ApiError(401, "Authentication required");
+  }
   return requirePatUser(authorization);
 }
 
