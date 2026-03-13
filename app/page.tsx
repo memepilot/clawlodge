@@ -70,7 +70,7 @@ export default async function Home({
     q: params.q,
     category: selectedCategory,
     page,
-    per_page: 12,
+    per_page: 18,
   });
   const githubLoginUrl = `${apiOrigin}/api/v1/auth/github/start?next=/publish`;
   const isTagResults = Boolean(params.tag);
