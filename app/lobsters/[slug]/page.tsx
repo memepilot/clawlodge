@@ -7,6 +7,7 @@ import { LobsterActions } from "@/components/lobster-actions";
 import { getLobsterAvatarSrc, LobsterAvatar } from "@/components/lobster-avatar";
 import { MarkdownContent } from "@/components/markdown-content";
 import { SearchBand } from "@/components/search-band";
+import { DownloadLink } from "@/components/download-link";
 import { WorkspaceBrowser } from "@/components/workspace-browser";
 import { getTranslations } from "@/lib/i18n";
 import { getRequestLocale } from "@/lib/server/locale";
@@ -217,12 +218,12 @@ export default async function LobsterDetailPage({
             </div>
             <div className="detail-aside-actions">
               {latest ? (
-                <a
+                <DownloadLink
                   className="btn btn-primary"
                   href={`/api/v1/lobsters/${encodeURIComponent(slug)}/versions/${encodeURIComponent(latest.version)}/download`}
                 >
                   {t.detail.downloadZip}
-                </a>
+                </DownloadLink>
               ) : null}
               {lobster.source_url ? (
                 <a className="btn" href={lobster.source_url} target="_blank" rel="noreferrer">
@@ -238,12 +239,12 @@ export default async function LobsterDetailPage({
         <div className="detail-section-head flex flex-wrap items-center justify-between gap-3">
           <h2 className="panel-title">{t.detail.readme}</h2>
           {latest ? (
-            <a
+            <DownloadLink
               className="btn"
               href={`/api/v1/lobsters/${encodeURIComponent(slug)}/versions/${encodeURIComponent(latest.version)}/download`}
             >
               {t.detail.downloadWorkspaceZip}
-            </a>
+            </DownloadLink>
           ) : null}
         </div>
         {latest ? (

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { DownloadLink } from "@/components/download-link";
 import { useLocale, useTranslations } from "@/components/locale-provider";
 import type { LobsterVersion } from "@/lib/types";
 
@@ -143,9 +144,9 @@ export function WorkspaceBrowser({
           <p className="page-subtitle mt-2">{t.workspace.snapshotHint}</p>
         </div>
         <div className="workspace-browser-aside">
-          <a className="btn" href={downloadHref}>
+          <DownloadLink className="btn" href={downloadHref}>
             {t.workspace.downloadZip}
-          </a>
+          </DownloadLink>
           <div className="workspace-browser-meta">
             <span className="workspace-meta-pill">{files.length} {t.detail.files}</span>
             <span className="workspace-meta-pill">{t.workspace.updated} {formatPublishedAt(publishedAt, locale)} UTC</span>
