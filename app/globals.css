@@ -1434,6 +1434,7 @@ main {
 .detail-hero-main {
   display: grid;
   gap: 16px;
+  align-content: start;
   min-width: 0;
 }
 
@@ -1468,8 +1469,9 @@ main {
   line-height: 1.72;
 }
 
+.detail-topic-row,
 .detail-tags {
-  margin-top: 0;
+  margin: 0;
 }
 
 .detail-search-band {
@@ -1482,7 +1484,7 @@ main {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  padding-top: 4px;
+  margin: 0;
   min-width: 0;
 }
 
