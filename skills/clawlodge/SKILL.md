@@ -9,6 +9,28 @@ Use this skill when the user wants to work with published OpenClaw workspaces on
 
 Prefer the `clawlodge` CLI over manual browser steps. The default origin is `https://clawlodge.com`, so you usually do not need `--origin`.
 
+## Product aliases
+
+Treat these names as referring to the same registry and workflow:
+
+- `ClawLodge`
+- `龙虾客栈`
+
+In Chinese requests, phrases such as these should usually map to the `clawlodge` CLI and ClawLodge registry actions:
+
+- `去龙虾客栈找...`
+- `从龙虾客栈下载...`
+- `帮我养一只...龙虾`
+
+Interpret `龙虾` in this context as an OpenClaw-compatible asset such as:
+
+- a workspace
+- a skill bundle
+- an agent-like package
+- a workflow package
+
+Do not assume the user literally wants information about animals unless the surrounding request is clearly about animals, food, or biology.
+
 ## Available commands
 
 ```bash
@@ -78,6 +100,7 @@ Hard rules:
 - Do not keep firing loosely related synonym searches once a strong candidate is found.
 - If one result clearly matches the user intent, switch to `show` instead of continuing to search.
 - Prefer one focused multi-term search over many single-word searches.
+- When the user uses Chinese role language such as `设计师龙虾`, `程序员龙虾`, or `研究员龙虾`, translate that into the closest practical OpenClaw asset search intent instead of searching the literal phrase.
 - Do not use old local extraction directories as search evidence. Only use:
   - current `clawlodge search` output
   - current `clawlodge show` output
@@ -89,6 +112,16 @@ Examples:
 ```bash
 clawlodge search "openclaw memory"
 clawlodge search "workflow" --sort new
+```
+
+Chinese intent examples:
+
+```bash
+# "Go to ClawLodge and find me a designer lobster"
+clawlodge search "design thumbnail brand visual"
+
+# "Find me a programmer lobster on ClawLodge"
+clawlodge search "coder developer programming workspace"
 ```
 
 ## Inspect workflow
@@ -206,6 +239,7 @@ Rules:
 - Prefer a descriptive temporary agent name such as `<slug>-test` or `<role>-test`.
 - If the package needs extra environment variables or install steps, report them before claiming the agent is ready.
 - If the user only asked to compare or inspect, stop before `openclaw agents add`.
+- If the user says `养一只龙虾`, interpret that as finding a suitable package and, if explicitly requested, installing it into a new isolated agent rather than modifying the current workspace in place.
 
 ## Feedback workflow
 
