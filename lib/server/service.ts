@@ -52,6 +52,7 @@ function buildLobsterSearchDocument(input: {
   name: string;
   summary?: string | null;
   tags?: string[];
+  topics?: string[];
   readmeText?: string | null;
   sourceUrl?: string | null;
   originalAuthor?: string | null;
@@ -63,6 +64,7 @@ function buildLobsterSearchDocument(input: {
     input.name,
     input.summary ?? "",
     (input.tags ?? []).join(" "),
+    (input.topics ?? []).join(" "),
     input.readmeText ?? "",
     input.sourceUrl ?? "",
     input.originalAuthor ?? "",
@@ -92,6 +94,7 @@ function computeSearchRelevance(params: {
   slug: string;
   name: string;
   tags: string[];
+  topics: string[];
   summary?: string | null;
   sourceUrl?: string | null;
   originalAuthor?: string | null;
@@ -105,6 +108,7 @@ function computeSearchRelevance(params: {
   const name = normalizeSearchText(params.name);
   const summary = normalizeSearchText(params.summary);
   const tags = params.tags.map((tag) => normalizeSearchText(tag));
+  const topics = params.topics.map((topic) => normalizeSearchText(topic));
   const sourceUrl = normalizeSearchText(params.sourceUrl);
   const originalAuthor = normalizeSearchText(params.originalAuthor);
 
@@ -123,6 +127,8 @@ function computeSearchRelevance(params: {
 
   if (tags.some((tag) => tag === query)) score += 3600;
   else if (tags.some((tag) => tag.includes(query))) score += 2200;
+  if (topics.some((topic) => topic === query)) score += 3200;
+  else if (topics.some((topic) => topic.includes(query))) score += 1800;
 
   if (summary.includes(query)) score += 1200;
   if (sourceUrl.includes(query) || originalAuthor.includes(query)) score += 800;
@@ -131,6 +137,7 @@ function computeSearchRelevance(params: {
     if (includesAllTokens(slugWords, queryTokens)) score += 1800;
     if (includesAllTokens(name, queryTokens)) score += 1600;
     if (tags.some((tag) => includesAllTokens(tag, queryTokens))) score += 1200;
+    if (topics.some((topic) => includesAllTokens(topic, queryTokens))) score += 1100;
     if (includesAllTokens(summary, queryTokens)) score += 500;
     if (includesAllTokens(sourceUrl, queryTokens) || includesAllTokens(originalAuthor, queryTokens)) score += 300;
   }
@@ -507,6 +514,7 @@ function toSummary(item: DbLobster, owner: DbUser): LobsterSummary {
     name: item.name,
     summary: normalizeStoredSummary(item.summary),
     category: item.category,
+    topics: item.topics,
     icon_url: null,
     license: item.license,
     source_type: item.sourceType,
@@ -657,6 +665,7 @@ export async function listLobsters(params?: {
           slug: lobster.slug,
           name: lobster.name,
           tags: lobster.tags,
+          topics: lobster.topics,
           summary: lobster.summary,
           sourceUrl: lobster.sourceUrl,
           originalAuthor: lobster.originalAuthor,
@@ -676,6 +685,7 @@ export async function listLobsters(params?: {
         updatedAt: lobster.updatedAt,
       }),
       category: getDerivedCategory(lobster),
+      topics: lobster.topics,
       latest_version: latestVersion,
       latest_source_repo: latestSourceRepo,
       icon_url: resolvePublicAssetUrl(latestIconUrl) ?? latestIconUrl ?? null,
@@ -885,6 +895,7 @@ export async function createLobster(
         summary: payload.summary.trim(),
         tags,
       }),
+      topics: [],
       license: payload.license,
       sourceType: "community",
       sourceUrl: null,
@@ -899,6 +910,7 @@ export async function createLobster(
         name: payload.name.trim(),
         summary: payload.summary.trim(),
         tags,
+        topics: [],
       }),
       tags,
       recommendationScore: null,
@@ -1086,6 +1098,7 @@ export async function createVersion(
       sourceUrl: lobster.sourceUrl,
       sourceRepo: payload.source_repo,
     });
+    lobster.topics = lobster.topics ?? [];
     lobster.updatedAt = now;
     lobster.githubStars = repoSignals?.stars ?? lobster.githubStars ?? null;
     lobster.searchDocument = buildLobsterSearchDocument({
@@ -1093,6 +1106,7 @@ export async function createVersion(
       name: lobster.name,
       summary: generatedSummary,
       tags: lobster.tags,
+      topics: lobster.topics,
       readmeText: migratedReadmeMarkdown,
       sourceUrl: lobster.sourceUrl,
       originalAuthor: lobster.originalAuthor,
@@ -1470,6 +1484,7 @@ export async function uploadViaMcp(
           summary: manifest.summary,
           sourceUrl: manifest.source?.repo_url ?? null,
         }),
+        topics: [],
         license: manifest.license,
         sourceType: "community",
         sourceUrl: manifest.source?.repo_url ?? null,
@@ -1483,6 +1498,7 @@ export async function uploadViaMcp(
           slug: slugify(manifest.lobster_slug),
           name: manifest.name,
           summary: manifest.summary,
+          topics: [],
           sourceUrl: manifest.source?.repo_url ?? null,
         }),
         tags: [],
@@ -1568,11 +1584,13 @@ export async function uploadViaMcp(
     if (Array.isArray(tagSetting?.value)) {
       lobster.tags = [...new Set(tagSetting.value.map((item) => String(item).trim().toLowerCase()).filter(Boolean))];
     }
+    lobster.topics = lobster.topics ?? [];
     lobster.searchDocument = buildLobsterSearchDocument({
       slug: lobster.slug,
       name: lobster.name,
       summary: lobster.summary,
       tags: lobster.tags,
+      topics: lobster.topics,
       readmeText: migratedReadmeText,
       sourceUrl: lobster.sourceUrl,
       originalAuthor: lobster.originalAuthor,
@@ -1631,6 +1649,7 @@ export async function publishWorkspace(userId: number, payload: WorkspacePublish
         tags: payload.tags,
         sourceUrl: lobster.sourceUrl,
       });
+      lobster.topics = lobster.topics ?? [];
       lobster.license = payload.license;
       lobster.tags = [...new Set(payload.tags.map((tag) => tag.trim().toLowerCase()).filter(Boolean))];
       lobster.updatedAt = new Date().toISOString();
@@ -1639,6 +1658,7 @@ export async function publishWorkspace(userId: number, payload: WorkspacePublish
         name: lobster.name,
         summary: lobster.summary,
         tags: lobster.tags,
+        topics: lobster.topics,
         sourceUrl: lobster.sourceUrl,
         originalAuthor: lobster.originalAuthor,
       });

@@ -78,6 +78,7 @@ async function ensureSchema(client) {
       name TEXT NOT NULL,
       summary TEXT NOT NULL,
       category TEXT,
+      topics_json JSONB NOT NULL DEFAULT '[]'::jsonb,
       license TEXT NOT NULL,
       source_type TEXT NOT NULL,
       source_url TEXT,
@@ -238,10 +239,10 @@ async function main() {
     for (const lobster of state.lobsters || []) {
       await client.query(
         `INSERT INTO lobsters_mirror
-          (id, slug, owner_id, name, summary, category, license, source_type, source_url, original_author, verified,
+          (id, slug, owner_id, name, summary, category, topics_json, license, source_type, source_url, original_author, verified,
            curation_note, seeded_at, status, report_penalty, search_document, tags_json, recommendation_score,
            github_stars, favorite_count, download_count, share_count, comment_count, created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17::jsonb,$18,$19,$20,$21,$22,$23,$24,$25)`,
+         VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18::jsonb,$19,$20,$21,$22,$23,$24,$25,$26)`,
         [
           lobster.id,
           lobster.slug,
@@ -249,6 +250,7 @@ async function main() {
           lobster.name,
           lobster.summary ?? "",
           lobster.category ?? null,
+          safeJsonStringify(lobster.topics ?? []),
           lobster.license,
           lobster.sourceType,
           lobster.sourceUrl ?? null,

@@ -6,6 +6,15 @@ export type LobsterCategory =
   | "workflow"
   | "memory";
 
+export type LobsterTopic =
+  | "dev"
+  | "design"
+  | "research"
+  | "writing"
+  | "productivity"
+  | "multiagent"
+  | "automation";
+
 export type DbUser = {
   id: number;
   handle: string;
@@ -57,6 +66,7 @@ export type DbLobster = {
   name: string;
   summary: string;
   category: LobsterCategory | null;
+  topics: LobsterTopic[];
   license: string;
   sourceType: "official" | "curated" | "community" | "demo";
   sourceUrl: string | null;

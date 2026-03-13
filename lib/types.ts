@@ -6,11 +6,21 @@ export type LobsterCategory =
   | "workflow"
   | "memory";
 
+export type LobsterTopic =
+  | "dev"
+  | "design"
+  | "research"
+  | "writing"
+  | "productivity"
+  | "multiagent"
+  | "automation";
+
 export type LobsterSummary = {
   slug: string;
   name: string;
   summary: string;
   category?: LobsterCategory | null;
+  topics?: LobsterTopic[];
   icon_url?: string | null;
   license: string;
   source_type?: "official" | "curated" | "community" | "demo";

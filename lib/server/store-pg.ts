@@ -66,6 +66,7 @@ function normalizeState(parsed: DbState) {
   parsed.lobsters = (parsed.lobsters ?? []).map((lobster) => ({
     ...lobster,
     category: lobster.category ?? null,
+    topics: Array.isArray(lobster.topics) ? lobster.topics : [],
     recommendationScore: lobster.recommendationScore ?? null,
     githubStars: lobster.githubStars ?? null,
     downloadCount: lobster.downloadCount ?? 0,
@@ -237,6 +238,7 @@ async function ensureSchema(client: PoolClient) {
       name TEXT NOT NULL,
       summary TEXT NOT NULL,
       category TEXT,
+      topics_json JSONB NOT NULL DEFAULT '[]'::jsonb,
       license TEXT NOT NULL,
       source_type TEXT NOT NULL,
       source_url TEXT,
@@ -304,6 +306,8 @@ async function ensureSchema(client: PoolClient) {
     CREATE INDEX IF NOT EXISTS idx_workspace_entries_version_path ON workspace_entries(version_id, path);
     CREATE INDEX IF NOT EXISTS idx_comments_mirror_lobster_created ON comments_mirror(lobster_id, created_at ASC);
   `);
+
+  await client.query("ALTER TABLE lobsters_mirror ADD COLUMN IF NOT EXISTS topics_json JSONB NOT NULL DEFAULT '[]'::jsonb");
 
   for (const sequenceName of Object.values(ID_SEQUENCES)) {
     await client.query(`CREATE SEQUENCE IF NOT EXISTS ${sequenceName}`);
@@ -399,10 +403,10 @@ async function syncMirrorTables(client: PoolClient, state: DbState) {
   for (const lobster of state.lobsters) {
     await client.query(
       `INSERT INTO lobsters_mirror
-        (id, slug, owner_id, name, summary, category, license, source_type, source_url, original_author, verified,
+        (id, slug, owner_id, name, summary, category, topics_json, license, source_type, source_url, original_author, verified,
          curation_note, seeded_at, status, report_penalty, search_document, tags_json, recommendation_score,
          github_stars, favorite_count, download_count, share_count, comment_count, created_at, updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17::jsonb,$18,$19,$20,$21,$22,$23,$24,$25)`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18::jsonb,$19,$20,$21,$22,$23,$24,$25,$26)`,
       [
         lobster.id,
         lobster.slug,
@@ -410,6 +414,7 @@ async function syncMirrorTables(client: PoolClient, state: DbState) {
         lobster.name,
         lobster.summary ?? "",
         lobster.category ?? null,
+        safeJsonStringify(lobster.topics ?? []),
         lobster.license,
         lobster.sourceType,
         lobster.sourceUrl ?? null,
@@ -534,6 +539,7 @@ function toMirrorLobster(row: Record<string, unknown>): DbLobster {
     name: String(row.name),
     summary: String(row.summary),
     category: row.category == null ? null : String(row.category) as DbLobster["category"],
+    topics: typeof row.topics_json === "string" ? parseJsonArray<DbLobster["topics"][number]>(row.topics_json) : (row.topics_json as DbLobster["topics"] | null) ?? [],
     license: String(row.license),
     sourceType: row.source_type as DbLobster["sourceType"],
     sourceUrl: row.source_url == null ? null : String(row.source_url),
