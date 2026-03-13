@@ -143,7 +143,6 @@ export default async function LobsterDetailPage({
       <section className="shell page-panel detail-hero">
         <div className="detail-hero-main">
           <div className="detail-kickers">
-            {lobster.source_type ? <span className="tag tag-source">{lobster.source_type === "community" ? t.detail.communityUpload : lobster.source_type}</span> : null}
             {lobster.verified ? <span className="tag tag-verified">{t.detail.verified}</span> : null}
           </div>
           <div className="detail-head">

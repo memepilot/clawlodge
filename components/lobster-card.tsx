@@ -5,22 +5,6 @@ import { Locale, getTranslations } from "@/lib/i18n";
 import { getDisplayAuthor, getDisplayLobsterName, getDisplaySummary } from "@/lib/lobster-display";
 import { LobsterSummary } from "@/lib/types";
 
-function sourceTypeLabel(value: LobsterSummary["source_type"], locale: Locale) {
-  const t = getTranslations(locale);
-  switch (value) {
-    case "official":
-      return t.card.official;
-    case "curated":
-      return t.card.curated;
-    case "community":
-      return t.card.communityUpload;
-    case "demo":
-      return t.card.demo;
-    default:
-      return value;
-  }
-}
-
 function categoryLabel(value: LobsterSummary["category"]) {
   if (!value) return null;
   switch (value) {
@@ -97,7 +81,7 @@ export function LobsterCard({
             </div>
           </div>
           <div className="lobster-card-meta lobster-card-home-meta">
-            <span className="tag tag-source">{category ?? sourceTypeLabel(item.source_type, locale) ?? "Setup"}</span>
+            {category ? <span className="tag tag-topic">{category}</span> : null}
             {item.topics?.slice(0, 2).map((topic) => (
               <span key={topic} className="tag tag-topic">
                 {topicLabel(topic)}
@@ -149,7 +133,7 @@ export function LobsterCard({
           <div className="flex items-start justify-between gap-3">
             <div className="lobster-card-main">
               <div className="lobster-card-meta">
-                {item.source_type ? <span className={`tag tag-source`}>{sourceTypeLabel(item.source_type, locale)}</span> : null}
+                {category ? <span className="tag tag-topic">{category}</span> : null}
                 {item.verified ? <span className="tag tag-verified">{t.detail.verified}</span> : null}
               </div>
               <div className="lobster-card-header">
