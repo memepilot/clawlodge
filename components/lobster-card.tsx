@@ -81,7 +81,7 @@ export function LobsterCard({
             </div>
           </div>
           <div className="lobster-card-meta lobster-card-home-meta">
-            {category ? <span className="tag tag-topic">{category}</span> : null}
+            {category ? <span className="tag tag-category">{category}</span> : null}
             {item.topics?.slice(0, 2).map((topic) => (
               <span key={topic} className="tag tag-topic">
                 {topicLabel(topic)}
@@ -133,7 +133,7 @@ export function LobsterCard({
           <div className="flex items-start justify-between gap-3">
             <div className="lobster-card-main">
               <div className="lobster-card-meta">
-                {category ? <span className="tag tag-topic">{category}</span> : null}
+                {category ? <span className="tag tag-category">{category}</span> : null}
                 {item.verified ? <span className="tag tag-verified">{t.detail.verified}</span> : null}
               </div>
               <div className="lobster-card-header">

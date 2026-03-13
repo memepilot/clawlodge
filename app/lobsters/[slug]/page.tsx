@@ -165,6 +165,11 @@ export default async function LobsterDetailPage({
             </div>
           </div>
           <p className="detail-summary">{lobster.summary}</p>
+          {lobster.category ? (
+            <div className="detail-topic-row">
+              <span className="tag tag-category">{lobster.category}</span>
+            </div>
+          ) : null}
           {lobster.topics?.length ? (
             <div className="detail-topic-row">
               {lobster.topics.map((topic) => (
