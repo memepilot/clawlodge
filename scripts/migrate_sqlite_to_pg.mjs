@@ -4,6 +4,18 @@ import { DatabaseSync } from "node:sqlite";
 
 import { Client } from "pg";
 
+const ID_SEQUENCES = {
+  user: "users_id_seq",
+  session: "sessions_id_seq",
+  apiToken: "api_tokens_id_seq",
+  hireProfile: "hire_profiles_id_seq",
+  lobster: "lobsters_id_seq",
+  lobsterVersion: "lobster_versions_id_seq",
+  comment: "comments_id_seq",
+  report: "reports_id_seq",
+  iconJob: "icon_jobs_id_seq",
+};
+
 function sanitizeJsonString(value) {
   let output = "";
   for (let index = 0; index < value.length; index += 1) {
@@ -133,11 +145,42 @@ async function ensureSchema(client) {
     CREATE INDEX IF NOT EXISTS idx_workspace_entries_version_path ON workspace_entries(version_id, path);
     CREATE INDEX IF NOT EXISTS idx_comments_mirror_lobster_created ON comments_mirror(lobster_id, created_at ASC);
   `);
+
+  for (const sequenceName of Object.values(ID_SEQUENCES)) {
+    await client.query(`CREATE SEQUENCE IF NOT EXISTS ${sequenceName}`);
+  }
+
+  await client.query("ALTER TABLE users_mirror ALTER COLUMN id SET DEFAULT nextval('users_id_seq')");
+  await client.query("ALTER TABLE lobsters_mirror ALTER COLUMN id SET DEFAULT nextval('lobsters_id_seq')");
+  await client.query("ALTER TABLE lobster_versions_mirror ALTER COLUMN id SET DEFAULT nextval('lobster_versions_id_seq')");
+  await client.query("ALTER TABLE comments_mirror ALTER COLUMN id SET DEFAULT nextval('comments_id_seq')");
+}
+
+async function setSequenceValue(client, key, value) {
+  if (value > 0) {
+    await client.query("SELECT setval($1::regclass, $2, true)", [ID_SEQUENCES[key], value]);
+  } else {
+    await client.query("SELECT setval($1::regclass, 1, false)", [ID_SEQUENCES[key]]);
+  }
+}
+
+async function syncStateSequences(client, state) {
+  await setSequenceValue(client, "user", Math.max(...(state.users || []).map((item) => item.id), 0));
+  await setSequenceValue(client, "session", Math.max(...(state.sessions || []).map((item) => item.id), 0));
+  await setSequenceValue(client, "apiToken", Math.max(...(state.apiTokens || []).map((item) => item.id), 0));
+  await setSequenceValue(client, "hireProfile", Math.max(...(state.hireProfiles || []).map((item) => item.id), 0));
+  await setSequenceValue(client, "lobster", Math.max(...(state.lobsters || []).map((item) => item.id), 0));
+  await setSequenceValue(client, "lobsterVersion", Math.max(...(state.lobsterVersions || []).map((item) => item.id), 0));
+  await setSequenceValue(client, "comment", Math.max(...(state.comments || []).map((item) => item.id), 0));
+  await setSequenceValue(client, "report", Math.max(...(state.reports || []).map((item) => item.id), 0));
+  await setSequenceValue(client, "iconJob", Math.max(...(state.iconJobs || []).map((item) => item.id), 0));
 }
 
 function stripWorkspaceFiles(state) {
+  const rest = { ...state };
+  delete rest.nextIds;
   return {
-    ...state,
+    ...rest,
     lobsterVersions: (state.lobsterVersions || []).map((version) => ({
       ...version,
       workspaceFiles: undefined,
@@ -287,6 +330,8 @@ async function main() {
         [comment.id, comment.userId, comment.lobsterId, comment.content, comment.createdAt],
       );
     }
+
+    await syncStateSequences(client, state);
 
     await client.query("COMMIT");
     const seed = crypto.createHash("sha256").update(JSON.stringify({ users: state.users?.length, lobsters: state.lobsters?.length, versions: state.lobsterVersions?.length, entries: workspaceEntries.length })).digest("hex");

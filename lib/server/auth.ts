@@ -27,9 +27,9 @@ export async function createSessionForUser(userId: number) {
   const raw = generateSessionToken();
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 14).toISOString();
 
-  await mutateDb((db) => {
+  await mutateDb(async (db, { allocateId }) => {
     db.sessions.push({
-      id: db.nextIds.session++,
+      id: await allocateId("session"),
       userId,
       tokenHash: sha256(raw),
       expiresAt,

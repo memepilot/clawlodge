@@ -152,18 +152,21 @@ export type DbIconJob = {
   completedAt: string | null;
 };
 
+export type DbLegacyNextIds = {
+  user: number;
+  session: number;
+  apiToken: number;
+  hireProfile: number;
+  lobster: number;
+  lobsterVersion: number;
+  comment: number;
+  report: number;
+  iconJob: number;
+};
+
 export type DbState = {
-  nextIds: {
-    user: number;
-    session: number;
-    apiToken: number;
-    hireProfile: number;
-    lobster: number;
-    lobsterVersion: number;
-    comment: number;
-    report: number;
-    iconJob: number;
-  };
+  // Legacy JSON payloads may still carry this field, but PostgreSQL sequences are the source of truth.
+  nextIds?: Partial<DbLegacyNextIds>;
   users: DbUser[];
   sessions: DbSession[];
   apiTokens: DbApiToken[];

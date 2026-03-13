@@ -864,7 +864,7 @@ export async function createLobster(
     throw new ApiError(400, "Invalid license");
   }
 
-  return mutateDb((db) => {
+  return mutateDb(async (db, { allocateId }) => {
     const base = slugify(payload.name);
     let slug = base;
     let idx = 2;
@@ -874,7 +874,7 @@ export async function createLobster(
     const tags = [...new Set(payload.tags.map((tag) => tag.trim().toLowerCase()).filter(Boolean))];
     const now = new Date().toISOString();
     const lobster: DbLobster = {
-      id: db.nextIds.lobster++,
+      id: await allocateId("lobster"),
       slug,
       ownerId: userId,
       name: payload.name.trim(),
@@ -954,7 +954,7 @@ export async function createVersion(
 
   let createdId = 0;
   let shouldQueueIcon = false;
-  const version = await mutateDb(async (db) => {
+  const version = await mutateDb(async (db, { allocateId }) => {
     const lobster = db.lobsters.find((item) => item.slug === slug);
     if (!lobster) throw new ApiError(404, "Lobster not found");
     if (lobster.ownerId !== userId) throw new ApiError(403, "Only owner can publish versions");
@@ -1046,7 +1046,7 @@ export async function createVersion(
     }));
 
     const created: DbLobsterVersion = {
-      id: db.nextIds.lobsterVersion++,
+      id: await allocateId("lobsterVersion"),
       lobsterId: lobster.id,
       createdBy: userId,
       version: payload.version,
@@ -1131,11 +1131,11 @@ export async function addComment(userId: number, slug: string, content: string) 
     .replace(/\n{3,}/g, "\n\n");
   if (!clean) throw new ApiError(400, "Invalid payload");
 
-  return mutateDb((db) => {
+  return mutateDb(async (db, { allocateId }) => {
     const lobster = db.lobsters.find((item) => item.slug === slug && item.status === "active");
     if (!lobster) throw new ApiError(404, "Lobster not found");
     const comment = {
-      id: db.nextIds.comment++,
+      id: await allocateId("comment"),
       userId,
       lobsterId: lobster.id,
       content: clean,
@@ -1194,11 +1194,11 @@ export async function submitReport(userId: number, slug: string, reason: string)
   if (!(await allowRate(`report:${userId}`, 10, 24 * 3600))) throw new ApiError(429, "Too many reports");
   if (!reason.trim()) throw new ApiError(400, "Invalid payload");
 
-  return mutateDb((db) => {
+  return mutateDb(async (db, { allocateId }) => {
     const lobster = db.lobsters.find((item) => item.slug === slug && item.status === "active");
     if (!lobster) throw new ApiError(404, "Lobster not found");
     db.reports.push({
-      id: db.nextIds.report++,
+      id: await allocateId("report"),
       lobsterId: lobster.id,
       reporterId: userId,
       reason: reason.trim(),
@@ -1281,7 +1281,7 @@ export async function getMe(userId: number): Promise<MeProfile> {
 }
 
 export async function rotateToken(userId: number) {
-  return mutateDb((db) => {
+  return mutateDb(async (db, { allocateId }) => {
     const now = new Date().toISOString();
     db.apiTokens
       .filter((item) => item.userId === userId && !item.revoked)
@@ -1291,7 +1291,7 @@ export async function rotateToken(userId: number) {
       });
     const token = generatePat();
     db.apiTokens.push({
-      id: db.nextIds.apiToken++,
+      id: await allocateId("apiToken"),
       userId,
       tokenHash: sha256(token),
       tokenPrefix: tokenPrefix(token),
@@ -1320,12 +1320,12 @@ export async function updateHireProfile(
 ) {
   if (!["open", "closed"].includes(payload.status)) throw new ApiError(400, "Invalid payload");
 
-  return mutateDb((db) => {
+  return mutateDb(async (db, { allocateId }) => {
     const now = new Date().toISOString();
     let profile = db.hireProfiles.find((item) => item.userId === userId);
     if (!profile) {
       profile = {
-        id: db.nextIds.hireProfile++,
+        id: await allocateId("hireProfile"),
         userId,
         status: payload.status,
         contactType: payload.contact_type ?? null,
@@ -1370,12 +1370,12 @@ function reserveHandle(db: { users: DbUser[] }, baseHandle: string) {
 export async function findOrCreateUserByHandle(handle: string) {
   const clean = normalizeHandle(handle);
   if (!clean || clean.length < 2) throw new ApiError(400, "Invalid handle");
-  return mutateDb((db) => {
+  return mutateDb(async (db, { allocateId }) => {
     const existing = db.users.find((item) => item.handle === clean);
     if (existing) return existing;
     const now = new Date().toISOString();
     const user = {
-      id: db.nextIds.user++,
+      id: await allocateId("user"),
       handle: clean,
       displayName: clean,
       avatarUrl: null,
@@ -1404,7 +1404,7 @@ export async function findOrCreateGithubUser(profile: {
     throw new ApiError(400, "Invalid GitHub profile");
   }
 
-  return mutateDb((db) => {
+  return mutateDb(async (db, { allocateId }) => {
     const now = new Date().toISOString();
     const byGithubId = db.users.find((item) => item.githubId === profile.githubId);
     if (byGithubId) {
@@ -1431,7 +1431,7 @@ export async function findOrCreateGithubUser(profile: {
     }
 
     const user = {
-      id: db.nextIds.user++,
+      id: await allocateId("user"),
       handle: reserveHandle(db, baseHandle),
       displayName: profile.name ?? profile.login,
       avatarUrl: profile.avatarUrl ?? null,
@@ -1454,12 +1454,12 @@ export async function uploadViaMcp(
   if (!(await allowRate(`mcp:${userId}`, 30, 3600))) throw new ApiError(429, "MCP upload rate limit exceeded");
   const manifest = parseAndValidateManifest(files.manifestRaw);
 
-  const result = await mutateDb(async (db) => {
+  const result = await mutateDb(async (db, { allocateId }) => {
     let lobster = db.lobsters.find((item) => item.slug === slugify(manifest.lobster_slug));
     if (!lobster) {
       const now = new Date().toISOString();
       lobster = {
-        id: db.nextIds.lobster++,
+        id: await allocateId("lobster"),
         slug: slugify(manifest.lobster_slug),
         ownerId: userId,
         name: manifest.name,
@@ -1533,7 +1533,7 @@ export async function uploadViaMcp(
     const now = new Date().toISOString();
 
     const createdVersion = {
-      id: db.nextIds.lobsterVersion++,
+      id: await allocateId("lobsterVersion"),
       lobsterId: lobster.id,
       createdBy: userId,
       version: manifest.version,

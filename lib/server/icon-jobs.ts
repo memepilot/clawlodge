@@ -17,7 +17,7 @@ function iconStorageKey(slug: string, version: string, contentType: string) {
 export async function enqueueIconGenerationJob(lobsterVersionId: number) {
   if (!hasAiIconConfig()) return;
 
-  await mutateDb((db) => {
+  await mutateDb(async (db, { allocateId }) => {
     const existing = db.iconJobs.find(
       (job) => job.lobsterVersionId === lobsterVersionId && (job.status === "pending" || job.status === "running"),
     );
@@ -25,7 +25,7 @@ export async function enqueueIconGenerationJob(lobsterVersionId: number) {
 
     const now = new Date().toISOString();
     db.iconJobs.push({
-      id: db.nextIds.iconJob++,
+      id: await allocateId("iconJob"),
       lobsterVersionId,
       status: "pending",
       attempts: 0,

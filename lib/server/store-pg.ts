@@ -5,6 +5,7 @@ import { Pool, type PoolClient, type QueryResultRow } from "pg";
 
 import type {
   DbComment,
+  DbLegacyNextIds,
   DbLobster,
   DbLobsterVersion,
   DbState,
@@ -24,19 +25,26 @@ type MirrorDetailRow = {
   versions: DbLobsterVersion[];
 };
 
+export type DbIdKey = keyof DbLegacyNextIds;
+
+export type DbMutationContext = {
+  allocateId: (key: DbIdKey) => Promise<number>;
+};
+
+const ID_SEQUENCES: Record<DbIdKey, string> = {
+  user: "users_id_seq",
+  session: "sessions_id_seq",
+  apiToken: "api_tokens_id_seq",
+  hireProfile: "hire_profiles_id_seq",
+  lobster: "lobsters_id_seq",
+  lobsterVersion: "lobster_versions_id_seq",
+  comment: "comments_id_seq",
+  report: "reports_id_seq",
+  iconJob: "icon_jobs_id_seq",
+};
+
 function emptyState(): DbState {
   return {
-    nextIds: {
-      user: 1,
-      session: 1,
-      apiToken: 1,
-      hireProfile: 1,
-      lobster: 1,
-      lobsterVersion: 1,
-      comment: 1,
-      report: 1,
-      iconJob: 1,
-    },
     users: [],
     sessions: [],
     apiTokens: [],
@@ -50,7 +58,11 @@ function emptyState(): DbState {
 }
 
 function normalizeState(parsed: DbState) {
-  parsed.lobsters = parsed.lobsters.map((lobster) => ({
+  parsed.users = parsed.users ?? [];
+  parsed.sessions = parsed.sessions ?? [];
+  parsed.apiTokens = parsed.apiTokens ?? [];
+  parsed.hireProfiles = parsed.hireProfiles ?? [];
+  parsed.lobsters = (parsed.lobsters ?? []).map((lobster) => ({
     ...lobster,
     category: lobster.category ?? null,
     recommendationScore: lobster.recommendationScore ?? null,
@@ -58,7 +70,7 @@ function normalizeState(parsed: DbState) {
     downloadCount: lobster.downloadCount ?? 0,
     shareCount: lobster.shareCount ?? 0,
   }));
-  parsed.lobsterVersions = parsed.lobsterVersions.map((version) => ({
+  parsed.lobsterVersions = (parsed.lobsterVersions ?? []).map((version) => ({
     ...version,
     iconUrl: version.iconUrl ?? null,
     iconSeed: version.iconSeed ?? null,
@@ -76,6 +88,8 @@ function normalizeState(parsed: DbState) {
     maskedSecretsCount: version.maskedSecretsCount ?? 0,
     blockedFilesCount: version.blockedFilesCount ?? 0,
   }));
+  parsed.comments = parsed.comments ?? [];
+  parsed.reports = parsed.reports ?? [];
   parsed.iconJobs = (parsed.iconJobs ?? []).map((job) => ({
     ...job,
     status: job.status ?? "pending",
@@ -84,27 +98,7 @@ function normalizeState(parsed: DbState) {
     startedAt: job.startedAt ?? null,
     completedAt: job.completedAt ?? null,
   }));
-  repairNextIds(parsed);
-  parsed.nextIds.iconJob = parsed.nextIds.iconJob ?? 1;
   return parsed;
-}
-
-function repairNextIds(state: DbState) {
-  state.nextIds.user = Math.max(state.nextIds.user ?? 1, Math.max(...state.users.map((item) => item.id), 0) + 1);
-  state.nextIds.session = Math.max(state.nextIds.session ?? 1, Math.max(...state.sessions.map((item) => item.id), 0) + 1);
-  state.nextIds.apiToken = Math.max(state.nextIds.apiToken ?? 1, Math.max(...state.apiTokens.map((item) => item.id), 0) + 1);
-  state.nextIds.hireProfile = Math.max(
-    state.nextIds.hireProfile ?? 1,
-    Math.max(...state.hireProfiles.map((item) => item.id), 0) + 1,
-  );
-  state.nextIds.lobster = Math.max(state.nextIds.lobster ?? 1, Math.max(...state.lobsters.map((item) => item.id), 0) + 1);
-  state.nextIds.lobsterVersion = Math.max(
-    state.nextIds.lobsterVersion ?? 1,
-    Math.max(...state.lobsterVersions.map((item) => item.id), 0) + 1,
-  );
-  state.nextIds.comment = Math.max(state.nextIds.comment ?? 1, Math.max(...state.comments.map((item) => item.id), 0) + 1);
-  state.nextIds.report = Math.max(state.nextIds.report ?? 1, Math.max(...state.reports.map((item) => item.id), 0) + 1);
-  state.nextIds.iconJob = Math.max(state.nextIds.iconJob ?? 1, Math.max(...state.iconJobs.map((item) => item.id), 0) + 1);
 }
 
 function versionsWithInlineWorkspaceFiles(state: DbState) {
@@ -112,8 +106,10 @@ function versionsWithInlineWorkspaceFiles(state: DbState) {
 }
 
 function stripWorkspaceFilesFromState(state: DbState): DbState {
+  const rest = { ...state };
+  delete rest.nextIds;
   return {
-    ...state,
+    ...rest,
     lobsterVersions: state.lobsterVersions.map((version) => ({
       ...version,
       workspaceFiles: undefined,
@@ -307,12 +303,50 @@ async function ensureSchema(client: PoolClient) {
     CREATE INDEX IF NOT EXISTS idx_workspace_entries_version_path ON workspace_entries(version_id, path);
     CREATE INDEX IF NOT EXISTS idx_comments_mirror_lobster_created ON comments_mirror(lobster_id, created_at ASC);
   `);
+
+  for (const sequenceName of Object.values(ID_SEQUENCES)) {
+    await client.query(`CREATE SEQUENCE IF NOT EXISTS ${sequenceName}`);
+  }
+
+  await client.query("ALTER TABLE users_mirror ALTER COLUMN id SET DEFAULT nextval('users_id_seq')");
+  await client.query("ALTER TABLE lobsters_mirror ALTER COLUMN id SET DEFAULT nextval('lobsters_id_seq')");
+  await client.query("ALTER TABLE lobster_versions_mirror ALTER COLUMN id SET DEFAULT nextval('lobster_versions_id_seq')");
+  await client.query("ALTER TABLE comments_mirror ALTER COLUMN id SET DEFAULT nextval('comments_id_seq')");
+}
+
+async function allocateId(client: PoolClient, key: DbIdKey) {
+  const result = await client.query<{ id: string }>("SELECT nextval($1::regclass) AS id", [ID_SEQUENCES[key]]);
+  const value = Number(result.rows[0]?.id);
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new Error(`Failed to allocate id for ${key}`);
+  }
+  return value;
+}
+
+async function setSequenceValue(client: PoolClient, key: DbIdKey, value: number) {
+  if (value > 0) {
+    await client.query("SELECT setval($1::regclass, $2, true)", [ID_SEQUENCES[key], value]);
+  } else {
+    await client.query("SELECT setval($1::regclass, 1, false)", [ID_SEQUENCES[key]]);
+  }
+}
+
+async function syncStateSequences(client: PoolClient, state: DbState) {
+  await setSequenceValue(client, "user", Math.max(...state.users.map((item) => item.id), 0));
+  await setSequenceValue(client, "session", Math.max(...state.sessions.map((item) => item.id), 0));
+  await setSequenceValue(client, "apiToken", Math.max(...state.apiTokens.map((item) => item.id), 0));
+  await setSequenceValue(client, "hireProfile", Math.max(...state.hireProfiles.map((item) => item.id), 0));
+  await setSequenceValue(client, "lobster", Math.max(...state.lobsters.map((item) => item.id), 0));
+  await setSequenceValue(client, "lobsterVersion", Math.max(...state.lobsterVersions.map((item) => item.id), 0));
+  await setSequenceValue(client, "comment", Math.max(...state.comments.map((item) => item.id), 0));
+  await setSequenceValue(client, "report", Math.max(...state.reports.map((item) => item.id), 0));
+  await setSequenceValue(client, "iconJob", Math.max(...state.iconJobs.map((item) => item.id), 0));
 }
 
 async function syncWorkspaceEntries(client: PoolClient, state: DbState) {
-  await client.query("DELETE FROM workspace_entries");
   const versions = versionsWithInlineWorkspaceFiles(state);
   if (!versions.length) return;
+  await client.query("DELETE FROM workspace_entries WHERE version_id = ANY($1::int[])", [versions.map((version) => version.id)]);
   for (const version of versions) {
     for (const file of version.workspaceFiles ?? []) {
       await client.query(
@@ -443,10 +477,18 @@ async function persistState(client: PoolClient, state: DbState) {
   const now = new Date().toISOString();
   const persisted = stripWorkspaceFilesFromState(state);
   await client.query("UPDATE app_state SET payload = $1::jsonb, updated_at = $2 WHERE id = 1", [safeJsonStringify(persisted), now]);
-  if (versionsWithInlineWorkspaceFiles(state).length) {
-    await syncWorkspaceEntries(client, state);
-  }
+  await syncWorkspaceEntries(client, state);
   await syncMirrorTables(client, persisted);
+  await syncStateSequences(client, state);
+}
+
+async function loadDbWithClient(client: PoolClient) {
+  const result = await client.query<{ payload: DbState | string }>("SELECT payload FROM app_state WHERE id = 1");
+  const payload = result.rows[0]?.payload;
+  if (!payload) {
+    return emptyState();
+  }
+  return normalizeState(typeof payload === "string" ? JSON.parse(payload) as DbState : payload as DbState);
 }
 
 async function ensureDatabase() {
@@ -463,22 +505,13 @@ async function ensureDatabase() {
         [safeJsonStringify(persisted), new Date().toISOString()],
       );
       await syncMirrorTables(client, persisted);
+      await syncStateSequences(client, state);
     } else {
-      const row = await client.query<{ payload: DbState | string }>("SELECT payload FROM app_state WHERE id = 1");
-      const payload = row.rows[0]?.payload;
-      const rawState = typeof payload === "string" ? JSON.parse(payload) as DbState : payload as DbState;
-      const rawNextIds = JSON.stringify(rawState.nextIds ?? {});
-      const state = normalizeState(rawState);
-      const nextIdsChanged = rawNextIds !== JSON.stringify(state.nextIds ?? {});
-      if (versionsWithInlineWorkspaceFiles(state).length) {
+      const state = await loadDbWithClient(client);
+      if (versionsWithInlineWorkspaceFiles(state).length || state.nextIds) {
         await persistState(client, state);
-      } else if (nextIdsChanged) {
-        const persisted = stripWorkspaceFilesFromState(state);
-        await client.query("UPDATE app_state SET payload = $1::jsonb, updated_at = $2 WHERE id = 1", [
-          safeJsonStringify(persisted),
-          new Date().toISOString(),
-        ]);
-        await syncMirrorTables(client, persisted);
+      } else {
+        await syncStateSequences(client, state);
       }
     }
   });
@@ -487,12 +520,7 @@ async function ensureDatabase() {
 
 async function loadDb() {
   await ensureDatabase();
-  const result = await query<{ payload: DbState | string }>("SELECT payload FROM app_state WHERE id = 1");
-  const payload = result.rows[0]?.payload;
-  if (!payload) {
-    return emptyState();
-  }
-  return normalizeState(typeof payload === "string" ? JSON.parse(payload) as DbState : payload as DbState);
+  return withTransaction((client) => loadDbWithClient(client));
 }
 
 function toMirrorLobster(row: Record<string, unknown>): DbLobster {
@@ -573,11 +601,16 @@ export async function writeDb(next: DbState) {
   await withTransaction((client) => persistState(client, next));
 }
 
-export async function mutateDb<T>(fn: (state: DbState) => T | Promise<T>): Promise<T> {
-  const state = await loadDb();
-  const result = await fn(state);
-  await writeDb(state);
-  return result;
+export async function mutateDb<T>(fn: (state: DbState, context: DbMutationContext) => T | Promise<T>): Promise<T> {
+  await ensureDatabase();
+  return withTransaction(async (client) => {
+    const state = await loadDbWithClient(client);
+    const result = await fn(state, {
+      allocateId: (key) => allocateId(client, key),
+    });
+    await persistState(client, state);
+    return result;
+  });
 }
 
 export async function readMirroredLobsterSummaries() {
