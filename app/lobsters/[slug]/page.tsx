@@ -6,7 +6,6 @@ import { cache } from "react";
 import { LobsterActions } from "@/components/lobster-actions";
 import { getLobsterAvatarSrc, LobsterAvatar } from "@/components/lobster-avatar";
 import { MarkdownContent } from "@/components/markdown-content";
-import { SearchBand } from "@/components/search-band";
 import { DownloadLink } from "@/components/download-link";
 import { WorkspaceBrowser } from "@/components/workspace-browser";
 import { getTranslations } from "@/lib/i18n";
@@ -131,16 +130,6 @@ export default async function LobsterDetailPage({
 
   return (
     <div className="page-shell stack-lg">
-      <SearchBand
-        className="page-panel detail-search-band"
-        defaultQuery={displayName}
-        placeholder={t.home.searchPlaceholder}
-        buttonLabel={t.home.searchButton}
-        helperText={t.home.searchStat}
-        includeSort
-        sortValue="hot"
-      />
-
       <section className="shell page-panel detail-hero">
         <div className="detail-hero-main">
           <div className="detail-kickers">
