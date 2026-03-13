@@ -41,6 +41,27 @@ function categoryLabel(value: LobsterSummary["category"]) {
   }
 }
 
+function topicLabel(value: NonNullable<LobsterSummary["topics"]>[number]) {
+  switch (value) {
+    case "dev":
+      return "Dev";
+    case "design":
+      return "Design";
+    case "research":
+      return "Research";
+    case "writing":
+      return "Writing";
+    case "productivity":
+      return "Productivity";
+    case "multiagent":
+      return "Multi-Agent";
+    case "automation":
+      return "Automation";
+    default:
+      return value;
+  }
+}
+
 export function LobsterCard({
   item,
   locale = "en",
@@ -77,6 +98,11 @@ export function LobsterCard({
           </div>
           <div className="lobster-card-meta lobster-card-home-meta">
             <span className="tag tag-source">{category ?? sourceTypeLabel(item.source_type, locale) ?? "Setup"}</span>
+            {item.topics?.slice(0, 2).map((topic) => (
+              <span key={topic} className="tag tag-topic">
+                {topicLabel(topic)}
+              </span>
+            ))}
           </div>
           <p className="lobster-card-summary lobster-card-home-summary">{summary}</p>
           <div className="lobster-card-footer lobster-card-home-footer">
@@ -153,6 +179,15 @@ export function LobsterCard({
           </div>
           <p className="lobster-card-summary lobster-card-summary-clamped">{summary}</p>
           {item.curation_note ? <p className="lobster-card-note">{item.curation_note}</p> : null}
+          {item.topics?.length ? (
+            <div className="lobster-card-topics">
+              {item.topics.map((topic) => (
+                <span key={topic} className="tag tag-topic">
+                  {topicLabel(topic)}
+                </span>
+              ))}
+            </div>
+          ) : null}
           <div className="lobster-card-tags">
             {item.tags.map((tag) => (
               <Link key={tag} className="tag" href={`/?tag=${encodeURIComponent(tag)}`}>

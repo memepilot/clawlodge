@@ -726,6 +726,14 @@ main {
   margin-top: 16px;
 }
 
+.lobster-card-topics,
+.detail-topic-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
 .lobster-card-home-meta {
   margin-bottom: 0;
 }
@@ -751,6 +759,12 @@ main {
 .tag-verified {
   background: rgba(255, 107, 74, 0.1);
   border-color: rgba(255, 107, 74, 0.2);
+}
+
+.tag-topic {
+  background: rgba(67, 117, 179, 0.08);
+  border-color: rgba(67, 117, 179, 0.18);
+  color: #35597f;
 }
 
 .seed-list {

@@ -19,6 +19,48 @@ export const dynamic = "force-dynamic";
 
 const getCachedLobster = cache(async (slug: string) => getLobsterBySlug(slug));
 
+function topicLabel(value: string, locale: "en" | "zh") {
+  if (locale === "zh") {
+    switch (value) {
+      case "dev":
+        return "开发";
+      case "design":
+        return "设计";
+      case "research":
+        return "研究";
+      case "writing":
+        return "写作";
+      case "productivity":
+        return "效率";
+      case "multiagent":
+        return "多智能体";
+      case "automation":
+        return "自动化";
+      default:
+        return value;
+    }
+  }
+
+  switch (value) {
+    case "dev":
+      return "Dev";
+    case "design":
+      return "Design";
+    case "research":
+      return "Research";
+    case "writing":
+      return "Writing";
+    case "productivity":
+      return "Productivity";
+    case "multiagent":
+      return "Multi-Agent";
+    case "automation":
+      return "Automation";
+    default:
+      return value;
+  }
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -124,6 +166,15 @@ export default async function LobsterDetailPage({
             </div>
           </div>
           <p className="detail-summary">{lobster.summary}</p>
+          {lobster.topics?.length ? (
+            <div className="detail-topic-row">
+              {lobster.topics.map((topic) => (
+                <span key={topic} className="tag tag-topic">
+                  {topicLabel(topic, locale)}
+                </span>
+              ))}
+            </div>
+          ) : null}
           <div className="lobster-card-tags detail-tags">
             {lobster.tags.map((tag) => (
               <Link key={tag} className="tag" href={`/?tag=${encodeURIComponent(tag)}`}>
