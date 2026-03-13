@@ -69,7 +69,6 @@ export default async function LobsterDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const commentsPromise = getComments(slug);
   const localePromise = getRequestLocale();
   let lobster;
   try {
@@ -80,6 +79,7 @@ export default async function LobsterDetailPage({
     }
     throw error;
   }
+  const commentsPromise = getComments(slug);
   const [comments, locale] = await Promise.all([commentsPromise, localePromise]);
   const latest = lobster.versions[0];
   const t = getTranslations(locale);
