@@ -609,6 +609,37 @@ function iconStorageKey(slug: string, version: string, contentType: string) {
   return `lobsters/${slug}/${version}/icon.${iconExtensionForContentType(contentType)}`;
 }
 
+const LOBSTER_SUMMARY_CACHE_TTL_MS = 30_000;
+
+let lobsterSummariesCache:
+  | {
+      expiresAt: number;
+      value: Awaited<ReturnType<typeof readMirroredLobsterSummaries>>;
+    }
+  | null = null;
+let lobsterSummariesPromise: Promise<Awaited<ReturnType<typeof readMirroredLobsterSummaries>>> | null = null;
+
+async function readCachedLobsterSummaries() {
+  const now = Date.now();
+  if (lobsterSummariesCache && lobsterSummariesCache.expiresAt > now) {
+    return lobsterSummariesCache.value;
+  }
+  if (!lobsterSummariesPromise) {
+    lobsterSummariesPromise = readMirroredLobsterSummaries()
+      .then((value) => {
+        lobsterSummariesCache = {
+          value,
+          expiresAt: Date.now() + LOBSTER_SUMMARY_CACHE_TTL_MS,
+        };
+        return value;
+      })
+      .finally(() => {
+        lobsterSummariesPromise = null;
+      });
+  }
+  return lobsterSummariesPromise;
+}
+
 export async function listLobsters(params?: {
   sort?: string;
   tag?: string;
@@ -617,7 +648,7 @@ export async function listLobsters(params?: {
   page?: number;
   per_page?: number;
 }) {
-  let items = await readMirroredLobsterSummaries();
+  let items = await readCachedLobsterSummaries();
   if (params?.sort !== "new") {
     const hasPendingGithubStars = items.some(
       ({ lobster }) => lobster.status === "active" && lobster.sourceUrl && parseGithubRepoRef(lobster.sourceUrl) && lobster.githubStars == null,

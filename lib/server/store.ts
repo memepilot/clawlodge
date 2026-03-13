@@ -4,6 +4,7 @@ export {
   readMirroredComments,
   readMirroredLobsterDetail,
   readMirroredLobsterSummaries,
+  readMirroredUserProfiles,
   readMirroredLobsterVersion,
   readWorkspaceEntriesForVersionId,
   writeDb,

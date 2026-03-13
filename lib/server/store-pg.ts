@@ -19,6 +19,7 @@ const SCHEMA_INIT_LOCK = { classId: 20260313, objectId: 1 };
 
 let pool: Pool | null = null;
 let initialized = false;
+let initializationPromise: Promise<void> | null = null;
 
 type MirrorDetailRow = {
   lobster: DbLobster;
@@ -305,18 +306,22 @@ async function ensureSchema(client: PoolClient) {
     CREATE INDEX IF NOT EXISTS idx_versions_mirror_lobster_created ON lobster_versions_mirror(lobster_id, created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_workspace_entries_version_path ON workspace_entries(version_id, path);
     CREATE INDEX IF NOT EXISTS idx_comments_mirror_lobster_created ON comments_mirror(lobster_id, created_at ASC);
+    ALTER TABLE lobsters_mirror
+      ADD COLUMN IF NOT EXISTS topics_json JSONB NOT NULL DEFAULT '[]'::jsonb;
+    CREATE SEQUENCE IF NOT EXISTS users_id_seq;
+    CREATE SEQUENCE IF NOT EXISTS sessions_id_seq;
+    CREATE SEQUENCE IF NOT EXISTS api_tokens_id_seq;
+    CREATE SEQUENCE IF NOT EXISTS hire_profiles_id_seq;
+    CREATE SEQUENCE IF NOT EXISTS lobsters_id_seq;
+    CREATE SEQUENCE IF NOT EXISTS lobster_versions_id_seq;
+    CREATE SEQUENCE IF NOT EXISTS comments_id_seq;
+    CREATE SEQUENCE IF NOT EXISTS reports_id_seq;
+    CREATE SEQUENCE IF NOT EXISTS icon_jobs_id_seq;
+    ALTER TABLE users_mirror ALTER COLUMN id SET DEFAULT nextval('users_id_seq');
+    ALTER TABLE lobsters_mirror ALTER COLUMN id SET DEFAULT nextval('lobsters_id_seq');
+    ALTER TABLE lobster_versions_mirror ALTER COLUMN id SET DEFAULT nextval('lobster_versions_id_seq');
+    ALTER TABLE comments_mirror ALTER COLUMN id SET DEFAULT nextval('comments_id_seq');
   `);
-
-  await client.query("ALTER TABLE lobsters_mirror ADD COLUMN IF NOT EXISTS topics_json JSONB NOT NULL DEFAULT '[]'::jsonb");
-
-  for (const sequenceName of Object.values(ID_SEQUENCES)) {
-    await client.query(`CREATE SEQUENCE IF NOT EXISTS ${sequenceName}`);
-  }
-
-  await client.query("ALTER TABLE users_mirror ALTER COLUMN id SET DEFAULT nextval('users_id_seq')");
-  await client.query("ALTER TABLE lobsters_mirror ALTER COLUMN id SET DEFAULT nextval('lobsters_id_seq')");
-  await client.query("ALTER TABLE lobster_versions_mirror ALTER COLUMN id SET DEFAULT nextval('lobster_versions_id_seq')");
-  await client.query("ALTER TABLE comments_mirror ALTER COLUMN id SET DEFAULT nextval('comments_id_seq')");
 }
 
 async function allocateId(client: PoolClient, key: DbIdKey) {
@@ -499,31 +504,67 @@ async function loadDbWithClient(client: PoolClient) {
 
 async function ensureDatabase() {
   if (initialized) return;
-  await withTransaction(async (client) => {
-    // Serialize first-run schema/bootstrap work across processes to avoid DDL deadlocks.
-    await client.query("SELECT pg_advisory_xact_lock($1, $2)", [SCHEMA_INIT_LOCK.classId, SCHEMA_INIT_LOCK.objectId]);
-    await ensureSchema(client);
-    const existing = await client.query<{ id: number }>("SELECT id FROM app_state WHERE id = 1");
-    if (!existing.rowCount) {
-      const state = await loadSeedState();
-      const persisted = stripWorkspaceFilesFromState(state);
-      await syncWorkspaceEntries(client, state);
-      await client.query(
-        "INSERT INTO app_state (id, payload, updated_at) VALUES (1, $1::jsonb, $2)",
-        [safeJsonStringify(persisted), new Date().toISOString()],
-      );
-      await syncMirrorTables(client, persisted);
-      await syncStateSequences(client, state);
-    } else {
-      const state = await loadDbWithClient(client);
-      if (versionsWithInlineWorkspaceFiles(state).length || state.nextIds) {
-        await persistState(client, state);
-      } else {
-        await syncStateSequences(client, state);
+  if (!initializationPromise) {
+    initializationPromise = (async () => {
+      try {
+        const probe = await query<{ has_state: boolean; has_users: boolean; has_lobsters: boolean; has_versions: boolean }>(
+          `SELECT
+             EXISTS(SELECT 1 FROM app_state WHERE id = 1) AS has_state,
+             to_regclass('public.users_mirror') IS NOT NULL AS has_users,
+             to_regclass('public.lobsters_mirror') IS NOT NULL AS has_lobsters,
+             to_regclass('public.lobster_versions_mirror') IS NOT NULL AS has_versions`,
+        );
+        const row = probe.rows[0];
+        if (row?.has_state && row.has_users && row.has_lobsters && row.has_versions) {
+          return;
+        }
+      } catch {
+        // Fall back to the full bootstrap path when the schema is absent or partially initialized.
       }
-    }
-  });
-  initialized = true;
+
+      await withTransaction(async (client) => {
+        // Serialize first-run schema/bootstrap work across processes to avoid DDL deadlocks.
+        await client.query("SELECT pg_advisory_xact_lock($1, $2)", [SCHEMA_INIT_LOCK.classId, SCHEMA_INIT_LOCK.objectId]);
+        await ensureSchema(client);
+        const existing = await client.query<{ id: number }>("SELECT id FROM app_state WHERE id = 1");
+        if (!existing.rowCount) {
+          const state = await loadSeedState();
+          const persisted = stripWorkspaceFilesFromState(state);
+          await syncWorkspaceEntries(client, state);
+          await client.query(
+            "INSERT INTO app_state (id, payload, updated_at) VALUES (1, $1::jsonb, $2)",
+            [safeJsonStringify(persisted), new Date().toISOString()],
+          );
+          await syncMirrorTables(client, persisted);
+          await syncStateSequences(client, state);
+          return;
+        }
+
+        const mirrorStatus = await client.query<{ has_users: boolean; has_lobsters: boolean; has_versions: boolean }>(
+          `SELECT
+             EXISTS(SELECT 1 FROM users_mirror) AS has_users,
+             EXISTS(SELECT 1 FROM lobsters_mirror) AS has_lobsters,
+             EXISTS(SELECT 1 FROM lobster_versions_mirror) AS has_versions`,
+        );
+        const needsMirrorBootstrap =
+          !mirrorStatus.rows[0]?.has_users ||
+          !mirrorStatus.rows[0]?.has_lobsters ||
+          !mirrorStatus.rows[0]?.has_versions;
+
+        if (needsMirrorBootstrap) {
+          const state = await loadDbWithClient(client);
+          await persistState(client, state);
+        }
+      });
+    })()
+      .then(() => {
+        initialized = true;
+      })
+      .finally(() => {
+        initializationPromise = null;
+      });
+  }
+  await initializationPromise;
 }
 
 async function loadDb() {
@@ -550,6 +591,37 @@ function toMirrorLobster(row: Record<string, unknown>): DbLobster {
     status: row.status as DbLobster["status"],
     reportPenalty: Number(row.report_penalty),
     searchDocument: String(row.search_document),
+    tags: typeof row.tags_json === "string" ? parseJsonArray<string>(row.tags_json) : (row.tags_json as string[] | null) ?? [],
+    recommendationScore: row.recommendation_score == null ? null : Number(row.recommendation_score),
+    githubStars: row.github_stars == null ? null : Number(row.github_stars),
+    favoriteCount: Number(row.favorite_count),
+    downloadCount: Number(row.download_count),
+    shareCount: Number(row.share_count),
+    commentCount: Number(row.comment_count),
+    createdAt: String(row.created_at),
+    updatedAt: String(row.updated_at),
+  };
+}
+
+function toMirroredSummaryLobster(row: Record<string, unknown>): DbLobster {
+  return {
+    id: Number(row.id),
+    slug: String(row.slug),
+    ownerId: Number(row.owner_id),
+    name: String(row.name),
+    summary: String(row.summary),
+    category: row.category == null ? null : String(row.category) as DbLobster["category"],
+    topics: typeof row.topics_json === "string" ? parseJsonArray<DbLobster["topics"][number]>(row.topics_json) : (row.topics_json as DbLobster["topics"] | null) ?? [],
+    license: String(row.license),
+    sourceType: row.source_type as DbLobster["sourceType"],
+    sourceUrl: row.source_url == null ? null : String(row.source_url),
+    originalAuthor: row.original_author == null ? null : String(row.original_author),
+    verified: Boolean(row.verified),
+    curationNote: row.curation_note == null ? null : String(row.curation_note),
+    seededAt: row.seeded_at == null ? null : String(row.seeded_at),
+    status: row.status as DbLobster["status"],
+    reportPenalty: Number(row.report_penalty),
+    searchDocument: "",
     tags: typeof row.tags_json === "string" ? parseJsonArray<string>(row.tags_json) : (row.tags_json as string[] | null) ?? [],
     recommendationScore: row.recommendation_score == null ? null : Number(row.recommendation_score),
     githubStars: row.github_stars == null ? null : Number(row.github_stars),
@@ -626,7 +698,31 @@ export async function readMirroredLobsterSummaries() {
   await ensureDatabase();
   const result = await query<Record<string, unknown>>(`
     SELECT
-      l.*,
+      l.id,
+      l.slug,
+      l.owner_id,
+      l.name,
+      l.summary,
+      l.category,
+      l.topics_json,
+      l.license,
+      l.source_type,
+      l.source_url,
+      l.original_author,
+      l.verified,
+      l.curation_note,
+      l.seeded_at,
+      l.status,
+      l.report_penalty,
+      l.tags_json,
+      l.recommendation_score,
+      l.github_stars,
+      l.favorite_count,
+      l.download_count,
+      l.share_count,
+      l.comment_count,
+      l.created_at,
+      l.updated_at,
       u.handle AS owner_handle,
       u.display_name AS owner_display_name,
       lv.version AS latest_version,
@@ -636,7 +732,7 @@ export async function readMirroredLobsterSummaries() {
     FROM lobsters_mirror l
     JOIN users_mirror u ON u.id = l.owner_id
     LEFT JOIN LATERAL (
-      SELECT *
+      SELECT version, source_repo, icon_url, created_at, id
       FROM lobster_versions_mirror
       WHERE lobster_id = l.id
       ORDER BY created_at DESC, id DESC
@@ -646,7 +742,7 @@ export async function readMirroredLobsterSummaries() {
   `);
 
   return result.rows.map((row) => ({
-    lobster: toMirrorLobster(row),
+    lobster: toMirroredSummaryLobster(row),
     owner: {
       handle: String(row.owner_handle),
       displayName: row.owner_display_name == null ? null : String(row.owner_display_name),
@@ -801,5 +897,19 @@ export async function readMirroredComments(slug: string) {
     comment: toMirrorComment(row),
     userHandle: String(row.handle),
     userDisplayName: row.display_name == null ? null : String(row.display_name),
+  }));
+}
+
+export async function readMirroredUserProfiles() {
+  await ensureDatabase();
+  const result = await query<Record<string, unknown>>(
+    `SELECT id, handle, updated_at
+     FROM users_mirror
+     ORDER BY id ASC`,
+  );
+  return result.rows.map((row) => ({
+    id: Number(row.id),
+    handle: String(row.handle),
+    updatedAt: String(row.updated_at),
   }));
 }

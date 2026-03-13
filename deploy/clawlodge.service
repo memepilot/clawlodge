@@ -11,6 +11,7 @@ Environment=PORT=3001
 Environment=CLAWLODGE_DATA_DIR=/var/lib/clawlodge
 EnvironmentFile=/var/www/clawlodge/.env.production
 ExecStart=/usr/bin/npm run start
+ExecStartPost=/bin/sh -lc 'sleep 2; /usr/bin/curl -fsS "http://127.0.0.1:3001/api/v1/lobsters?page=1&pageSize=12" >/dev/null || true; /usr/bin/curl -fsS "http://127.0.0.1:3001/" >/dev/null || true'
 Restart=always
 RestartSec=5
 

@@ -1,10 +1,13 @@
 import type { MetadataRoute } from "next";
 
-import { readDb } from "@/lib/server/store";
+import { readMirroredLobsterSummaries, readMirroredUserProfiles } from "@/lib/server/store";
 import { absoluteUrl } from "@/lib/site";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const db = await readDb();
+  const [lobsters, users] = await Promise.all([
+    readMirroredLobsterSummaries(),
+    readMirroredUserProfiles(),
+  ]);
 
   const staticRoutes: MetadataRoute.Sitemap = [
     {
@@ -34,16 +37,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  const lobsterRoutes: MetadataRoute.Sitemap = db.lobsters
-    .filter((item) => item.status === "active")
-    .map((item) => ({
-      url: absoluteUrl(`/lobsters/${item.slug}`),
-      lastModified: new Date(item.updatedAt),
+  const lobsterRoutes: MetadataRoute.Sitemap = lobsters.map(({ lobster }) => ({
+      url: absoluteUrl(`/lobsters/${lobster.slug}`),
+      lastModified: new Date(lobster.updatedAt),
       changeFrequency: "weekly" as const,
       priority: 0.8,
     }));
 
-  const userRoutes: MetadataRoute.Sitemap = db.users.map((user) => ({
+  const userRoutes: MetadataRoute.Sitemap = users.map((user) => ({
     url: absoluteUrl(`/u/${user.handle}`),
     lastModified: new Date(user.updatedAt),
     changeFrequency: "weekly" as const,
