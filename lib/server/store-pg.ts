@@ -15,6 +15,7 @@ import type {
 
 const dataDir = path.resolve(process.env.CLAWLODGE_DATA_DIR || path.join(process.cwd(), "data"));
 const legacyJsonPath = path.join(dataDir, "app-db.json");
+const SCHEMA_INIT_LOCK = { classId: 20260313, objectId: 1 };
 
 let pool: Pool | null = null;
 let initialized = false;
@@ -494,6 +495,8 @@ async function loadDbWithClient(client: PoolClient) {
 async function ensureDatabase() {
   if (initialized) return;
   await withTransaction(async (client) => {
+    // Serialize first-run schema/bootstrap work across processes to avoid DDL deadlocks.
+    await client.query("SELECT pg_advisory_xact_lock($1, $2)", [SCHEMA_INIT_LOCK.classId, SCHEMA_INIT_LOCK.objectId]);
     await ensureSchema(client);
     const existing = await client.query<{ id: number }>("SELECT id FROM app_state WHERE id = 1");
     if (!existing.rowCount) {
