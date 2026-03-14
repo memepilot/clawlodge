@@ -15,7 +15,7 @@ import { ApiError } from "@/lib/server/errors";
 import { getComments, getLobsterBySlug } from "@/lib/server/service";
 import { absoluteUrl } from "@/lib/site";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 const getCachedLobster = cache(async (slug: string) => getLobsterBySlug(slug));
 
