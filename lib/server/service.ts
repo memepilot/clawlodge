@@ -540,10 +540,11 @@ function toSummary(item: DbLobster, owner: DbUser): LobsterSummary {
 
 function toVersion(version: DbLobsterVersion, options?: { includeWorkspaceContent?: boolean }): LobsterVersion {
   const includeWorkspaceContent = options?.includeWorkspaceContent ?? true;
+  const readmeText = rewriteReadmeRelativeLinks(version);
   return {
     version: version.version,
     changelog: version.changelog,
-    readme_text: version.readmeText,
+    readme_text: readmeText,
     manifest_url: resolvePublicAssetUrl(version.manifestUrl) ?? version.manifestUrl,
     readme_url: resolvePublicAssetUrl(version.readmeUrl) ?? version.readmeUrl,
     icon_url: resolvePublicAssetUrl(version.iconUrl) ?? version.iconUrl,
@@ -573,6 +574,104 @@ function toVersion(version: DbLobsterVersion, options?: { includeWorkspaceConten
       size: skill.size,
     })),
   };
+}
+
+function isRelativeReadmeLink(value: string) {
+  return Boolean(value)
+    && !/^(?:[a-z]+:)?\/\//i.test(value)
+    && !value.startsWith("#")
+    && !value.startsWith("data:")
+    && !value.startsWith("mailto:")
+    && !value.startsWith("javascript:");
+}
+
+function splitUrlSuffix(value: string) {
+  const hashIndex = value.indexOf("#");
+  const queryIndex = value.indexOf("?");
+  let cutIndex = -1;
+  if (hashIndex !== -1 && queryIndex !== -1) cutIndex = Math.min(hashIndex, queryIndex);
+  else cutIndex = Math.max(hashIndex, queryIndex);
+  if (cutIndex === -1) {
+    return { basePath: value, suffix: "" };
+  }
+  return {
+    basePath: value.slice(0, cutIndex),
+    suffix: value.slice(cutIndex),
+  };
+}
+
+function normalizeRepoRelativePath(value: string) {
+  const trimmed = value.trim().replace(/^<|>$/g, "");
+  const { basePath, suffix } = splitUrlSuffix(trimmed);
+  const normalized = path.posix.normalize(basePath).replace(/^(\.\.\/)+/, "").replace(/^\.?\//, "");
+  if (!normalized) return null;
+  return {
+    path: normalized,
+    suffix,
+  };
+}
+
+function isLikelyBinaryAssetPath(filePath: string) {
+  const lower = filePath.toLowerCase();
+  return /\.(png|jpe?g|gif|webp|svg|avif|ico|mp4|webm|mov|mp3|wav|ogg|pdf)$/i.test(lower);
+}
+
+function buildGithubRepoUrl(sourceRepo: string | null | undefined, ref: string | null | undefined, filePath: string, mode: "blob" | "raw") {
+  const repo = parseGithubRepoRef(sourceRepo);
+  if (!repo) return null;
+  const targetRef = ref?.trim() || "HEAD";
+  const encodedPath = filePath.split("/").map(encodeURIComponent).join("/");
+  return `https://github.com/${repo.owner}/${repo.repo}/${mode}/${encodeURIComponent(targetRef)}/${encodedPath}`;
+}
+
+function resolveReadmeLinkTarget(
+  rawTarget: string,
+  version: DbLobsterVersion,
+  storageUrlByPath: Map<string, string>,
+) {
+  if (!isRelativeReadmeLink(rawTarget)) return null;
+  const normalized = normalizeRepoRelativePath(rawTarget);
+  if (!normalized) return null;
+
+  const stored = storageUrlByPath.get(normalized.path);
+  if (stored) return `${stored}${normalized.suffix}`;
+
+  const mode = isLikelyBinaryAssetPath(normalized.path) ? "raw" : "blob";
+  const githubUrl = buildGithubRepoUrl(version.sourceRepo, version.sourceCommit, normalized.path, mode);
+  return githubUrl ? `${githubUrl}${normalized.suffix}` : null;
+}
+
+function rewriteReadmeRelativeLinks(version: DbLobsterVersion) {
+  const storageUrlByPath = new Map<string, string>();
+  for (const file of version.workspaceFiles ?? []) {
+    if (!file.storageUrl) continue;
+    const publicUrl = resolvePublicAssetUrl(file.storageUrl) ?? file.storageUrl;
+    storageUrlByPath.set(file.path, publicUrl);
+  }
+
+  let next = version.readmeText;
+
+  next = next.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, rawTarget) => {
+    const replacement = resolveReadmeLinkTarget(String(rawTarget), version, storageUrlByPath);
+    return replacement ? `![${alt}](${replacement})` : match;
+  });
+
+  next = next.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, label, rawTarget) => {
+    const replacement = resolveReadmeLinkTarget(String(rawTarget), version, storageUrlByPath);
+    return replacement ? `[${label}](${replacement})` : match;
+  });
+
+  next = next.replace(/(<(?:img|video|audio|source|a)\b[^>]*?\b(?:src|href|poster|srcset)=)(['"])(.*?)\2/gi, (
+    match,
+    prefix,
+    quote,
+    rawTarget,
+  ) => {
+    const replacement = resolveReadmeLinkTarget(String(rawTarget), version, storageUrlByPath);
+    return replacement ? `${prefix}${quote}${replacement}${quote}` : match;
+  });
+
+  return next;
 }
 
 function attachLatestVersion(summary: LobsterSummary, versions: DbLobsterVersion[]) {
