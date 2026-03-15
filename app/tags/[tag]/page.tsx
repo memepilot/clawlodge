@@ -1,6 +1,9 @@
+import { notFound } from "next/navigation";
+
 import { LobsterCollectionPage } from "@/components/lobster-collection-page";
 import { buildCollectionMetadata } from "@/lib/lobster-taxonomy";
 import { getRequestLocale } from "@/lib/server/locale";
+import { readMirroredLobsterSummaries } from "@/lib/server/store";
 import { listLobsters } from "@/lib/server/service";
 
 export const revalidate = 300;
@@ -16,6 +19,10 @@ function humanizeTag(tag: string) {
 export async function generateMetadata({ params }: { params: Promise<{ tag: string }> }) {
   const { tag } = await params;
   const decoded = decodeURIComponent(tag);
+  const summaries = await readMirroredLobsterSummaries();
+  const normalizedTag = decoded.trim().toLowerCase();
+  const exists = summaries.some(({ lobster }) => lobster.status === "active" && lobster.tags.includes(normalizedTag));
+  if (!exists) return {};
   const locale = await getRequestLocale();
   const title = `#${decoded} ${locale === "zh" ? "OpenClaw 配置" : "OpenClaw Setups"}`;
   const description = locale === "zh"
@@ -38,10 +45,14 @@ export default async function TagPage({
   const [{ tag }, query] = await Promise.all([params, searchParams]);
   const locale = await getRequestLocale();
   const decodedTag = decodeURIComponent(tag);
+  const summaries = await readMirroredLobsterSummaries();
+  const normalizedTag = decodedTag.trim().toLowerCase();
+  const exists = summaries.some(({ lobster }) => lobster.status === "active" && lobster.tags.includes(normalizedTag));
+  if (!exists) notFound();
   const sort = query.sort === "new" ? "new" : "hot";
   const page = Number.isFinite(Number(query.page)) ? Math.max(1, Math.floor(Number(query.page))) : 1;
   const result = await listLobsters({
-    tag: decodedTag,
+    tag: normalizedTag,
     sort,
     page,
     per_page: 18,
