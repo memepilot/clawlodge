@@ -123,7 +123,7 @@ export default async function LobsterDetailPage({
     throw error;
   }
   const commentsPromise = getComments(slug);
-  const relatedPromise = getRelatedLobsters(slug);
+  const relatedPromise = getRelatedLobsters(slug, 6);
   const [comments, related, locale] = await Promise.all([commentsPromise, relatedPromise, localePromise]);
   const latest = lobster.versions[0];
   const t = getTranslations(locale);
@@ -181,7 +181,6 @@ export default async function LobsterDetailPage({
           <div className="detail-jump-links">
             <a className="detail-jump-link" href="#readme">{t.detail.readme}</a>
             <a className="detail-jump-link" href="#workspace">{t.detail.workspace}</a>
-            {lobster.source_url ? <a className="detail-jump-link" href="#source-repository">{t.detail.source}</a> : null}
             <a className="detail-jump-link" href="#community">{t.detail.community}</a>
           </div>
         </div>
@@ -258,26 +257,14 @@ export default async function LobsterDetailPage({
         </section>
       ) : null}
 
-      {lobster.source_url ? (
-        <section id="source-repository" className="shell page-panel p-5 md:p-6">
-          <div className="stack-sm source-card">
-            <h2 className="panel-title">{t.detail.sourceRepo}</h2>
-            <p className="muted text-sm">
-              {t.detail.sourceRepoHint}
-            </p>
-            <div className="source-card-link">
-              <a
-                className="inline-link"
-                href={lobster.source_url}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {lobster.source_url}
-              </a>
-            </div>
-          </div>
-        </section>
-      ) : null}
+      <div id="community">
+        <LobsterActions
+          slug={slug}
+          initialComments={comments}
+          initialFavoriteCount={lobster.favorite_count}
+          initialShareCount={lobster.share_count}
+        />
+      </div>
 
       {related.length ? (
         <section className="shell page-panel p-5 md:p-6">
@@ -291,15 +278,6 @@ export default async function LobsterDetailPage({
           </div>
         </section>
       ) : null}
-
-      <div id="community">
-        <LobsterActions
-          slug={slug}
-          initialComments={comments}
-          initialFavoriteCount={lobster.favorite_count}
-          initialShareCount={lobster.share_count}
-        />
-      </div>
     </div>
   );
 }
