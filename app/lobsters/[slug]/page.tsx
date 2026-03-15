@@ -159,21 +159,23 @@ export default async function LobsterDetailPage({
           <p className="detail-summary">{lobster.summary}</p>
           {lobster.category ? (
             <div className="detail-topic-row">
-              <span className="tag tag-category">{lobster.category}</span>
+              <Link className="tag tag-category" href={`/categories/${lobster.category}`}>
+                {lobster.category}
+              </Link>
             </div>
           ) : null}
           {lobster.topics?.length ? (
             <div className="detail-topic-row">
               {lobster.topics.map((topic) => (
-                <span key={topic} className="tag tag-topic">
+                <Link key={topic} className="tag tag-topic" href={`/topics/${topic}`}>
                   {topicLabel(topic, locale)}
-                </span>
+                </Link>
               ))}
             </div>
           ) : null}
           <div className="lobster-card-tags detail-tags">
             {lobster.tags.map((tag) => (
-              <Link key={tag} className="tag" href={`/?tag=${encodeURIComponent(tag)}`}>
+              <Link key={tag} className="tag" href={`/tags/${encodeURIComponent(tag)}`}>
                 #{tag}
               </Link>
             ))}

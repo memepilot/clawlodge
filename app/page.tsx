@@ -2,6 +2,7 @@ import Script from "next/script";
 import Link from "next/link";
 
 import { LobsterCard } from "@/components/lobster-card";
+import { CATEGORY_OPTIONS, categoryLabel } from "@/lib/lobster-taxonomy";
 import { apiOrigin } from "@/lib/api";
 import { getTranslations } from "@/lib/i18n";
 import { getRequestLocale } from "@/lib/server/locale";
@@ -10,48 +11,6 @@ import { LobsterCategory } from "@/lib/types";
 import { absoluteUrl, siteConfig } from "@/lib/site";
 
 export const revalidate = 300;
-
-const categoryOptions: Array<{ value: LobsterCategory; icon: string }> = [
-  { value: "workspace", icon: "▣" },
-  { value: "skill", icon: "✦" },
-  { value: "agent", icon: "◉" },
-  { value: "tooling", icon: "⌘" },
-  { value: "workflow", icon: "⇄" },
-  { value: "memory", icon: "◌" },
-];
-
-function categoryLabel(category: LobsterCategory, locale: "en" | "zh") {
-  if (locale === "zh") {
-    switch (category) {
-      case "workspace":
-        return "工作区";
-      case "skill":
-        return "技能";
-      case "agent":
-        return "智能体";
-      case "tooling":
-        return "工具";
-      case "workflow":
-        return "工作流";
-      case "memory":
-        return "记忆";
-    }
-  }
-  switch (category) {
-    case "workspace":
-      return "Workspace";
-    case "skill":
-      return "Skill";
-    case "agent":
-      return "Agent";
-    case "tooling":
-      return "Tooling";
-    case "workflow":
-      return "Workflow";
-    case "memory":
-      return "Memory";
-  }
-}
 
 export default async function Home({
   searchParams,
@@ -63,7 +22,7 @@ export default async function Home({
   const page = Number.isFinite(Number(params.page)) ? Math.max(1, Math.floor(Number(params.page))) : 1;
   const locale = await getRequestLocale();
   const t = getTranslations(locale);
-  const selectedCategory = categoryOptions.some((option) => option.value === params.category) ? (params.category as LobsterCategory) : undefined;
+  const selectedCategory = CATEGORY_OPTIONS.some((option) => option.value === params.category) ? (params.category as LobsterCategory) : undefined;
   const result = await listLobsters({
     sort,
     tag: params.tag,
@@ -203,7 +162,7 @@ export default async function Home({
               <span className="home-category-icon">◍</span>
               <span>{locale === "zh" ? "全部" : "All"}</span>
             </Link>
-            {categoryOptions.map((option) => (
+            {CATEGORY_OPTIONS.map((option) => (
               <Link
                 key={option.value}
                 className={`home-category-pill ${selectedCategory === option.value ? "is-active" : ""}`}

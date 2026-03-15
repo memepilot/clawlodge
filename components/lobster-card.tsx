@@ -2,48 +2,16 @@ import Link from "next/link";
 
 import { LobsterAvatar } from "@/components/lobster-avatar";
 import { Locale, getTranslations } from "@/lib/i18n";
+import { categoryLabel as localizedCategoryLabel, topicLabel as localizedTopicLabel } from "@/lib/lobster-taxonomy";
 import { getDisplayAuthor, getDisplayLobsterName, getDisplaySummary } from "@/lib/lobster-display";
 import { LobsterSummary } from "@/lib/types";
 
 function categoryLabel(value: LobsterSummary["category"]) {
-  if (!value) return null;
-  switch (value) {
-    case "workspace":
-      return "Workspace";
-    case "skill":
-      return "Skill";
-    case "agent":
-      return "Agent";
-    case "tooling":
-      return "Tooling";
-    case "workflow":
-      return "Workflow";
-    case "memory":
-      return "Memory";
-    default:
-      return value;
-  }
+  return value ? localizedCategoryLabel(value, "en") : null;
 }
 
 function topicLabel(value: NonNullable<LobsterSummary["topics"]>[number]) {
-  switch (value) {
-    case "dev":
-      return "Dev";
-    case "design":
-      return "Design";
-    case "research":
-      return "Research";
-    case "writing":
-      return "Writing";
-    case "productivity":
-      return "Productivity";
-    case "multiagent":
-      return "Multi-Agent";
-    case "automation":
-      return "Automation";
-    default:
-      return value;
-  }
+  return localizedTopicLabel(value, "en");
 }
 
 export function LobsterCard({
@@ -81,11 +49,15 @@ export function LobsterCard({
             </div>
           </div>
           <div className="lobster-card-meta lobster-card-home-meta">
-            {category ? <span className="tag tag-category">{category}</span> : null}
+            {category && item.category ? (
+              <Link className="tag tag-category" href={`/categories/${item.category}`}>
+                {category}
+              </Link>
+            ) : null}
             {item.topics?.slice(0, 2).map((topic) => (
-              <span key={topic} className="tag tag-topic">
+              <Link key={topic} className="tag tag-topic" href={`/topics/${topic}`}>
                 {topicLabel(topic)}
-              </span>
+              </Link>
             ))}
           </div>
           <p className="lobster-card-summary lobster-card-home-summary">{summary}</p>
@@ -166,9 +138,9 @@ export function LobsterCard({
           {item.topics?.length ? (
             <div className="lobster-card-topics">
               {item.topics.map((topic) => (
-                <span key={topic} className="tag tag-topic">
+                <Link key={topic} className="tag tag-topic" href={`/topics/${topic}`}>
                   {topicLabel(topic)}
-                </span>
+                </Link>
               ))}
             </div>
           ) : null}

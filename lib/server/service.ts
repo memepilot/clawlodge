@@ -771,6 +771,7 @@ async function readCachedLobsterSummaries() {
 export async function listLobsters(params?: {
   sort?: string;
   tag?: string;
+  topic?: string;
   q?: string;
   category?: string;
   page?: number;
@@ -813,6 +814,10 @@ export async function listLobsters(params?: {
   if (params?.category?.trim()) {
     const category = params.category.trim().toLowerCase();
     items = items.filter(({ lobster }) => getDerivedCategory(lobster).toLowerCase() === category);
+  }
+  if (params?.topic?.trim()) {
+    const topic = params.topic.trim().toLowerCase();
+    items = items.filter(({ lobster }) => (lobster.topics ?? []).some((item) => item === topic));
   }
   const query = params?.q?.trim() ?? "";
 
