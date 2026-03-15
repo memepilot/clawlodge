@@ -3,6 +3,8 @@ import os from "node:os";
 import path from "node:path";
 import readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 
 const BLOCKED_DIRS = new Set([".git", ".github", ".next", ".vite", "node_modules", "dist", "build", "coverage", ".idea", ".vscode", "tmp", "temp", "logs", "data"]);
 const BLOCKED_FILE_NAMES = [
@@ -23,8 +25,9 @@ const MAX_FILE_BYTES = 128 * 1024;
 const MAX_EXCERPT_CHARS = 1600;
 const MAX_BINARY_EMBED_BYTES = 8 * 1024 * 1024;
 const DEFAULT_ORIGIN = "https://clawlodge.com";
-const CLI_VERSION = "0.1.8";
+const CLI_VERSION = "0.1.9";
 const CONFIG_PATH = path.join(os.homedir(), ".config", "clawlodge", "config.json");
+const execFileAsync = promisify(execFile);
 const REDACTION_RULES = [
   [/\bsk-[A-Za-z0-9]{20,}\b/g, "[REDACTED_OPENAI_KEY]"],
   [/\bsk-or-v1-[A-Za-z0-9_-]{20,}\b/g, "[REDACTED_OPENROUTER_KEY]"],
@@ -79,6 +82,7 @@ Basic usage:
   clawlodge show openclaw-config
   clawlodge get openclaw-config
   clawlodge download openclaw-config
+  clawlodge install openclaw-config --agent openclaw-config-test
   clawlodge favorite openclaw-config
   clawlodge comment openclaw-config --content "Useful setup"
   clawlodge report openclaw-config --reason "Contains broken publish output"
@@ -110,6 +114,9 @@ Commands:
   clawlodge download
     Download one published workspace version as a zip
 
+  clawlodge install
+    Download a published workspace, unzip it, and create a new OpenClaw agent
+
   clawlodge favorite
     Favorite one published workspace
 
@@ -138,6 +145,7 @@ Advanced usage:
   clawlodge show cft0808-edict
   clawlodge get cft0808-edict
   clawlodge download cft0808-edict --version 0.1.1 --out /tmp/cft0808-edict.zip
+  clawlodge install openclaw-config --agent openclaw-config-test
   clawlodge favorite cft0808-edict
   clawlodge unfavorite cft0808-edict
   clawlodge comment cft0808-edict --content "Helpful docs and workflows."
@@ -606,21 +614,91 @@ async function runShow(options, positionals) {
 async function runDownload(options, positionals) {
   const origin = resolveOrigin(options);
   const slug = options.slug?.trim() || requirePositional(positionals, "slug");
-  let version = options.version?.trim() || "";
-  if (!version) {
-    const detail = await requestJson(`${origin.replace(/\/$/, "")}/api/v1/lobsters/${encodeURIComponent(slug)}`, "");
-    version = detail.latest_version;
-    if (!version) {
-      throw new Error(`No published version found for ${slug}`);
-    }
-  }
+  const { version, out, bytes } = await downloadWorkspaceArchive(origin, slug, options);
+  console.log(JSON.stringify({ ok: true, mode: "download", origin, slug, version, out, bytes }, null, 2));
+}
 
+async function resolveDownloadVersion(origin, slug, requestedVersion) {
+  let version = requestedVersion?.trim() || "";
+  if (version) return version;
+  const detail = await requestJson(`${origin.replace(/\/$/, "")}/api/v1/lobsters/${encodeURIComponent(slug)}`, "");
+  version = detail.latest_version;
+  if (!version) {
+    throw new Error(`No published version found for ${slug}`);
+  }
+  return version;
+}
+
+async function downloadWorkspaceArchive(origin, slug, options = {}) {
+  const version = await resolveDownloadVersion(origin, slug, options.version);
   const url = `${origin.replace(/\/$/, "")}/api/v1/lobsters/${encodeURIComponent(slug)}/versions/${encodeURIComponent(version)}/download`;
   const { body } = await requestBuffer(url, "");
   const out = path.resolve(options.out?.trim() || `${slug}-${version}.zip`);
   await fs.mkdir(path.dirname(out), { recursive: true });
   await fs.writeFile(out, body);
-  console.log(JSON.stringify({ ok: true, mode: "download", origin, slug, version, out, bytes: body.length }, null, 2));
+  return { version, out, bytes: body.length };
+}
+
+async function ensureCommand(command, installHint) {
+  try {
+    await execFileAsync("which", [command]);
+  } catch {
+    throw new Error(`${command} is required for clawlodge install.${installHint ? ` ${installHint}` : ""}`);
+  }
+}
+
+async function unzipArchive(zipPath, destinationDir) {
+  await ensureCommand("unzip", "Install unzip first, then try again.");
+  await fs.mkdir(destinationDir, { recursive: true });
+  await execFileAsync("unzip", ["-q", "-o", zipPath, "-d", destinationDir]);
+}
+
+async function detectWorkspacePath(extractDir) {
+  const entries = await fs.readdir(extractDir, { withFileTypes: true });
+  const dirs = entries.filter((entry) => entry.isDirectory());
+  if (dirs.length === 1) {
+    return path.join(extractDir, dirs[0].name);
+  }
+  return extractDir;
+}
+
+async function runInstall(options, positionals) {
+  const origin = resolveOrigin(options);
+  const slug = options.slug?.trim() || requirePositional(positionals, "slug");
+  const agentId = (options.agent?.trim() || `${slug}-test`).trim();
+  const installRoot = options.dir?.trim()
+    ? path.resolve(options.dir.trim())
+    : await fs.mkdtemp(path.join(os.tmpdir(), `${slug}-install-`));
+  const zipPath = path.resolve(options.out?.trim() || path.join(installRoot, `${slug}.zip`));
+
+  const { version, bytes } = await downloadWorkspaceArchive(origin, slug, { ...options, out: zipPath });
+  const extractDir = path.join(installRoot, "unzipped");
+  await unzipArchive(zipPath, extractDir);
+  const workspacePath = await detectWorkspacePath(extractDir);
+
+  await ensureCommand("openclaw", "Install OpenClaw CLI and make sure it is on PATH.");
+  const addArgs = ["agents", "add", agentId, "--workspace", workspacePath, "--non-interactive"];
+  if (options.model?.trim()) {
+    addArgs.push("--model", options.model.trim());
+  }
+  if (options["agent-dir"]?.trim()) {
+    addArgs.push("--agent-dir", path.resolve(options["agent-dir"].trim()));
+  }
+  const { stdout, stderr } = await execFileAsync("openclaw", addArgs, { maxBuffer: 1024 * 1024 * 4 });
+  console.log(JSON.stringify({
+    ok: true,
+    mode: "install",
+    origin,
+    slug,
+    version,
+    bytes,
+    agent_id: agentId,
+    zip_path: zipPath,
+    extract_dir: extractDir,
+    workspace_path: workspacePath,
+    openclaw_stdout: stdout.trim() || null,
+    openclaw_stderr: stderr.trim() || null,
+  }, null, 2));
 }
 
 function requireTextOption(options, positionals, key, label) {
@@ -730,6 +808,11 @@ export async function runCli(argv = process.argv.slice(2)) {
 
   if (command === "download") {
     await runDownload(options, positionals);
+    return;
+  }
+
+  if (command === "install") {
+    await runInstall(options, positionals);
     return;
   }
 

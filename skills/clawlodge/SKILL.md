@@ -41,6 +41,7 @@ clawlodge search "memory"
 clawlodge show openclaw-config
 clawlodge get openclaw-config
 clawlodge download openclaw-config --version 0.13.1 --out /tmp/openclaw-config.zip
+clawlodge install openclaw-config --agent openclaw-config-test
 clawlodge favorite openclaw-config
 clawlodge unfavorite openclaw-config
 clawlodge comment openclaw-config --content "Useful setup"
@@ -54,6 +55,7 @@ clawlodge publish
 - Use `clawlodge search "<query>"` to find candidate workspaces.
 - Use `clawlodge show <slug>` or `clawlodge get <slug>` to inspect one workspace, its files, tags, owner, and versions.
 - Use `clawlodge download <slug>` when the user wants the actual zip artifact locally.
+- Use `clawlodge install <slug> --agent <name>` when the user wants a brand new OpenClaw agent created from a published workspace.
 - Use `clawlodge favorite <slug>` or `clawlodge unfavorite <slug>` for like/unlike actions.
 - Use `clawlodge comment <slug> --content "..."` to post a comment.
 - Use `clawlodge report <slug> --reason "..."` to submit negative feedback.
@@ -64,6 +66,7 @@ Decision rule:
 
 - If the user wants metadata, file lists, versions, author, tags, or source repo, use `show`/`get`.
 - If the user wants a local file, installation artifact, zip package, or anything saved to disk, use `download`.
+- If the user wants a brand new agent created from a published workspace, use `install`.
 - Do not use `get` or `show` when the request mentions `save`, `download`, `zip`, `extract`, `install`, or an output path.
 
 ## Auth model
@@ -211,34 +214,27 @@ Rules:
 
 ## Install into a new agent
 
-When the user wants to try a workspace without disturbing the current setup, use a new isolated OpenClaw agent.
+When the user wants to try a workspace without disturbing the current setup, prefer the dedicated `install` command.
 
 Preferred sequence:
 
 1. Confirm the candidate with `clawlodge show <slug>`.
-2. Download to `/tmp/<slug>.zip`.
-3. Extract into `/tmp/<slug>-<version>/`.
-4. Inspect the extracted files and verify the package looks usable.
-5. Create a new agent with `openclaw agents add`.
-6. Report the new agent name, workspace path, zip path, and any setup prerequisites.
+2. Run `clawlodge install <slug> --agent <name>`.
+3. Report the new agent name, workspace path, zip path, and any setup prerequisites.
 
 Example:
 
 ```bash
 clawlodge show openclaw-config
-clawlodge download openclaw-config --out /tmp/openclaw-config.zip
-mkdir -p /tmp/openclaw-config-0.13.1
-unzip -o /tmp/openclaw-config.zip -d /tmp/openclaw-config-0.13.1
-openclaw agents add openclaw-config-test --workspace /tmp/openclaw-config-0.13.1 --non-interactive
+clawlodge install openclaw-config --agent openclaw-config-test
 ```
 
 Rules:
 
-- Do not create or modify a new agent until the download and extraction steps have succeeded.
-- Do not point a new agent at a stale directory from an earlier task.
-- Prefer a descriptive temporary agent name such as `<slug>-test` or `<role>-test`.
+- Prefer `clawlodge install` over manually chaining `download`, `unzip`, and `openclaw agents add`.
+- Use a descriptive isolated agent name such as `<slug>-test` or `<role>-test`.
+- If the user asked only to inspect or compare, stop before `install`.
 - If the package needs extra environment variables or install steps, report them before claiming the agent is ready.
-- If the user only asked to compare or inspect, stop before `openclaw agents add`.
 - If the user says `养一只龙虾`, interpret that as finding a suitable package and, if explicitly requested, installing it into a new isolated agent rather than modifying the current workspace in place.
 
 ## Feedback workflow
