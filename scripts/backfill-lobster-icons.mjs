@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 
-import { DatabaseSync } from "node:sqlite";
+import { Pool } from "pg";
 
 import { generateLobsterIconForSlug } from "./generate-lobster-icon.mjs";
 
@@ -56,6 +56,23 @@ function getLatestVersions(state) {
   return latestByLobster;
 }
 
+let pool = null;
+
+function getPool() {
+  if (!pool) {
+    const connectionString = process.env.DATABASE_URL?.trim();
+    if (!connectionString) throw new Error("DATABASE_URL is required");
+    pool = new Pool({ connectionString });
+  }
+  return pool;
+}
+
+async function loadState(client) {
+  const row = (await client.query("SELECT payload FROM app_state WHERE id = 1")).rows[0];
+  if (!row?.payload) throw new Error("Missing app_state payload");
+  return typeof row.payload === "string" ? JSON.parse(row.payload) : row.payload;
+}
+
 async function putLocalStorageObject(key, body, contentType) {
   const dataDir = path.resolve("data");
   const storageDir = path.join(dataDir, "storage");
@@ -86,14 +103,8 @@ async function findExistingGenerated(slug) {
 }
 
 async function main() {
-  const dbPath = path.resolve("data/app.db");
-  const db = new DatabaseSync(dbPath);
-  const row = db.prepare("SELECT payload FROM app_state WHERE id = 1").get();
-  if (!row?.payload) {
-    throw new Error("Missing app_state payload");
-  }
-
-  const state = JSON.parse(row.payload);
+  const client = await getPool().connect();
+  const state = await loadState(client);
   const latestVersions = getLatestVersions(state);
   const results = [];
   const failures = [];
@@ -132,9 +143,20 @@ async function main() {
         outputPath: generated.outputPath,
       });
 
-      db.prepare("UPDATE app_state SET payload = ?, updated_at = ? WHERE id = 1")
-        .run(JSON.stringify(state), new Date().toISOString());
+      await client.query("BEGIN");
+      await client.query(
+        "UPDATE lobster_versions_mirror SET icon_url=$1, icon_seed=$2, icon_spec_version=$3 WHERE id=$4",
+        [iconUrl, generated.seed ?? null, "nanobana-v1", latest.id],
+      );
+      await client.query(
+        "UPDATE app_state SET payload = $1, updated_at = $2 WHERE id = 1",
+        [JSON.stringify(state), new Date().toISOString()],
+      );
+      await client.query("COMMIT");
     } catch (error) {
+      try {
+        await client.query("ROLLBACK");
+      } catch {}
       failures.push({
         slug: lobster.slug,
         error: error instanceof Error ? error.message : String(error),
@@ -157,6 +179,9 @@ async function main() {
     failed: failures.length,
     first: results[0] ?? null,
   }, null, 2));
+
+  client.release();
+  await getPool().end();
 }
 
 main().catch((error) => {

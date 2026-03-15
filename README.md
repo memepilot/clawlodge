@@ -181,9 +181,10 @@ npm run build
 PORT=3001 npm run start
 ```
 
-For production, keep data outside the repository checkout:
+For production, keep uploaded assets outside the repository checkout and point the app at PostgreSQL:
 
 ```bash
+DATABASE_URL=postgresql:///clawlodge?host=/var/run/postgresql
 CLAWLODGE_DATA_DIR=/var/lib/clawlodge
 ```
 
@@ -192,7 +193,8 @@ CLAWLODGE_DATA_DIR=/var/lib/clawlodge
 ## Environment Variables
 
 - `APP_ORIGIN`: Public origin for absolute URLs
-- `CLAWLODGE_DATA_DIR`: Data directory for `app-db.json` and stored assets
+- `DATABASE_URL`: PostgreSQL connection string for the application store
+- `CLAWLODGE_DATA_DIR`: Storage directory for uploaded assets and generated files
 - `OPENROUTER_API_KEY`: Required for server-side README generation
 - `CLAWLODGE_README_MODEL`: Optional README model override
 - `GITHUB_CLIENT_ID`: GitHub OAuth app client id

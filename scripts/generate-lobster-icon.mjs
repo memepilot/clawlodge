@@ -4,7 +4,7 @@ import { Buffer } from "node:buffer";
 import crypto from "node:crypto";
 import { execFileSync } from "node:child_process";
 
-import { DatabaseSync } from "node:sqlite";
+import { Pool } from "pg";
 
 const DEFAULT_CHAT_COMPLETIONS_URL = "https://openrouter.ai/api/v1/chat/completions";
 const MAX_README_PROMPT_CHARS = 200;
@@ -306,35 +306,67 @@ async function renderIcon(prompt) {
   return parseImageAsset(body);
 }
 
-function getLatestVersion(state, lobsterId) {
-  return [...(state.lobsterVersions ?? [])]
-    .filter((item) => item.lobsterId === lobsterId)
-    .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")))[0] ?? null;
+let pool = null;
+
+function getPool() {
+  if (!pool) {
+    const connectionString = process.env.DATABASE_URL?.trim();
+    if (!connectionString) throw new Error("DATABASE_URL is required");
+    pool = new Pool({ connectionString });
+  }
+  return pool;
+}
+
+async function loadLobsterSignals(slug) {
+  const result = await getPool().query(
+    `
+      SELECT
+        l.slug,
+        l.summary,
+        l.source_type,
+        l.tags_json,
+        lv.version,
+        lv.readme_text,
+        COALESCE(
+          (
+            SELECT json_agg(path ORDER BY path)
+            FROM workspace_entries
+            WHERE version_id = lv.id
+          ),
+          '[]'::json
+        ) AS workspace_paths
+      FROM lobsters_mirror l
+      JOIN LATERAL (
+        SELECT id, version, readme_text
+        FROM lobster_versions_mirror
+        WHERE lobster_id = l.id
+        ORDER BY created_at DESC, id DESC
+        LIMIT 1
+      ) lv ON TRUE
+      WHERE l.slug = $1
+      LIMIT 1
+    `,
+    [slug],
+  );
+  const row = result.rows[0];
+  if (!row) throw new Error(`Lobster not found: ${slug}`);
+
+  return {
+    slug: String(row.slug),
+    version: String(row.version),
+    tags: Array.isArray(row.tags_json) ? row.tags_json : [],
+    sourceType: String(row.source_type),
+    workspacePaths: Array.isArray(row.workspace_paths) ? row.workspace_paths : [],
+    readmeText: String(row.readme_text ?? ""),
+    summary: String(row.summary ?? ""),
+  };
 }
 
 export async function generateLobsterIconForSlug(slug) {
   await readEnvFile(path.resolve(".env.local"));
+  const signals = await loadLobsterSignals(slug);
 
-  const db = new DatabaseSync(path.resolve("data/app.db"), { readonly: true });
-  const row = db.prepare("SELECT payload FROM app_state WHERE id = 1").get();
-  if (!row?.payload) throw new Error("Missing app_state payload");
-
-  const state = JSON.parse(row.payload);
-  const lobster = (state.lobsters ?? []).find((item) => item.slug === slug);
-  if (!lobster) throw new Error(`Lobster not found: ${slug}`);
-
-  const version = getLatestVersion(state, lobster.id);
-  if (!version) throw new Error(`No version found for lobster: ${slug}`);
-
-  const prompt = await generateIconPrompt({
-    slug: lobster.slug,
-    version: version.version,
-    tags: lobster.tags,
-    sourceType: lobster.sourceType,
-    workspacePaths: (version.workspaceFiles ?? []).map((file) => file.path),
-    readmeText: version.readmeText,
-    summary: lobster.summary,
-  });
+  const prompt = await generateIconPrompt(signals);
 
   const icon = await renderIcon(prompt);
   const extension = iconExtensionForContentType(icon.contentType);
@@ -350,12 +382,12 @@ export async function generateLobsterIconForSlug(slug) {
 
   return {
     slug,
-    version: version.version,
+    version: signals.version,
     outputPath,
     promptPath,
     prompt,
     contentType: icon.contentType,
-    seed: sha256(`${slug}:${version.version}:${prompt}`),
+    seed: sha256(`${slug}:${signals.version}:${prompt}`),
   };
 }
 

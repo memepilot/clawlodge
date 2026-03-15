@@ -1,6 +1,3 @@
-import fs from "node:fs/promises";
-import path from "node:path";
-
 import { Pool, type PoolClient, type QueryResultRow } from "pg";
 
 import type {
@@ -13,8 +10,6 @@ import type {
   DbWorkspaceFile,
 } from "./types";
 
-const dataDir = path.resolve(process.env.CLAWLODGE_DATA_DIR || path.join(process.cwd(), "data"));
-const legacyJsonPath = path.join(dataDir, "app-db.json");
 const SCHEMA_INIT_LOCK = { classId: 20260313, objectId: 1 };
 
 let pool: Pool | null = null;
@@ -178,24 +173,6 @@ function getPool() {
 
 async function query<T extends QueryResultRow = Record<string, unknown>>(text: string, params: unknown[] = []) {
   return getPool().query<T>(text, params);
-}
-
-async function ensureDataDir() {
-  await fs.mkdir(path.dirname(legacyJsonPath), { recursive: true });
-}
-
-async function loadLegacyStateFromJson() {
-  try {
-    const raw = await fs.readFile(legacyJsonPath, "utf8");
-    return normalizeState(JSON.parse(raw) as DbState);
-  } catch {
-    return emptyState();
-  }
-}
-
-async function loadSeedState() {
-  await ensureDataDir();
-  return loadLegacyStateFromJson();
 }
 
 async function withTransaction<T>(fn: (client: PoolClient) => Promise<T>) {
@@ -528,7 +505,7 @@ async function ensureDatabase() {
         await ensureSchema(client);
         const existing = await client.query<{ id: number }>("SELECT id FROM app_state WHERE id = 1");
         if (!existing.rowCount) {
-          const state = await loadSeedState();
+          const state = emptyState();
           const persisted = stripWorkspaceFilesFromState(state);
           await syncWorkspaceEntries(client, state);
           await client.query(
