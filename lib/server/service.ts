@@ -579,6 +579,7 @@ function toVersion(version: DbLobsterVersion, options?: { includeWorkspaceConten
 function isRelativeReadmeLink(value: string) {
   return Boolean(value)
     && !/^(?:[a-z]+:)?\/\//i.test(value)
+    && !value.startsWith("/")
     && !value.startsWith("#")
     && !value.startsWith("data:")
     && !value.startsWith("mailto:")
