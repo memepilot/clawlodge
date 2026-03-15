@@ -152,6 +152,7 @@ export const messages = {
       noVersionYet: "No version published yet.",
       sourceRepo: "Source Repository",
       sourceRepoHint: "Original GitHub repository for this setup.",
+      related: "Related Lobsters",
       communityUpload: "community upload",
       verified: "verified",
     },
@@ -352,6 +353,7 @@ export const messages = {
       noVersionYet: "还没有发布任何版本。",
       sourceRepo: "源码仓库",
       sourceRepoHint: "这个配置对应的原始 GitHub 仓库。",
+      related: "相关推荐",
       communityUpload: "社区上传",
       verified: "已认证",
     },
@@ -416,5 +418,3 @@ export function detectLocale(input?: string | null): Locale {
 export function getTranslations(locale: Locale): Messages {
   return messages[locale] ?? messages.en;
 }
-      related: "Related Lobsters",
-      related: "相关推荐",
