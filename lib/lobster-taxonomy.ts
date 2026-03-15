@@ -130,7 +130,7 @@ export function buildCollectionMetadata(params: {
   pathname: string;
 }): Metadata {
   return {
-    title: `${params.title} | ${siteConfig.name}`,
+    title: params.title,
     description: params.description,
     alternates: {
       canonical: absoluteUrl(params.pathname),
