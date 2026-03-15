@@ -42,7 +42,6 @@ export function LobsterCollectionPage({
       <section className="hero hero-compact">
         <div className="hero-inner">
           <div className="hero-copy">
-            <span className="hero-badge">{locale === "zh" ? "SEO 落地页" : "SEO Landing Page"}</span>
             <h1 className="hero-title">{title}</h1>
             <p className="hero-subtitle">{intro}</p>
           </div>
