@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { LobsterCollectionPage } from "@/components/lobster-collection-page";
-import { buildCollectionMetadata } from "@/lib/lobster-taxonomy";
+import { buildCollectionMetadata, tagSeoTitle } from "@/lib/lobster-taxonomy";
 import { getRequestLocale } from "@/lib/server/locale";
 import { readMirroredLobsterSummaries } from "@/lib/server/store";
 import { listLobsters } from "@/lib/server/service";
@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: { params: Promise<{ tag: stri
   const exists = summaries.some(({ lobster }) => lobster.status === "active" && lobster.tags.includes(normalizedTag));
   if (!exists) return {};
   const locale = await getRequestLocale();
-  const title = `#${decoded} ${locale === "zh" ? "OpenClaw 配置" : "OpenClaw Setups"}`;
+  const title = tagSeoTitle(decoded, locale);
   const description = locale === "zh"
     ? `浏览带有 ${decoded} 标签的 OpenClaw 配置、技能和工作流。`
     : `Browse OpenClaw workspaces, skills, and workflows tagged with ${decoded}.`;
@@ -58,7 +58,7 @@ export default async function TagPage({
     per_page: 18,
   });
   const pathname = `/tags/${encodeURIComponent(decodedTag)}`;
-  const title = `#${humanizeTag(decodedTag)} ${locale === "zh" ? "OpenClaw 配置" : "OpenClaw Setups"}`;
+  const title = tagSeoTitle(humanizeTag(decodedTag), locale);
   const intro = locale === "zh"
     ? `浏览所有带有 #${decodedTag} 标签的 OpenClaw 配置、技能和工作流。`
     : `Browse every OpenClaw workspace, skill, and workflow tagged with #${decodedTag}.`;

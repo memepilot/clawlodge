@@ -150,6 +150,89 @@ export function buildCollectionMetadata(params: {
   };
 }
 
+export function categorySeoTitle(category: LobsterCategory, locale: "en" | "zh") {
+  if (locale === "zh") {
+    switch (category) {
+      case "workspace":
+        return "OpenClaw 工作区";
+      case "skill":
+        return "OpenClaw 技能";
+      case "agent":
+        return "OpenClaw 智能体";
+      case "tooling":
+        return "OpenClaw 工具";
+      case "workflow":
+        return "OpenClaw 工作流";
+      case "memory":
+        return "OpenClaw 记忆配置";
+    }
+  }
+
+  switch (category) {
+    case "workspace":
+      return "OpenClaw Workspaces - Full Agent Systems and Setups";
+    case "skill":
+      return "OpenClaw Skills - Reusable Skills and Examples";
+    case "agent":
+      return "OpenClaw Agents - Agent Setups and Examples";
+    case "tooling":
+      return "OpenClaw Tooling - Consoles, Studios and Utilities";
+    case "workflow":
+      return "OpenClaw Workflows - Real Automation Setups";
+    case "memory":
+      return "OpenClaw Memory Setups - Long-Term Memory and Context Workflows";
+  }
+}
+
+export function topicSeoTitle(topic: LobsterTopic, locale: "en" | "zh") {
+  if (locale === "zh") {
+    return `${topicLabel(topic, locale)} OpenClaw 配置`;
+  }
+
+  switch (topic) {
+    case "multiagent":
+      return "OpenClaw Multi-Agent Setups - Community Examples";
+    case "automation":
+      return "OpenClaw Automation Workflows - Practical Community Examples";
+    case "design":
+      return "OpenClaw for Design Work - Skills and Workflow Setups";
+    case "dev":
+      return "OpenClaw for Development - Skills, Agents and Setups";
+    case "research":
+      return "OpenClaw Research Workflows - Community Setups";
+    case "writing":
+      return "OpenClaw Writing Workflows - Skills and Community Setups";
+    case "productivity":
+      return "OpenClaw Productivity Setups - Skills and Workflow Examples";
+  }
+}
+
+export function tagSeoTitle(tag: string, locale: "en" | "zh") {
+  const normalized = tag.trim().toLowerCase();
+  if (locale === "zh") {
+    return `#${tag} OpenClaw 配置`;
+  }
+
+  switch (normalized) {
+    case "openclaw":
+      return "OpenClaw Setups - Community Skills, Agents and Workflows";
+    case "claude-code":
+      return "Claude Code with OpenClaw - Skills and Workflow Setups";
+    case "multi-agent":
+    case "multiagent":
+      return "OpenClaw Multi-Agent Examples - Community Setups";
+    case "automation":
+      return "OpenClaw Automation Workflows - Practical Community Examples";
+    case "creators":
+    case "creator":
+      return "OpenClaw for Creators - YouTube, TikTok and Content Workflows";
+    case "productivity":
+      return "OpenClaw Productivity Setups - Skills and Workflow Examples";
+    default:
+      return `OpenClaw ${tag} Setups - Community Skills and Workflows`;
+  }
+}
+
 export function buildCollectionJsonLd(params: {
   title: string;
   description: string;

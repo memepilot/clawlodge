@@ -18,6 +18,28 @@ import { absoluteUrl } from "@/lib/site";
 
 export const revalidate = 60;
 
+function categorySeoNoun(category: string | null | undefined) {
+  switch (category) {
+    case "skill":
+      return "OpenClaw Skill";
+    case "agent":
+      return "OpenClaw Agent";
+    case "workflow":
+      return "OpenClaw Workflow";
+    case "memory":
+      return "OpenClaw Memory Setup";
+    case "tooling":
+      return "OpenClaw Tooling";
+    case "workspace":
+    default:
+      return "OpenClaw Setup";
+  }
+}
+
+function detailSeoTitle(name: string, category: string | null | undefined) {
+  return `${name} - ${categorySeoNoun(category)}`;
+}
+
 const getCachedLobster = cache(async (slug: string) => getLobsterBySlug(slug));
 
 function topicLabel(value: string, locale: "en" | "zh") {
@@ -71,14 +93,15 @@ export async function generateMetadata({
   try {
     const lobster = await getCachedLobster(slug);
     const displayName = getDetailDisplayLobsterName(lobster);
+    const seoTitle = detailSeoTitle(displayName, lobster.category);
     return {
-      title: displayName,
+      title: seoTitle,
       description: lobster.summary,
       alternates: {
         canonical: absoluteUrl(`/lobsters/${slug}`),
       },
       openGraph: {
-        title: displayName,
+        title: seoTitle,
         description: lobster.summary,
         url: absoluteUrl(`/lobsters/${slug}`),
         type: "article",
@@ -91,7 +114,7 @@ export async function generateMetadata({
       },
       twitter: {
         card: "summary_large_image",
-        title: displayName,
+        title: seoTitle,
         description: lobster.summary,
         images: [absoluteUrl(getLobsterAvatarSrc(lobster.icon_url))],
       },

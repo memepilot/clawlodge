@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { LobsterCollectionPage } from "@/components/lobster-collection-page";
-import { buildCollectionMetadata, topicIntro, topicLabel } from "@/lib/lobster-taxonomy";
+import { buildCollectionMetadata, topicIntro, topicSeoTitle } from "@/lib/lobster-taxonomy";
 import { getRequestLocale } from "@/lib/server/locale";
 import { listLobsters } from "@/lib/server/service";
 import type { LobsterTopic } from "@/lib/types";
@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: { params: Promise<{ topic: st
   const { topic } = await params;
   const locale = await getRequestLocale();
   if (!TOPICS.includes(topic as LobsterTopic)) return {};
-  const title = `${topicLabel(topic as LobsterTopic, locale)} ${locale === "zh" ? "OpenClaw 配置" : "OpenClaw Setups"}`;
+  const title = topicSeoTitle(topic as LobsterTopic, locale);
   return buildCollectionMetadata({
     title,
     description: topicIntro(topic as LobsterTopic, locale),
@@ -42,7 +42,7 @@ export default async function TopicPage({
   });
   const pathname = `/topics/${topic}`;
   const typedTopic = topic as LobsterTopic;
-  const title = `${topicLabel(typedTopic, locale)} ${locale === "zh" ? "OpenClaw 配置" : "OpenClaw Setups"}`;
+  const title = topicSeoTitle(typedTopic, locale);
 
   return (
     <LobsterCollectionPage

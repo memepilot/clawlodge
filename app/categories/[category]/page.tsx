@@ -1,11 +1,9 @@
 import { notFound } from "next/navigation";
 
 import { LobsterCollectionPage } from "@/components/lobster-collection-page";
-import { buildCollectionMetadata, categoryIntro, categoryLabel, CATEGORY_OPTIONS } from "@/lib/lobster-taxonomy";
-import { getTranslations } from "@/lib/i18n";
+import { buildCollectionMetadata, categoryIntro, categorySeoTitle, CATEGORY_OPTIONS } from "@/lib/lobster-taxonomy";
 import { getRequestLocale } from "@/lib/server/locale";
 import { listLobsters } from "@/lib/server/service";
-import type { LobsterCategory } from "@/lib/types";
 
 export const revalidate = 300;
 
@@ -14,7 +12,7 @@ export async function generateMetadata({ params }: { params: Promise<{ category:
   const locale = await getRequestLocale();
   const match = CATEGORY_OPTIONS.find((option) => option.value === category);
   if (!match) return {};
-  const title = `${categoryLabel(match.value, locale)} ${locale === "zh" ? "OpenClaw 配置" : "OpenClaw Setups"}`;
+  const title = categorySeoTitle(match.value, locale);
   return buildCollectionMetadata({
     title,
     description: categoryIntro(match.value, locale),
@@ -31,7 +29,6 @@ export default async function CategoryPage({
 }) {
   const [{ category }, query] = await Promise.all([params, searchParams]);
   const locale = await getRequestLocale();
-  const t = getTranslations(locale);
   const match = CATEGORY_OPTIONS.find((option) => option.value === category);
   if (!match) notFound();
   const sort = query.sort === "new" ? "new" : "hot";
@@ -43,7 +40,7 @@ export default async function CategoryPage({
     per_page: 18,
   });
   const pathname = `/categories/${match.value}`;
-  const title = `${categoryLabel(match.value, locale)} ${locale === "zh" ? "OpenClaw 配置" : "OpenClaw Setups"}`;
+  const title = categorySeoTitle(match.value, locale);
 
   return (
     <LobsterCollectionPage
