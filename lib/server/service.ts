@@ -691,6 +691,35 @@ function rankingScore(item: DbLobster, summary: LobsterSummary) {
   return downloads * 100000 + githubStars * 100 + recommendation + summary.hot_score;
 }
 
+function toMirroredSummaryResponse(params: {
+  lobster: DbLobster;
+  owner: { handle: string; displayName: string | null };
+  latestVersion: string | null;
+  latestSourceRepo: string | null;
+  latestIconUrl: string | null;
+}): LobsterSummary {
+  const { lobster, owner, latestVersion, latestSourceRepo, latestIconUrl } = params;
+  return {
+    ...toSummary(lobster, {
+      id: lobster.ownerId,
+      handle: owner.handle,
+      displayName: owner.displayName,
+      avatarUrl: null,
+      bio: null,
+      email: null,
+      githubId: null,
+      favoriteSlugs: [],
+      createdAt: lobster.createdAt,
+      updatedAt: lobster.updatedAt,
+    }),
+    category: getDerivedCategory(lobster),
+    topics: lobster.topics,
+    latest_version: latestVersion,
+    latest_source_repo: latestSourceRepo,
+    icon_url: resolvePublicAssetUrl(latestIconUrl) ?? latestIconUrl ?? null,
+  };
+}
+
 function decodeStorageKeyFromUrl(url: string | null | undefined) {
   if (!url?.startsWith("/api/v1/storage/")) return null;
   const encoded = url.slice("/api/v1/storage/".length);
@@ -801,25 +830,13 @@ export async function listLobsters(params?: {
           originalAuthor: lobster.originalAuthor,
         })
       : 0,
-    summary: {
-      ...toSummary(lobster, {
-        id: lobster.ownerId,
-        handle: owner.handle,
-        displayName: owner.displayName,
-        avatarUrl: null,
-        bio: null,
-        email: null,
-        githubId: null,
-        favoriteSlugs: [],
-        createdAt: lobster.createdAt,
-        updatedAt: lobster.updatedAt,
-      }),
-      category: getDerivedCategory(lobster),
-      topics: lobster.topics,
-      latest_version: latestVersion,
-      latest_source_repo: latestSourceRepo,
-      icon_url: resolvePublicAssetUrl(latestIconUrl) ?? latestIconUrl ?? null,
-    },
+    summary: toMirroredSummaryResponse({
+      lobster,
+      owner,
+      latestVersion,
+      latestSourceRepo,
+      latestIconUrl,
+    }),
   }));
 
   const filteredSummaries = query ? summaries.filter((entry) => entry.searchScore > 0) : summaries;
@@ -855,6 +872,40 @@ export async function listLobsters(params?: {
     has_prev: safePage > 1,
     has_next: safePage < totalPages,
   };
+}
+
+export async function getRelatedLobsters(slug: string, limit = 4) {
+  const [detail, items] = await Promise.all([getLobsterBySlug(slug), readCachedLobsterSummaries()]);
+  const targetTopics = new Set(detail.topics ?? []);
+  const targetCategory = detail.category ?? null;
+
+  return items
+    .filter(({ lobster }) => lobster.slug !== slug && lobster.status === "active")
+    .map(({ lobster, owner, latestVersion, latestSourceRepo, latestIconUrl }) => {
+      const topicOverlap = (lobster.topics ?? []).filter((topic) => targetTopics.has(topic)).length;
+      const sameCategory = Boolean(targetCategory && getDerivedCategory(lobster) === targetCategory);
+      return {
+        topicOverlap,
+        sameCategory,
+        summary: toMirroredSummaryResponse({
+          lobster,
+          owner,
+          latestVersion,
+          latestSourceRepo,
+          latestIconUrl,
+        }),
+      };
+    })
+    .filter((entry) => entry.topicOverlap > 0 || entry.sameCategory)
+    .sort((a, b) => {
+      if (b.topicOverlap !== a.topicOverlap) return b.topicOverlap - a.topicOverlap;
+      if (a.sameCategory !== b.sameCategory) return Number(b.sameCategory) - Number(a.sameCategory);
+      if (b.summary.download_count !== a.summary.download_count) return b.summary.download_count - a.summary.download_count;
+      if (b.summary.favorite_count !== a.summary.favorite_count) return b.summary.favorite_count - a.summary.favorite_count;
+      return +new Date(b.summary.created_at) - +new Date(a.summary.created_at);
+    })
+    .slice(0, limit)
+    .map((entry) => entry.summary);
 }
 
 export async function getLobsterBySlug(slug: string): Promise<LobsterDetail> {

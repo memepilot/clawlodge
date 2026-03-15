@@ -416,3 +416,5 @@ export function detectLocale(input?: string | null): Locale {
 export function getTranslations(locale: Locale): Messages {
   return messages[locale] ?? messages.en;
 }
+      related: "Related Lobsters",
+      related: "相关推荐",

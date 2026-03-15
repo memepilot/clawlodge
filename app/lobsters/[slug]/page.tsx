@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 
 import { LobsterActions } from "@/components/lobster-actions";
+import { LobsterCard } from "@/components/lobster-card";
 import { getLobsterAvatarSrc, LobsterAvatar } from "@/components/lobster-avatar";
 import { MarkdownContent } from "@/components/markdown-content";
 import { DownloadLink } from "@/components/download-link";
@@ -12,7 +13,7 @@ import { getTranslations } from "@/lib/i18n";
 import { getRequestLocale } from "@/lib/server/locale";
 import { getDetailDisplayLobsterName, getDisplayAuthor } from "@/lib/lobster-display";
 import { ApiError } from "@/lib/server/errors";
-import { getComments, getLobsterBySlug } from "@/lib/server/service";
+import { getComments, getLobsterBySlug, getRelatedLobsters } from "@/lib/server/service";
 import { absoluteUrl } from "@/lib/site";
 
 export const revalidate = 60;
@@ -122,7 +123,8 @@ export default async function LobsterDetailPage({
     throw error;
   }
   const commentsPromise = getComments(slug);
-  const [comments, locale] = await Promise.all([commentsPromise, localePromise]);
+  const relatedPromise = getRelatedLobsters(slug);
+  const [comments, related, locale] = await Promise.all([commentsPromise, relatedPromise, localePromise]);
   const latest = lobster.versions[0];
   const t = getTranslations(locale);
   const displayName = getDetailDisplayLobsterName(lobster);
@@ -273,6 +275,19 @@ export default async function LobsterDetailPage({
                 {lobster.source_url}
               </a>
             </div>
+          </div>
+        </section>
+      ) : null}
+
+      {related.length ? (
+        <section className="shell page-panel p-5 md:p-6">
+          <div className="detail-section-head">
+            <h2 className="panel-title">{t.detail.related}</h2>
+          </div>
+          <div className="grid home-lobster-grid detail-related-grid">
+            {related.map((item) => (
+              <LobsterCard key={item.slug} item={item} locale={locale} variant="home" />
+            ))}
           </div>
         </section>
       ) : null}
