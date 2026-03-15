@@ -9,8 +9,8 @@ export const messages = {
   en: {
     brand: {
       name: "ClawLodge",
-      title: "ClawLodge | The OpenClaw Agent Zoo",
-      footer: "ClawLodge is the OpenClaw Agent Zoo for sharing and discovering real setups.",
+      title: "ClawLodge - Discover OpenClaw Setups, Skills, Agents and Workflows",
+      footer: "ClawLodge is a library for discovering and sharing real OpenClaw setups, skills, agents, and workflows.",
     },
     nav: {
       publish: "Publish",
@@ -33,7 +33,7 @@ export const messages = {
       cancel: "Cancel",
     },
     home: {
-      badge: "The OpenClaw Agent Zoo",
+      badge: "OpenClaw Setups, Skills and Workflows",
       title: "Discover and share powerful OpenClaw setups.",
       subtitle: "Browse real agent setups, inspect what is inside them, and publish your own prompts, skills, workflows, and integrations.",
       publishCta: "Publish your setup",
@@ -53,9 +53,9 @@ export const messages = {
     },
     about: {
       label: "About",
-      title: "The OpenClaw Agent Zoo.",
-      p1: "ClawLodge is a publishing and discovery hub for OpenClaw setups. It helps people browse reusable agents, inspect what is inside them, and publish their own workflows from the browser or the CLI.",
-      p2: "The project focuses on practical sharing: README rendering, workspace previews, downloadable snapshots, source links, and a simple CLI flow for publishing from a local OpenClaw workspace.",
+      title: "OpenClaw setups, skills, agents and workflows.",
+      p1: "ClawLodge is a publishing and discovery hub for OpenClaw setups. It helps people browse reusable skills, agent systems, and workflows, inspect what is inside them, and publish their own configurations from the browser or the CLI.",
+      p2: "The project focuses on practical sharing: README rendering, workspace previews, downloadable snapshots, source links, creator-friendly workflow discovery, and a simple CLI flow for publishing from a local OpenClaw workspace.",
       p3Prefix: "ClawLodge is available at",
       p3Middle: "and the source code is maintained on",
     },
@@ -210,8 +210,8 @@ export const messages = {
   zh: {
     brand: {
       name: "龙虾客栈",
-      title: "龙虾客栈 | OpenClaw 智能体图鉴",
-      footer: "龙虾客栈是分享和发现真实 OpenClaw 配置的智能体客栈。",
+      title: "龙虾客栈 - 发现 OpenClaw 配置、技能、智能体与工作流",
+      footer: "龙虾客栈是一个用于分享和发现真实 OpenClaw 配置、技能、智能体与工作流的资料库。",
     },
     nav: {
       publish: "发布",
@@ -234,7 +234,7 @@ export const messages = {
       cancel: "取消",
     },
     home: {
-      badge: "OpenClaw 智能体图鉴",
+      badge: "OpenClaw 配置、技能与工作流",
       title: "发现并分享强大的 OpenClaw 配置。",
       subtitle: "浏览真实智能体配置，查看里面的 prompts、skills、workflows 和 integrations，也可以发布你自己的方案。",
       publishCta: "发布你的配置",
@@ -254,9 +254,9 @@ export const messages = {
     },
     about: {
       label: "关于",
-      title: "OpenClaw 智能体图鉴。",
-      p1: "龙虾客栈是一个面向 OpenClaw 配置的发布与发现平台。你可以在这里浏览可复用的智能体方案，查看它们的内部结构，也可以通过网页或 CLI 发布自己的工作流。",
-      p2: "这个项目聚焦于实用分享：README 渲染、workspace 预览、快照下载、源码链接，以及从本地 OpenClaw workspace 发布的简洁 CLI 流程。",
+      title: "OpenClaw 配置、技能、智能体与工作流。",
+      p1: "龙虾客栈是一个面向 OpenClaw 配置的发布与发现平台。你可以在这里浏览可复用的技能、智能体系统和工作流，查看它们的内部结构，也可以通过网页或 CLI 发布自己的配置。",
+      p2: "这个项目聚焦于实用分享：README 渲染、workspace 预览、快照下载、源码链接、面向创作者的工作流发现，以及从本地 OpenClaw workspace 发布的简洁 CLI 流程。",
       p3Prefix: "龙虾客栈在线地址：",
       p3Middle: "，源码托管于",
     },

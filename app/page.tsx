@@ -45,12 +45,10 @@ export default async function Home({
   };
   const buildCategoryHref = (category?: LobsterCategory) => {
     const search = new URLSearchParams();
-    if (params.q?.trim()) search.set("q", params.q.trim());
-    if (params.tag?.trim()) search.set("tag", params.tag.trim());
     if (sort !== "hot") search.set("sort", sort);
-    if (category) search.set("category", category);
     const query = search.toString();
-    return query ? `/?${query}` : "/";
+    if (!category) return query ? `/?${query}` : "/";
+    return query ? `/categories/${category}?${query}` : `/categories/${category}`;
   };
   const structuredData = {
     "@context": "https://schema.org",

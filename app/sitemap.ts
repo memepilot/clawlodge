@@ -76,7 +76,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       if (b[1] !== a[1]) return b[1] - a[1];
       return a[0].localeCompare(b[0]);
     })
-    .slice(0, 250)
     .map(([tag]) => ({
     url: absoluteUrl(`/tags/${encodeURIComponent(tag)}`),
     changeFrequency: "weekly" as const,
