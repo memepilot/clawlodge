@@ -1971,6 +1971,14 @@ main {
   }
 
   .brand-name {
+    gap: 0;
+  }
+
+  .brand-mark {
+    display: none;
+  }
+
+  .brand-name {
     flex: 1 1 0;
   }
 
