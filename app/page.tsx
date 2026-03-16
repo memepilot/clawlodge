@@ -80,33 +80,7 @@ export default async function Home({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
-      {isTagResults ? (
-        <section className="section section-tight">
-          <div className="tag-results-bar hero-card">
-            <form className="tag-results-form" method="get">
-              <div className="search-bar">
-                <span className="mono">/</span>
-                <input
-                  className="search-input"
-                  name="q"
-                  defaultValue={params.q ?? ""}
-                  placeholder={t.home.searchPlaceholder}
-                />
-              </div>
-              <div className="search-controls-row">
-                <select className="select" defaultValue={sort} name="sort">
-                  <option value="hot">Hot</option>
-                  <option value="new">New</option>
-                </select>
-                {params.tag?.trim() ? <input type="hidden" name="tag" value={params.tag.trim()} /> : null}
-                <button className="btn btn-primary search-submit" type="submit">
-                  {t.home.searchButton}
-                </button>
-              </div>
-            </form>
-          </div>
-        </section>
-      ) : (
+      {isTagResults ? null : (
         <section className="hero">
           <div className="hero-inner">
             <div className="hero-copy">
