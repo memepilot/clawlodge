@@ -88,6 +88,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <a className="inline-link" href={siteConfig.githubUrl} target="_blank" rel="noreferrer">
                   {t.nav.github}
                 </a>
+                <a className="inline-link" href={siteConfig.xUrl} target="_blank" rel="noreferrer">
+                  {t.nav.twitter}
+                </a>
                 <a className="inline-link" href={siteConfig.npmCliUrl} target="_blank" rel="noreferrer">
                   {t.nav.installCli}
                 </a>
