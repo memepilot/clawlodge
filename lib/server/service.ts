@@ -529,6 +529,7 @@ function toSummary(item: DbLobster, owner: DbUser): LobsterSummary {
     latest_version: null,
     recommended: false,
     favorite_count: item.favoriteCount,
+    view_count: item.viewCount,
     download_count: item.downloadCount,
     share_count: item.shareCount,
     comment_count: item.commentCount,
@@ -686,10 +687,11 @@ function attachLatestVersion(summary: LobsterSummary, versions: DbLobsterVersion
 }
 
 function rankingScore(item: DbLobster, summary: LobsterSummary) {
+  const views = item.viewCount ?? 0;
   const downloads = item.downloadCount ?? 0;
   const githubStars = item.githubStars ?? 0;
   const recommendation = item.recommendationScore ?? 0;
-  return downloads * 100000 + githubStars * 100 + recommendation + summary.hot_score;
+  return views * 10000 + downloads * 1000 + githubStars * 10 + recommendation + summary.hot_score;
 }
 
 function toMirroredSummaryResponse(params: {
@@ -924,6 +926,15 @@ export async function getLobsterBySlug(slug: string): Promise<LobsterDetail> {
   };
 }
 
+export async function recordLobsterViewAndGetBySlug(slug: string): Promise<LobsterDetail> {
+  await mutateDb((db) => {
+    const lobster = db.lobsters.find((item) => item.slug === slug && item.status === "active");
+    if (!lobster) throw new ApiError(404, "Lobster not found");
+    lobster.viewCount = (lobster.viewCount ?? 0) + 1;
+  });
+  return getLobsterBySlug(slug);
+}
+
 export async function getWorkspaceFilePreview(slug: string, version: string, filePath: string) {
   const found = await readMirroredLobsterVersion(slug, version);
   if (!found) throw new ApiError(404, "Version not found");
@@ -1103,6 +1114,7 @@ export async function createLobster(
       recommendationScore: null,
       githubStars: null,
       favoriteCount: 0,
+      viewCount: 0,
       downloadCount: 0,
       shareCount: 0,
       commentCount: 0,
@@ -1692,6 +1704,7 @@ export async function uploadViaMcp(
         recommendationScore: null,
         githubStars: null,
         favoriteCount: 0,
+        viewCount: 0,
         downloadCount: 0,
         shareCount: 0,
         commentCount: 0,

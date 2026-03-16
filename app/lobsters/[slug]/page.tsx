@@ -13,7 +13,7 @@ import { getTranslations } from "@/lib/i18n";
 import { getRequestLocale } from "@/lib/server/locale";
 import { getDetailDisplayLobsterName, getDisplayAuthor } from "@/lib/lobster-display";
 import { ApiError } from "@/lib/server/errors";
-import { getComments, getLobsterBySlug, getRelatedLobsters } from "@/lib/server/service";
+import { getComments, getLobsterBySlug, getRelatedLobsters, recordLobsterViewAndGetBySlug } from "@/lib/server/service";
 import { absoluteUrl } from "@/lib/site";
 
 export const revalidate = 60;
@@ -138,7 +138,7 @@ export default async function LobsterDetailPage({
   const localePromise = getRequestLocale();
   let lobster;
   try {
-    lobster = await getCachedLobster(slug);
+    lobster = await recordLobsterViewAndGetBySlug(slug);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
       notFound();
@@ -223,12 +223,12 @@ export default async function LobsterDetailPage({
                 <strong className="detail-aside-meta">{latest?.workspace_files?.length ?? 0}</strong>
               </div>
               <div>
-                <span className="detail-aside-label">{t.detail.downloads}</span>
-                <strong className="detail-aside-meta">{lobster.download_count}</strong>
+                <span className="detail-aside-label">{t.detail.views}</span>
+                <strong className="detail-aside-meta">{lobster.view_count}</strong>
               </div>
               <div>
-                <span className="detail-aside-label">{t.detail.favorites}</span>
-                <strong className="detail-aside-meta">{lobster.favorite_count}</strong>
+                <span className="detail-aside-label">{t.detail.downloads}</span>
+                <strong className="detail-aside-meta">{lobster.download_count}</strong>
               </div>
             </div>
             <div className="detail-aside-actions">

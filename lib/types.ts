@@ -36,6 +36,7 @@ export type LobsterSummary = {
   latest_source_repo?: string | null;
   recommended?: boolean;
   favorite_count: number;
+  view_count: number;
   download_count: number;
   share_count: number;
   comment_count: number;

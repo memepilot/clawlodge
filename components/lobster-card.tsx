@@ -71,6 +71,13 @@ export function LobsterCard({
                 homeAuthorLabel
               )}
             </span>
+            <span className="stat-chip" aria-label={`${item.view_count} views`}>
+              <svg viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M2.8 10s2.5-4.6 7.2-4.6 7.2 4.6 7.2 4.6-2.5 4.6-7.2 4.6S2.8 10 2.8 10Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="10" cy="10" r="2.3" fill="none" stroke="currentColor" strokeWidth="1.8" />
+              </svg>
+              <span>{item.view_count}</span>
+            </span>
             <span className="stat-chip" aria-label={`${item.download_count} downloads`}>
               <svg viewBox="0 0 20 20" aria-hidden="true">
                 <path d="M10 3.2v8.1M6.8 8.9 10 12.1l3.2-3.2M4 15.2h12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -152,6 +159,13 @@ export function LobsterCard({
             ))}
           </div>
           <div className="lobster-card-footer">
+            <span className="stat-chip" aria-label={`${item.view_count} views`}>
+              <svg viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M2.8 10s2.5-4.6 7.2-4.6 7.2 4.6 7.2 4.6-2.5 4.6-7.2 4.6S2.8 10 2.8 10Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="10" cy="10" r="2.3" fill="none" stroke="currentColor" strokeWidth="1.8" />
+              </svg>
+              <span>{item.view_count}</span>
+            </span>
             <span className="stat-chip" aria-label={`${item.download_count} downloads`}>
               <svg viewBox="0 0 20 20" aria-hidden="true">
                 <path d="M10 3.2v8.1M6.8 8.9 10 12.1l3.2-3.2M4 15.2h12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />

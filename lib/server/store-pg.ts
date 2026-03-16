@@ -65,6 +65,7 @@ function normalizeState(parsed: DbState) {
     topics: Array.isArray(lobster.topics) ? lobster.topics : [],
     recommendationScore: lobster.recommendationScore ?? null,
     githubStars: lobster.githubStars ?? null,
+    viewCount: lobster.viewCount ?? 0,
     downloadCount: lobster.downloadCount ?? 0,
     shareCount: lobster.shareCount ?? 0,
   }));
@@ -231,6 +232,7 @@ async function ensureSchema(client: PoolClient) {
       recommendation_score DOUBLE PRECISION,
       github_stars INTEGER,
       favorite_count INTEGER NOT NULL,
+      view_count INTEGER NOT NULL DEFAULT 0,
       download_count INTEGER NOT NULL,
       share_count INTEGER NOT NULL,
       comment_count INTEGER NOT NULL,
@@ -285,6 +287,8 @@ async function ensureSchema(client: PoolClient) {
     CREATE INDEX IF NOT EXISTS idx_comments_mirror_lobster_created ON comments_mirror(lobster_id, created_at ASC);
     ALTER TABLE lobsters_mirror
       ADD COLUMN IF NOT EXISTS topics_json JSONB NOT NULL DEFAULT '[]'::jsonb;
+    ALTER TABLE lobsters_mirror
+      ADD COLUMN IF NOT EXISTS view_count INTEGER NOT NULL DEFAULT 0;
     CREATE SEQUENCE IF NOT EXISTS users_id_seq;
     CREATE SEQUENCE IF NOT EXISTS sessions_id_seq;
     CREATE SEQUENCE IF NOT EXISTS api_tokens_id_seq;
@@ -387,8 +391,8 @@ async function syncMirrorTables(client: PoolClient, state: DbState) {
       `INSERT INTO lobsters_mirror
         (id, slug, owner_id, name, summary, category, topics_json, license, source_type, source_url, original_author, verified,
          curation_note, seeded_at, status, report_penalty, search_document, tags_json, recommendation_score,
-         github_stars, favorite_count, download_count, share_count, comment_count, created_at, updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18::jsonb,$19,$20,$21,$22,$23,$24,$25,$26)`,
+         github_stars, favorite_count, view_count, download_count, share_count, comment_count, created_at, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18::jsonb,$19,$20,$21,$22,$23,$24,$25,$26,$27)`,
       [
         lobster.id,
         lobster.slug,
@@ -411,6 +415,7 @@ async function syncMirrorTables(client: PoolClient, state: DbState) {
         lobster.recommendationScore ?? null,
         lobster.githubStars ?? null,
         lobster.favoriteCount,
+        lobster.viewCount,
         lobster.downloadCount,
         lobster.shareCount,
         lobster.commentCount,
@@ -483,22 +488,6 @@ async function ensureDatabase() {
   if (initialized) return;
   if (!initializationPromise) {
     initializationPromise = (async () => {
-      try {
-        const probe = await query<{ has_state: boolean; has_users: boolean; has_lobsters: boolean; has_versions: boolean }>(
-          `SELECT
-             EXISTS(SELECT 1 FROM app_state WHERE id = 1) AS has_state,
-             to_regclass('public.users_mirror') IS NOT NULL AS has_users,
-             to_regclass('public.lobsters_mirror') IS NOT NULL AS has_lobsters,
-             to_regclass('public.lobster_versions_mirror') IS NOT NULL AS has_versions`,
-        );
-        const row = probe.rows[0];
-        if (row?.has_state && row.has_users && row.has_lobsters && row.has_versions) {
-          return;
-        }
-      } catch {
-        // Fall back to the full bootstrap path when the schema is absent or partially initialized.
-      }
-
       await withTransaction(async (client) => {
         // Serialize first-run schema/bootstrap work across processes to avoid DDL deadlocks.
         await client.query("SELECT pg_advisory_xact_lock($1, $2)", [SCHEMA_INIT_LOCK.classId, SCHEMA_INIT_LOCK.objectId]);
@@ -572,6 +561,7 @@ function toMirrorLobster(row: Record<string, unknown>): DbLobster {
     recommendationScore: row.recommendation_score == null ? null : Number(row.recommendation_score),
     githubStars: row.github_stars == null ? null : Number(row.github_stars),
     favoriteCount: Number(row.favorite_count),
+    viewCount: Number(row.view_count),
     downloadCount: Number(row.download_count),
     shareCount: Number(row.share_count),
     commentCount: Number(row.comment_count),
@@ -603,6 +593,7 @@ function toMirroredSummaryLobster(row: Record<string, unknown>): DbLobster {
     recommendationScore: row.recommendation_score == null ? null : Number(row.recommendation_score),
     githubStars: row.github_stars == null ? null : Number(row.github_stars),
     favoriteCount: Number(row.favorite_count),
+    viewCount: Number(row.view_count),
     downloadCount: Number(row.download_count),
     shareCount: Number(row.share_count),
     commentCount: Number(row.comment_count),
@@ -695,6 +686,7 @@ export async function readMirroredLobsterSummaries() {
       l.recommendation_score,
       l.github_stars,
       l.favorite_count,
+      l.view_count,
       l.download_count,
       l.share_count,
       l.comment_count,
