@@ -35,10 +35,43 @@ const markdownSchema = {
   },
 };
 
+function isRenderableImageSource(src: string | undefined) {
+  if (!src) return false;
+  if (src.startsWith("data:image/")) return true;
+  try {
+    const normalized = new URL(src, "https://clawlodge.com");
+    return /\.(png|jpe?g|gif|webp|svg|avif|ico)$/i.test(normalized.pathname);
+  } catch {
+    return /\.(png|jpe?g|gif|webp|svg|avif|ico)$/i.test(src);
+  }
+}
+
 export function MarkdownContent({ value }: { value: string }) {
   return (
     <article className="markdown mt-4 text-sm">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[[rehypeRaw], [rehypeSanitize, markdownSchema]]}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={[[rehypeRaw], [rehypeSanitize, markdownSchema]]}
+        components={{
+          img: ({ src, alt, title }) => {
+            if (!isRenderableImageSource(src)) {
+              return (
+                <a
+                  className="btn markdown-fallback-download"
+                  href={src}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={title}
+                >
+                  {alt?.trim() || "Open attachment"}
+                </a>
+              );
+            }
+
+            return <img src={src} alt={alt || ""} title={title} loading="lazy" decoding="async" />;
+          },
+        }}
+      >
         {value}
       </ReactMarkdown>
     </article>

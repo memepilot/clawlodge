@@ -1814,6 +1814,13 @@ main {
   white-space: normal;
 }
 
+.markdown-fallback-download {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.4rem 0 1rem;
+}
+
 .markdown pre {
   width: 100%;
   max-width: 100%;
