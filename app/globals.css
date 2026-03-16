@@ -1722,6 +1722,10 @@ main {
   vertical-align: middle;
 }
 
+.markdown p[align] img {
+  margin: 6px 8px;
+}
+
 .markdown img,
 .markdown video,
 .markdown iframe {
