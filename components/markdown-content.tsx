@@ -53,6 +53,11 @@ export function MarkdownContent({ value }: { value: string }) {
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[[rehypeRaw], [rehypeSanitize, markdownSchema]]}
         components={{
+          table: ({ children }) => (
+            <div className="markdown-table-wrap">
+              <table>{children}</table>
+            </div>
+          ),
           img: ({ src, alt, title }) => {
             const safeSrc = typeof src === "string" ? src : undefined;
             if (!isRenderableImageSource(safeSrc)) {
