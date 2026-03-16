@@ -1779,6 +1779,8 @@ main {
   text-align: left;
   vertical-align: top;
   border-bottom: 1px solid rgba(22, 42, 59, 0.08);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .markdown th {
@@ -1805,6 +1807,11 @@ main {
 .markdown td > :last-child,
 .markdown th > :last-child {
   margin-bottom: 0;
+}
+
+.markdown td code,
+.markdown th code {
+  white-space: normal;
 }
 
 .markdown pre {
