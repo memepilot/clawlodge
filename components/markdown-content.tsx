@@ -54,11 +54,12 @@ export function MarkdownContent({ value }: { value: string }) {
         rehypePlugins={[[rehypeRaw], [rehypeSanitize, markdownSchema]]}
         components={{
           img: ({ src, alt, title }) => {
-            if (!isRenderableImageSource(src)) {
+            const safeSrc = typeof src === "string" ? src : undefined;
+            if (!isRenderableImageSource(safeSrc)) {
               return (
                 <a
                   className="btn markdown-fallback-download"
-                  href={src}
+                  href={safeSrc}
                   target="_blank"
                   rel="noreferrer"
                   title={title}
@@ -68,7 +69,7 @@ export function MarkdownContent({ value }: { value: string }) {
               );
             }
 
-            return <img src={src} alt={alt || ""} title={title} loading="lazy" decoding="async" />;
+            return <img src={safeSrc} alt={alt || ""} title={title} loading="lazy" decoding="async" />;
           },
         }}
       >
