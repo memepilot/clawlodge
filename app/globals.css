@@ -1726,6 +1726,16 @@ main {
   margin: 6px 8px;
 }
 
+.markdown p:has(> img + img) {
+  text-align: center;
+}
+
+.markdown p:has(> img + img) > img {
+  display: inline-block;
+  vertical-align: middle;
+  margin: 6px 8px;
+}
+
 .markdown img,
 .markdown video,
 .markdown iframe {
