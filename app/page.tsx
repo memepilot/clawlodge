@@ -80,28 +80,26 @@ export default async function Home({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
-      {isTagResults ? null : (
-        <section className="hero">
-          <div className="hero-inner">
-            <div className="hero-copy">
-              <span className="hero-badge">{t.home.badge}</span>
-              <h1 className="hero-title">{t.home.title}</h1>
-              <p className="hero-subtitle">{t.home.subtitle}</p>
-              <div className="hero-actions">
-                <Link className="btn btn-primary" href="/publish">
-                  {t.home.publishCta}
-                </Link>
-                <a className="btn" href={siteConfig.npmCliUrl} target="_blank" rel="noreferrer">
-                  {t.nav.installCli}
-                </a>
-                <a className="btn" href={githubLoginUrl}>
-                  {t.auth.loginWithGithub}
-                </a>
-              </div>
+      <section className="hero">
+        <div className="hero-inner">
+          <div className="hero-copy">
+            <span className="hero-badge">{t.home.badge}</span>
+            <h1 className="hero-title">{t.home.title}</h1>
+            <p className="hero-subtitle">{t.home.subtitle}</p>
+            <div className="hero-actions">
+              <Link className="btn btn-primary" href="/publish">
+                {t.home.publishCta}
+              </Link>
+              <a className="btn" href={siteConfig.npmCliUrl} target="_blank" rel="noreferrer">
+                {t.nav.installCli}
+              </a>
+              <a className="btn" href={githubLoginUrl}>
+                {t.auth.loginWithGithub}
+              </a>
             </div>
           </div>
-        </section>
-      )}
+        </div>
+      </section>
 
       <section className={`section ${isTagResults ? "section-tight section-topless" : ""}`}>
         <div className="home-toolbar">
