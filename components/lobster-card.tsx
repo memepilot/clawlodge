@@ -90,15 +90,6 @@ export function LobsterCard({
               </svg>
               <span>{item.favorite_count}</span>
             </span>
-            <span className="stat-chip" aria-label={`${item.share_count} shares`}>
-              <svg viewBox="0 0 20 20" aria-hidden="true">
-                <path d="M7.2 10.2 12.8 6.8M7.2 9.8l5.6 3.4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                <circle cx="5.4" cy="10" r="2.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
-                <circle cx="14.8" cy="5.6" r="2.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
-                <circle cx="14.8" cy="14.4" r="2.2" fill="none" stroke="currentColor" strokeWidth="1.8" />
-              </svg>
-              <span>{item.share_count}</span>
-            </span>
             <span className="stat-chip" aria-label={`${item.comment_count} comments`}>
               <svg viewBox="0 0 20 20" aria-hidden="true">
                 <path d="M4.2 5.4h11.6a1.8 1.8 0 0 1 1.8 1.8v6a1.8 1.8 0 0 1-1.8 1.8H9.1l-3.7 2.8v-2.8H4.2a1.8 1.8 0 0 1-1.8-1.8v-6a1.8 1.8 0 0 1 1.8-1.8Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
