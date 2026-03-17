@@ -30,7 +30,6 @@ export function LobsterCard({
   const isHomeCard = variant === "home";
   const cardClassName = ["card", "lobster-card", isHomeCard ? "lobster-card-home" : ""].filter(Boolean).join(" ");
   const category = categoryLabel(item.category);
-  const homeAuthorLabel = `@${item.owner_handle}`;
   return (
     <article className={cardClassName}>
       {item.recommended && !isHomeCard ? (
@@ -65,10 +64,10 @@ export function LobsterCard({
             <span className="lobster-card-home-author">
               {author.href ? (
                 <Link className="inline-link" href={author.href}>
-                  {homeAuthorLabel}
+                  {author.label}
                 </Link>
               ) : (
-                homeAuthorLabel
+                author.label
               )}
             </span>
             <span className="stat-chip" aria-label={`${item.view_count} views`}>
