@@ -253,14 +253,6 @@ export default async function LobsterDetailPage({
       <section id="readme" className="shell page-panel p-5 md:p-6">
         <div className="detail-section-head flex flex-wrap items-center justify-between gap-3">
           <h2 className="panel-title">{t.detail.readme}</h2>
-          {latest ? (
-            <DownloadLink
-              className="btn"
-              href={`/api/v1/lobsters/${encodeURIComponent(slug)}/versions/${encodeURIComponent(latest.version)}/download`}
-            >
-              {t.detail.downloadWorkspaceZip}
-            </DownloadLink>
-          ) : null}
         </div>
         {latest ? (
           <MarkdownContent value={latest.readme_text} />
