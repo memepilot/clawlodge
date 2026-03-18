@@ -289,6 +289,11 @@ async function collectFiles(
     const relativePath = normalizeRelativePath(root, absolutePath);
     if (!relativePath) continue;
 
+    if (entry.isSymbolicLink()) {
+      blocked.push(relativePath);
+      continue;
+    }
+
     if (entry.isDirectory()) {
       if (isBlockedFile(relativePath)) {
         blocked.push(relativePath);
@@ -309,6 +314,10 @@ async function collectFiles(
     }
 
     const fileStat = await fs.stat(absolutePath);
+    if (!fileStat.isFile()) {
+      blocked.push(relativePath);
+      continue;
+    }
     const baseRecord: WorkspaceSharedFile = {
       path: relativePath,
       size: fileStat.size,

@@ -324,6 +324,11 @@ async function collectFiles(root, currentDir, shared, blocked, skills, stats) {
     const relativePath = normalizeRelativePath(root, absolutePath);
     if (!relativePath) continue;
 
+    if (entry.isSymbolicLink()) {
+      blocked.push(relativePath);
+      continue;
+    }
+
     if (entry.isDirectory()) {
       if (isBlockedFile(relativePath)) {
         blocked.push(relativePath);
@@ -343,6 +348,10 @@ async function collectFiles(root, currentDir, shared, blocked, skills, stats) {
     }
 
     const fileStat = await fs.stat(absolutePath);
+    if (!fileStat.isFile()) {
+      blocked.push(relativePath);
+      continue;
+    }
     const record = {
       path: relativePath,
       size: fileStat.size,
