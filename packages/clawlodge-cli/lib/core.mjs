@@ -83,6 +83,7 @@ Basic usage:
   clawlodge get openclaw-config
   clawlodge download openclaw-config
   clawlodge install openclaw-config --agent openclaw-config-test
+  clawlodge adopt openclaw-config --agent openclaw-config-test
   clawlodge favorite openclaw-config
   clawlodge comment openclaw-config --content "Useful setup"
   clawlodge report openclaw-config --reason "Contains broken publish output"
@@ -117,6 +118,9 @@ Commands:
   clawlodge install
     Download a published workspace, unzip it, and create a new OpenClaw agent
 
+  clawlodge adopt
+    Alias of clawlodge install
+
   clawlodge favorite
     Favorite one published workspace
 
@@ -146,6 +150,7 @@ Advanced usage:
   clawlodge get cft0808-edict
   clawlodge download cft0808-edict --version 0.1.1 --out /tmp/cft0808-edict.zip
   clawlodge install openclaw-config --agent openclaw-config-test
+  clawlodge adopt openclaw-config --agent openclaw-config-test
   clawlodge favorite cft0808-edict
   clawlodge unfavorite cft0808-edict
   clawlodge comment cft0808-edict --content "Helpful docs and workflows."
@@ -820,7 +825,7 @@ export async function runCli(argv = process.argv.slice(2)) {
     return;
   }
 
-  if (command === "install") {
+  if (command === "install" || command === "adopt") {
     await runInstall(options, positionals);
     return;
   }

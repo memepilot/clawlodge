@@ -21,6 +21,9 @@ In Chinese requests, phrases such as these should usually map to the `clawlodge`
 - `去龙虾客栈找...`
 - `从龙虾客栈下载...`
 - `帮我养一只...龙虾`
+- `去龙虾客栈养一条...龙虾`
+- `帮我领养一个...龙虾`
+- `给我装一个...龙虾`
 
 Interpret `龙虾` in this context as an OpenClaw-compatible asset such as:
 
@@ -67,6 +70,7 @@ Decision rule:
 - If the user wants metadata, file lists, versions, author, tags, or source repo, use `show`/`get`.
 - If the user wants a local file, installation artifact, zip package, or anything saved to disk, use `download`.
 - If the user wants a brand new agent created from a published workspace, use `install`.
+- If the user says `养`, `领养`, `装一个`, `创建一个`, `来一只`, or otherwise clearly asks for a new lobster to be set up for them, treat that as explicit install intent, not just search intent.
 - Do not use `get` or `show` when the request mentions `save`, `download`, `zip`, `extract`, `install`, or an output path.
 
 ## Auth model
@@ -104,6 +108,7 @@ Hard rules:
 - If one result clearly matches the user intent, switch to `show` instead of continuing to search.
 - Prefer one focused multi-term search over many single-word searches.
 - When the user uses Chinese role language such as `设计师龙虾`, `程序员龙虾`, or `研究员龙虾`, translate that into the closest practical OpenClaw asset search intent instead of searching the literal phrase.
+- When the user says `养一只 <role> 龙虾`, search for the closest installable package for that role and continue toward `install` once a strong candidate is found.
 - Do not use old local extraction directories as search evidence. Only use:
   - current `clawlodge search` output
   - current `clawlodge show` output
@@ -126,6 +131,24 @@ clawlodge search "design thumbnail brand visual"
 # "Find me a programmer lobster on ClawLodge"
 clawlodge search "coder developer programming workspace"
 ```
+
+Role intent hints:
+
+- `程序员龙虾` / `开发龙虾`
+  - prefer `coder`, `developer`, `programming`, `coding`, `workspace`, `starter`
+- `设计师龙虾`
+  - prefer `design`, `thumbnail`, `brand`, `visual`, `creative`
+- `研究员龙虾`
+  - prefer `research`, `analysis`, `workflow`, `knowledge`
+- `产品经理龙虾`
+  - prefer `product`, `pm`, `planning`, `workflow`
+
+Preference rules for "raise/adopt a lobster":
+
+- Prefer directly usable `workspace` or focused `skill` packages over very heavy orchestration systems.
+- Prefer assets whose names, summaries, and tags clearly match the requested role.
+- Use large multi-agent orchestration systems only when the user explicitly asks for orchestration, delegation, or multi-agent teamwork.
+- Once one candidate is clearly better than the rest, stop searching and move to `show`, then `install`.
 
 ## Inspect workflow
 
@@ -235,7 +258,15 @@ Rules:
 - Use a descriptive isolated agent name such as `<slug>-test` or `<role>-test`.
 - If the user asked only to inspect or compare, stop before `install`.
 - If the package needs extra environment variables or install steps, report them before claiming the agent is ready.
-- If the user says `养一只龙虾`, interpret that as finding a suitable package and, if explicitly requested, installing it into a new isolated agent rather than modifying the current workspace in place.
+- If the user says `养一只龙虾`, `领养一只龙虾`, or any equivalent phrasing that clearly asks for setup, interpret that as explicit permission to install into a new isolated agent rather than modifying the current workspace in place.
+- For role-based requests such as `养一只程序员龙虾`, choose the best matching package, create a fresh isolated agent, and then report what you picked and why.
+- After a successful `install`, stop and report:
+  - chosen lobster slug
+  - new agent id
+  - workspace path
+  - zip path
+  - one-sentence explanation of why this package matched the request
+- Do not continue into unrelated browsing, extra polling, or additional installs after a successful `install` unless the user explicitly asked for more.
 
 ## Feedback workflow
 
