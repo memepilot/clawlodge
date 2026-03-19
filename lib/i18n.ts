@@ -51,6 +51,8 @@ export const messages = {
       next: "Next",
       page: "Page",
       showing: "Showing",
+      jumpTo: "Jump to",
+      go: "Go",
     },
     about: {
       label: "About",
@@ -134,6 +136,7 @@ export const messages = {
       saveFailed: "Save failed",
       seedSaveFailed: "Seed save failed",
       hireProfile: "Hire Profile",
+      loginRequiredHint: "Log in with GitHub to manage tokens, hire profile, and seed settings.",
     },
     detail: {
       by: "by",
@@ -254,6 +257,8 @@ export const messages = {
       next: "下一页",
       page: "第",
       showing: "显示",
+      jumpTo: "跳到",
+      go: "前往",
     },
     about: {
       label: "关于",
@@ -337,6 +342,7 @@ export const messages = {
       saveFailed: "保存失败",
       seedSaveFailed: "保存种子内容失败",
       hireProfile: "合作资料",
+      loginRequiredHint: "请先用 GitHub 登录后再管理令牌、合作资料和种子设置。",
     },
     detail: {
       by: "作者",
