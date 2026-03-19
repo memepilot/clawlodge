@@ -12,6 +12,16 @@ export const CATEGORY_OPTIONS: Array<{ value: LobsterCategory; icon: string }> =
   { value: "memory", icon: "◌" },
 ];
 
+export const TOPIC_OPTIONS: Array<{ value: LobsterTopic; icon: string }> = [
+  { value: "dev", icon: "⌘" },
+  { value: "design", icon: "✦" },
+  { value: "research", icon: "◌" },
+  { value: "writing", icon: "✎" },
+  { value: "productivity", icon: "◍" },
+  { value: "multiagent", icon: "⇄" },
+  { value: "automation", icon: "⚙" },
+];
+
 export function categoryLabel(category: LobsterCategory, locale: "en" | "zh") {
   if (locale === "zh") {
     switch (category) {

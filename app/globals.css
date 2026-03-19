@@ -451,6 +451,19 @@ main {
   max-width: 760px;
 }
 
+.home-section-heading {
+  margin: 0 0 10px;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.home-taxonomy-block {
+  margin-top: 18px;
+}
+
 .home-search-icon {
   display: inline-flex;
   align-items: center;
@@ -470,6 +483,12 @@ main {
   justify-content: flex-end;
   gap: 6px;
   align-items: center;
+}
+
+.home-topic-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .home-category-pill {
@@ -497,6 +516,25 @@ main {
   color: var(--seafoam);
 }
 
+.home-topic-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(42, 31, 25, 0.08);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ink-soft);
+  font-weight: 700;
+  font-size: 0.94rem;
+}
+
+.home-topic-pill:hover {
+  color: var(--accent-deep);
+  border-color: var(--border-ui-hover);
+}
+
 .home-category-icon {
   display: inline-flex;
   width: 0.9rem;
@@ -508,8 +546,14 @@ main {
 .home-results-bar {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 8px;
+}
+
+.home-results-bar .home-section-heading {
+  flex: 1 1 100%;
+  margin-bottom: 0;
 }
 
 .home-results-summary {
@@ -522,6 +566,10 @@ main {
   color: var(--seafoam);
   font-size: 0.98rem;
   font-weight: 600;
+}
+
+.home-latest-section {
+  margin-top: 32px;
 }
 
 .card {
