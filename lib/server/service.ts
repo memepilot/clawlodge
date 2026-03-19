@@ -882,18 +882,28 @@ export async function listLobsters(params?: {
   };
 }
 
-export async function getRelatedLobsters(slug: string, limit = 4) {
-  const [detail, items] = await Promise.all([getLobsterBySlug(slug), readCachedLobsterSummaries()]);
+export async function getRelatedLobsters(
+  slug: string,
+  limit = 4,
+  detailSeed?: Pick<LobsterDetail, "topics" | "category" | "tags">,
+) {
+  const [detail, items] = await Promise.all([
+    detailSeed ? Promise.resolve(detailSeed) : getLobsterBySlug(slug),
+    readCachedLobsterSummaries(),
+  ]);
   const targetTopics = new Set(detail.topics ?? []);
   const targetCategory = detail.category ?? null;
+  const targetTags = new Set(detail.tags ?? []);
 
   return items
     .filter(({ lobster }) => lobster.slug !== slug && lobster.status === "active")
     .map(({ lobster, owner, latestVersion, latestSourceRepo, latestIconUrl }) => {
       const topicOverlap = (lobster.topics ?? []).filter((topic) => targetTopics.has(topic)).length;
+      const tagOverlap = lobster.tags.filter((tag) => targetTags.has(tag)).length;
       const sameCategory = Boolean(targetCategory && getDerivedCategory(lobster) === targetCategory);
       return {
         topicOverlap,
+        tagOverlap,
         sameCategory,
         summary: toMirroredSummaryResponse({
           lobster,
@@ -904,9 +914,12 @@ export async function getRelatedLobsters(slug: string, limit = 4) {
         }),
       };
     })
-    .filter((entry) => entry.topicOverlap > 0 || entry.sameCategory)
     .sort((a, b) => {
+      const aRelatedScore = a.topicOverlap * 100 + a.tagOverlap * 10 + Number(a.sameCategory) * 25;
+      const bRelatedScore = b.topicOverlap * 100 + b.tagOverlap * 10 + Number(b.sameCategory) * 25;
+      if (bRelatedScore !== aRelatedScore) return bRelatedScore - aRelatedScore;
       if (b.topicOverlap !== a.topicOverlap) return b.topicOverlap - a.topicOverlap;
+      if (b.tagOverlap !== a.tagOverlap) return b.tagOverlap - a.tagOverlap;
       if (a.sameCategory !== b.sameCategory) return Number(b.sameCategory) - Number(a.sameCategory);
       if (b.summary.download_count !== a.summary.download_count) return b.summary.download_count - a.summary.download_count;
       if (b.summary.favorite_count !== a.summary.favorite_count) return b.summary.favorite_count - a.summary.favorite_count;
@@ -933,6 +946,14 @@ export async function recordLobsterViewAndGetBySlug(slug: string): Promise<Lobst
     lobster.viewCount = (lobster.viewCount ?? 0) + 1;
   });
   return getLobsterBySlug(slug);
+}
+
+export async function recordLobsterView(slug: string) {
+  await mutateDb((db) => {
+    const lobster = db.lobsters.find((item) => item.slug === slug && item.status === "active");
+    if (!lobster) return;
+    lobster.viewCount = (lobster.viewCount ?? 0) + 1;
+  });
 }
 
 export async function getWorkspaceFilePreview(slug: string, version: string, filePath: string) {
