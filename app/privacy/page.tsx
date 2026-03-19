@@ -2,13 +2,27 @@ import type { Metadata } from "next";
 
 import { getTranslations } from "@/lib/i18n";
 import { getRequestLocale } from "@/lib/server/locale";
-import { absoluteUrl, siteConfig } from "@/lib/site";
+import { absoluteUrl, buildSocialImages, siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Privacy",
   description: "Privacy notes for ClawLodge, including stored data, uploads, and support contact routes.",
   alternates: {
     canonical: absoluteUrl("/privacy"),
+  },
+  openGraph: {
+    title: "Privacy | ClawLodge",
+    description: "Privacy notes for ClawLodge, including stored data, uploads, and support contact routes.",
+    url: absoluteUrl("/privacy"),
+    siteName: siteConfig.name,
+    type: "article",
+    images: buildSocialImages(null, "ClawLodge privacy page preview"),
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Privacy | ClawLodge",
+    description: "Privacy notes for ClawLodge, including stored data, uploads, and support contact routes.",
+    images: buildSocialImages(null, "ClawLodge privacy page preview").map((image) => image.url),
   },
 };
 

@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 
 import { LobsterCollectionPage } from "@/components/lobster-collection-page";
-import { buildCollectionMetadata, categoryIntro, categorySeoTitle, CATEGORY_OPTIONS } from "@/lib/lobster-taxonomy";
+import { buildCollectionMetadata, categoryGuideSlugs, categoryIntro, categoryLabel, categorySeoTitle, CATEGORY_OPTIONS } from "@/lib/lobster-taxonomy";
+import { getGuideList } from "@/lib/guides";
 import { getRequestLocale } from "@/lib/server/locale";
 import { listLobsters } from "@/lib/server/service";
 
@@ -41,6 +42,7 @@ export default async function CategoryPage({
   });
   const pathname = `/categories/${match.value}`;
   const title = categorySeoTitle(match.value, locale);
+  const guides = getGuideList().filter((guide) => categoryGuideSlugs(match.value).includes(guide.slug));
 
   return (
     <LobsterCollectionPage
@@ -48,6 +50,15 @@ export default async function CategoryPage({
       title={title}
       intro={categoryIntro(match.value, locale)}
       pathname={pathname}
+      breadcrumbs={[
+        { label: locale === "zh" ? "首页" : "Home", href: "/" },
+        { label: categoryLabel(match.value, locale) },
+      ]}
+      relatedLinks={guides.map((guide) => ({
+        title: guide.title[locale],
+        description: guide.description[locale],
+        href: `/guides/${guide.slug}`,
+      }))}
       result={result}
       sort={sort}
       selectedCategory={match.value}

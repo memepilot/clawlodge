@@ -1,7 +1,9 @@
 import Link from "next/link";
 import Script from "next/script";
 
+import { Breadcrumbs } from "@/components/breadcrumbs";
 import { LobsterCard } from "@/components/lobster-card";
+import { PaginationBar } from "@/components/pagination-bar";
 import { apiOrigin } from "@/lib/api";
 import { buildCollectionJsonLd, CATEGORY_OPTIONS, categoryLabel } from "@/lib/lobster-taxonomy";
 import { getTranslations } from "@/lib/i18n";
@@ -17,6 +19,8 @@ type Props = {
   sort: "hot" | "new";
   buildPageHref: (page: number) => string;
   selectedCategory?: LobsterCategory;
+  breadcrumbs?: Array<{ label: string; href?: string }>;
+  relatedLinks?: Array<{ title: string; description: string; href: string }>;
 };
 
 export function LobsterCollectionPage({
@@ -28,6 +32,8 @@ export function LobsterCollectionPage({
   sort,
   buildPageHref,
   selectedCategory,
+  breadcrumbs,
+  relatedLinks,
 }: Props) {
   const t = getTranslations(locale);
   const githubLoginUrl = `${apiOrigin}/api/v1/auth/github/start?next=/publish`;
@@ -54,9 +60,10 @@ export function LobsterCollectionPage({
       <section className="hero">
         <div className="hero-inner">
           <div className="hero-copy">
-            <span className="hero-badge">{t.home.badge}</span>
-            <h1 className="hero-title">{t.home.title}</h1>
-            <p className="hero-subtitle">{t.home.subtitle}</p>
+            {breadcrumbs?.length ? <Breadcrumbs items={breadcrumbs} /> : null}
+            <span className="hero-badge">{locale === "zh" ? "精选分组" : "Curated Collection"}</span>
+            <h1 className="hero-title">{title}</h1>
+            <p className="hero-subtitle">{intro}</p>
             <div className="hero-actions">
               <Link className="btn btn-primary" href="/publish">
                 {t.home.publishCta}
@@ -126,37 +133,35 @@ export function LobsterCollectionPage({
           )}
         </div>
 
-        {result.total_pages > 1 ? (
-          <div className="pagination-bar">
-            <p className="pagination-summary muted">
-              {t.home.showing} {(result.page - 1) * result.per_page + 1}-{Math.min(result.page * result.per_page, result.total)} / {result.total}
-            </p>
-            <div className="pagination-actions">
-              {result.has_prev ? (
-                <Link className="btn" href={buildPageHref(result.page - 1)}>
-                  {t.home.previous}
-                </Link>
-              ) : (
-                <span className="btn pagination-disabled" aria-disabled="true">
-                  {t.home.previous}
-                </span>
-              )}
-              <span className="pagination-current">
-                {t.home.page} {result.page} / {result.total_pages}
-              </span>
-              {result.has_next ? (
-                <Link className="btn btn-primary" href={buildPageHref(result.page + 1)}>
-                  {t.home.next}
-                </Link>
-              ) : (
-                <span className="btn btn-primary pagination-disabled" aria-disabled="true">
-                  {t.home.next}
-                </span>
-              )}
-            </div>
-          </div>
-        ) : null}
+        <PaginationBar
+          labels={{
+            showing: t.home.showing,
+            previous: t.home.previous,
+            next: t.home.next,
+            page: t.home.page,
+            jumpTo: t.home.jumpTo,
+            go: t.home.go,
+          }}
+          result={result}
+          buildPageHref={buildPageHref}
+          action={pathname}
+          inputId={`page-jump-${pathname.replace(/[^\w-]+/g, "-")}`}
+          hiddenFields={sort !== "hot" ? [{ name: "sort", value: sort }] : []}
+        />
       </section>
+
+      {relatedLinks?.length ? (
+        <section className="section section-tight">
+          <div className="guide-link-grid taxonomy-link-grid">
+            {relatedLinks.map((item) => (
+              <Link key={item.href} className="guide-link-card" href={item.href}>
+                <strong>{item.title}</strong>
+                <span>{item.description}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

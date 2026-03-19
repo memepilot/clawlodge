@@ -3,13 +3,16 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 
+import { Breadcrumbs } from "@/components/breadcrumbs";
 import { LobsterActions } from "@/components/lobster-actions";
 import { LobsterCard } from "@/components/lobster-card";
 import { getLobsterAvatarSrc, LobsterAvatar } from "@/components/lobster-avatar";
 import { MarkdownContent } from "@/components/markdown-content";
 import { DownloadLink } from "@/components/download-link";
 import { WorkspaceBrowser } from "@/components/workspace-browser";
+import { categoryLabel, topicLabel as taxonomyTopicLabel } from "@/lib/lobster-taxonomy";
 import { getTranslations } from "@/lib/i18n";
+import { getGuideList } from "@/lib/guides";
 import { getRequestLocale } from "@/lib/server/locale";
 import { getDetailDisplayLobsterName, getDisplayAuthor } from "@/lib/lobster-display";
 import { ApiError } from "@/lib/server/errors";
@@ -41,48 +44,6 @@ function detailSeoTitle(name: string, category: string | null | undefined) {
 }
 
 const getCachedLobster = cache(async (slug: string) => getLobsterBySlug(slug));
-
-function topicLabel(value: string, locale: "en" | "zh") {
-  if (locale === "zh") {
-    switch (value) {
-      case "dev":
-        return "开发";
-      case "design":
-        return "设计";
-      case "research":
-        return "研究";
-      case "writing":
-        return "写作";
-      case "productivity":
-        return "效率";
-      case "multiagent":
-        return "多智能体";
-      case "automation":
-        return "自动化";
-      default:
-        return value;
-    }
-  }
-
-  switch (value) {
-    case "dev":
-      return "Dev";
-    case "design":
-      return "Design";
-    case "research":
-      return "Research";
-    case "writing":
-      return "Writing";
-    case "productivity":
-      return "Productivity";
-    case "multiagent":
-      return "Multi-Agent";
-    case "automation":
-      return "Automation";
-    default:
-      return value;
-  }
-}
 
 export async function generateMetadata({
   params,
@@ -152,16 +113,29 @@ export default async function LobsterDetailPage({
   const t = getTranslations(locale);
   const displayName = getDetailDisplayLobsterName(lobster);
   const author = getDisplayAuthor(lobster, latest?.source_repo);
+  const guides = getGuideList().filter((guide) => {
+    if (lobster.category && guide.relatedCategories?.includes(lobster.category)) return true;
+    return lobster.topics?.some((topic) => guide.relatedTopics?.includes(topic));
+  }).slice(0, 3);
 
   return (
     <div className="page-shell stack-lg">
       <section className="shell page-panel detail-hero">
         <div className="detail-hero-main">
+          <Breadcrumbs
+            items={[
+              { label: locale === "zh" ? "首页" : "Home", href: "/" },
+              ...(lobster.category
+                ? [{ label: categoryLabel(lobster.category as never, locale), href: `/categories/${lobster.category}` }]
+                : []),
+              { label: displayName },
+            ]}
+          />
           <div className="detail-kickers">
             {lobster.verified ? <span className="tag tag-verified">{t.detail.verified}</span> : null}
           </div>
           <div className="detail-head">
-            <LobsterAvatar iconUrl={lobster.icon_url} alt="" size={112} className="detail-lobster-avatar" />
+            <LobsterAvatar iconUrl={lobster.icon_url} alt={`${displayName} icon`} size={112} className="detail-lobster-avatar" />
             <div>
               <h1 className="page-title">
                 {displayName}
@@ -183,7 +157,7 @@ export default async function LobsterDetailPage({
           {lobster.category ? (
             <div className="detail-topic-row">
               <Link className="tag tag-category" href={`/categories/${lobster.category}`}>
-                {lobster.category}
+                {categoryLabel(lobster.category as never, locale)}
               </Link>
             </div>
           ) : null}
@@ -191,7 +165,7 @@ export default async function LobsterDetailPage({
             <div className="detail-topic-row">
               {lobster.topics.map((topic) => (
                 <Link key={topic} className="tag tag-topic" href={`/topics/${topic}`}>
-                  {topicLabel(topic, locale)}
+                  {taxonomyTopicLabel(topic as never, locale)}
                 </Link>
               ))}
             </div>
@@ -282,6 +256,22 @@ export default async function LobsterDetailPage({
           initialShareCount={lobster.share_count}
         />
       </div>
+
+      {guides.length ? (
+        <section className="shell page-panel p-5 md:p-6">
+          <div className="detail-section-head">
+            <h2 className="panel-title">{locale === "zh" ? "继续阅读" : "Continue Reading"}</h2>
+          </div>
+          <div className="guide-link-grid">
+            {guides.map((guide) => (
+              <Link key={guide.slug} className="guide-link-card" href={`/guides/${guide.slug}`}>
+                <strong>{guide.title[locale]}</strong>
+                <span>{guide.description[locale]}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {related.length ? (
         <section className="shell page-panel p-5 md:p-6">

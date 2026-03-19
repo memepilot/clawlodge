@@ -8,7 +8,7 @@ import { LocaleProvider } from "@/components/locale-provider";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { getTranslations } from "@/lib/i18n";
 import { getRequestLocale } from "@/lib/server/locale";
-import { absoluteUrl, siteConfig } from "@/lib/site";
+import { absoluteUrl, buildSocialImages, siteConfig } from "@/lib/site";
 
 import "./globals.css";
 
@@ -32,11 +32,13 @@ export const metadata: Metadata = {
     url: absoluteUrl("/"),
     siteName: siteConfig.name,
     type: "website",
+    images: buildSocialImages(null, `${siteConfig.name} homepage preview`),
   },
   twitter: {
     card: "summary_large_image",
     title: siteConfig.title,
     description: siteConfig.description,
+    images: buildSocialImages(null, `${siteConfig.name} homepage preview`).map((image) => image.url),
   },
   robots: {
     index: true,
@@ -55,8 +57,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <header className="navbar">
             <div className="navbar-inner">
               <Link href="/" className="brand-name">
-                <span className="brand-mark" aria-hidden="true">
-                  <Image src="/logo-mark.svg" alt="" width={36} height={36} className="brand-mark-image" priority />
+                <span className="brand-mark">
+                  <Image src="/logo-mark.svg" alt="ClawLodge logo" width={36} height={36} className="brand-mark-image" priority />
                 </span>
                 <span className="brand-copy">{t.brand.name}</span>
               </Link>

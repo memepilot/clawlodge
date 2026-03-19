@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
@@ -46,6 +47,26 @@ function isRenderableImageSource(src: string | undefined) {
   }
 }
 
+function isOptimizableImageSource(src: string | undefined) {
+  if (!src) return false;
+  if (src.startsWith("/")) return true;
+  try {
+    const normalized = new URL(src, "https://clawlodge.com");
+    return normalized.hostname === "clawlodge.com" || normalized.hostname === "avatars.githubusercontent.com" || normalized.hostname.endsWith(".githubusercontent.com");
+  } catch {
+    return false;
+  }
+}
+
+function parseDimension(value: string | number | undefined) {
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) return value;
+  if (typeof value === "string") {
+    const match = value.trim().match(/^(\d+)(?:px)?$/i);
+    if (match) return Number(match[1]);
+  }
+  return null;
+}
+
 export function MarkdownContent({ value }: { value: string }) {
   return (
     <article className="markdown mt-4 text-sm">
@@ -58,8 +79,13 @@ export function MarkdownContent({ value }: { value: string }) {
               <table>{children}</table>
             </div>
           ),
-          img: ({ src, alt, title }) => {
+          picture: ({ children }) => <>{children}</>,
+          source: () => null,
+          img: ({ src, alt, title, width, height }) => {
             const safeSrc = typeof src === "string" ? src : undefined;
+            const safeAlt = alt?.trim() || title?.trim() || "README image";
+            const parsedWidth = parseDimension(width);
+            const parsedHeight = parseDimension(height);
             if (!isRenderableImageSource(safeSrc)) {
               return (
                 <a
@@ -69,12 +95,60 @@ export function MarkdownContent({ value }: { value: string }) {
                   rel="noreferrer"
                   title={title}
                 >
-                  {alt?.trim() || "Open attachment"}
+                  {safeAlt || "Open attachment"}
                 </a>
               );
             }
 
-            return <img src={safeSrc} alt={alt || ""} title={title} loading="lazy" decoding="async" />;
+            if (isOptimizableImageSource(safeSrc) && parsedWidth && parsedHeight) {
+              if (!safeSrc) return null;
+              return (
+                <Image
+                  src={safeSrc}
+                  alt={safeAlt}
+                  title={title}
+                  width={parsedWidth}
+                  height={parsedHeight}
+                  sizes="(max-width: 768px) 100vw, 768px"
+                  quality={75}
+                  style={{ width: "100%", maxWidth: `${parsedWidth}px`, height: "auto" }}
+                />
+              );
+            }
+
+            if (isOptimizableImageSource(safeSrc) && !parsedWidth && !parsedHeight) {
+              if (!safeSrc) return null;
+              return (
+                <Image
+                  src={safeSrc}
+                  alt={safeAlt}
+                  title={title}
+                  width={1200}
+                  height={675}
+                  sizes="(max-width: 768px) 100vw, 768px"
+                  quality={75}
+                  style={{ width: "100%", height: "auto" }}
+                />
+              );
+            }
+
+            return (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={safeSrc}
+                alt={safeAlt}
+                title={title}
+                width={typeof width === "number" || typeof width === "string" ? width : undefined}
+                height={typeof height === "number" || typeof height === "string" ? height : undefined}
+                loading="lazy"
+                decoding="async"
+                style={{
+                  maxWidth: "100%",
+                  height: "auto",
+                  ...(parsedWidth ? { width: `${parsedWidth}px` } : null),
+                }}
+              />
+            );
           },
         }}
       >

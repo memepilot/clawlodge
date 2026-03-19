@@ -40,7 +40,7 @@ export function LobsterCard({
       {isHomeCard ? (
         <>
           <div className="lobster-card-header lobster-card-home-header">
-            <LobsterAvatar iconUrl={item.icon_url} alt="" size={52} className="lobster-card-avatar lobster-card-home-avatar" />
+            <LobsterAvatar iconUrl={item.icon_url} alt={`${item.name} icon`} size={52} className="lobster-card-avatar lobster-card-home-avatar" />
             <div className="lobster-card-heading">
               <h3 className="lobster-card-title lobster-card-home-title">
                 <Link href={`/lobsters/${item.slug}`}>{displayName}</Link>
@@ -106,7 +106,7 @@ export function LobsterCard({
                 {item.verified ? <span className="tag tag-verified">{t.detail.verified}</span> : null}
               </div>
               <div className="lobster-card-header">
-                <LobsterAvatar iconUrl={item.icon_url} alt="" size={56} className="lobster-card-avatar" />
+                <LobsterAvatar iconUrl={item.icon_url} alt={`${item.name} icon`} size={56} className="lobster-card-avatar" />
                 <div className="lobster-card-heading">
                   <h3 className="lobster-card-title">
                     <Link href={`/lobsters/${item.slug}`}>{displayName}</Link>

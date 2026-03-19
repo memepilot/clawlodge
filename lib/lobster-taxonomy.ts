@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { LobsterCategory, LobsterTopic } from "@/lib/types";
-import { absoluteUrl, siteConfig } from "@/lib/site";
+import { absoluteUrl, buildSocialImages, siteConfig } from "@/lib/site";
 
 export const CATEGORY_OPTIONS: Array<{ value: LobsterCategory; icon: string }> = [
   { value: "workspace", icon: "▣" },
@@ -141,11 +141,13 @@ export function buildCollectionMetadata(params: {
       url: absoluteUrl(params.pathname),
       siteName: siteConfig.name,
       type: "website",
+      images: buildSocialImages(null, `${params.title} collection preview`),
     },
     twitter: {
       card: "summary_large_image",
       title: `${params.title} | ${siteConfig.name}`,
       description: params.description,
+      images: buildSocialImages(null, `${params.title} collection preview`).map((image) => image.url),
     },
   };
 }
@@ -217,7 +219,7 @@ export function tagSeoTitle(tag: string, locale: "en" | "zh") {
     case "openclaw":
       return "OpenClaw Setups - Community Skills, Agents and Workflows";
     case "claude-code":
-      return "Claude Code with OpenClaw - Skills and Workflow Setups";
+      return "Claude Code Tag Page - OpenClaw Skills and Workflow Setups";
     case "multi-agent":
     case "multiagent":
       return "OpenClaw Multi-Agent Examples - Community Setups";
@@ -245,4 +247,35 @@ export function buildCollectionJsonLd(params: {
     description: params.description,
     url: absoluteUrl(params.pathname),
   };
+}
+
+export function categoryGuideSlugs(category: LobsterCategory) {
+  switch (category) {
+    case "memory":
+      return ["openclaw-memory-allocation-strategies"];
+    case "workflow":
+    case "agent":
+      return ["openclaw-multi-agent-workflows"];
+    case "workspace":
+    case "skill":
+    case "tooling":
+    default:
+      return ["openclaw-config-file"];
+  }
+}
+
+export function topicGuideSlugs(topic: LobsterTopic) {
+  switch (topic) {
+    case "multiagent":
+    case "automation":
+      return ["openclaw-multi-agent-workflows"];
+    case "research":
+    case "productivity":
+      return ["openclaw-memory-allocation-strategies"];
+    case "dev":
+    case "design":
+    case "writing":
+    default:
+      return ["openclaw-config-file"];
+  }
 }
