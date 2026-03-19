@@ -1,8 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { LobsterCollectionPage } from "@/components/lobster-collection-page";
-import { buildCollectionMetadata, topicGuideSlugs, topicIntro, topicLabel, topicSeoTitle } from "@/lib/lobster-taxonomy";
-import { getGuideList } from "@/lib/guides";
+import { buildCollectionMetadata, topicIntro, topicSeoTitle } from "@/lib/lobster-taxonomy";
 import { getRequestLocale } from "@/lib/server/locale";
 import { listLobsters } from "@/lib/server/service";
 import type { LobsterTopic } from "@/lib/types";
@@ -44,7 +43,6 @@ export default async function TopicPage({
   const pathname = `/topics/${topic}`;
   const typedTopic = topic as LobsterTopic;
   const title = topicSeoTitle(typedTopic, locale);
-  const guides = getGuideList().filter((guide) => topicGuideSlugs(typedTopic).includes(guide.slug));
 
   return (
     <LobsterCollectionPage
@@ -52,15 +50,6 @@ export default async function TopicPage({
       title={title}
       intro={topicIntro(typedTopic, locale)}
       pathname={pathname}
-      breadcrumbs={[
-        { label: locale === "zh" ? "首页" : "Home", href: "/" },
-        { label: topicLabel(typedTopic, locale) },
-      ]}
-      relatedLinks={guides.map((guide) => ({
-        title: guide.title[locale],
-        description: guide.description[locale],
-        href: `/guides/${guide.slug}`,
-      }))}
       result={result}
       sort={sort}
       buildPageHref={(nextPage) => {

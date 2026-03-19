@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 
 import { LobsterCollectionPage } from "@/components/lobster-collection-page";
 import { buildCollectionMetadata, tagSeoTitle } from "@/lib/lobster-taxonomy";
-import { getGuideList } from "@/lib/guides";
 import { getRequestLocale } from "@/lib/server/locale";
 import { readMirroredLobsterSummaries } from "@/lib/server/store";
 import { listLobsters } from "@/lib/server/service";
@@ -63,7 +62,6 @@ export default async function TagPage({
   const intro = locale === "zh"
     ? `浏览所有带有 #${decodedTag} 标签的 OpenClaw 配置、技能和工作流。`
     : `Browse every OpenClaw workspace, skill, and workflow tagged with #${decodedTag}.`;
-  const guides = getGuideList().filter((guide) => guide.relatedTags?.includes(normalizedTag)).slice(0, 2);
 
   return (
     <LobsterCollectionPage
@@ -71,15 +69,6 @@ export default async function TagPage({
       title={title}
       intro={intro}
       pathname={pathname}
-      breadcrumbs={[
-        { label: locale === "zh" ? "首页" : "Home", href: "/" },
-        { label: `#${decodedTag}` },
-      ]}
-      relatedLinks={guides.map((guide) => ({
-        title: guide.title[locale],
-        description: guide.description[locale],
-        href: `/guides/${guide.slug}`,
-      }))}
       result={result}
       sort={sort}
       buildPageHref={(nextPage) => {

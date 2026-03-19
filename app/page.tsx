@@ -1,12 +1,9 @@
 import Script from "next/script";
 import Link from "next/link";
 
-import { Breadcrumbs } from "@/components/breadcrumbs";
 import { LobsterCard } from "@/components/lobster-card";
-import { PaginationBar } from "@/components/pagination-bar";
 import { CATEGORY_OPTIONS, categoryLabel } from "@/lib/lobster-taxonomy";
 import { apiOrigin } from "@/lib/api";
-import { getGuideList } from "@/lib/guides";
 import { getTranslations } from "@/lib/i18n";
 import { getRequestLocale } from "@/lib/server/locale";
 import { listLobsters } from "@/lib/server/service";
@@ -25,7 +22,6 @@ export default async function Home({
   const page = Number.isFinite(Number(params.page)) ? Math.max(1, Math.floor(Number(params.page))) : 1;
   const locale = await getRequestLocale();
   const t = getTranslations(locale);
-  const guides = getGuideList();
   const selectedCategory = CATEGORY_OPTIONS.some((option) => option.value === params.category) ? (params.category as LobsterCategory) : undefined;
   const result = await listLobsters({
     sort,
@@ -87,7 +83,6 @@ export default async function Home({
       <section className="hero">
         <div className="hero-inner">
           <div className="hero-copy">
-            <Breadcrumbs items={[{ label: locale === "zh" ? "首页" : "Home" }]} />
             <span className="hero-badge">{t.home.badge}</span>
             <h1 className="hero-title">{t.home.title}</h1>
             <p className="hero-subtitle">{t.home.subtitle}</p>
@@ -103,20 +98,6 @@ export default async function Home({
               </a>
             </div>
           </div>
-        </div>
-      </section>
-
-      <section className="section section-tight">
-        <div className="detail-section-head">
-          <h2 className="panel-title">{locale === "zh" ? "热门指南" : "Featured Guides"}</h2>
-        </div>
-        <div className="guide-link-grid">
-          {guides.map((guide) => (
-            <Link key={guide.slug} className="guide-link-card" href={`/guides/${guide.slug}`}>
-              <strong>{guide.title[locale]}</strong>
-              <span>{guide.description[locale]}</span>
-            </Link>
-          ))}
         </div>
       </section>
 
@@ -180,26 +161,36 @@ export default async function Home({
             <div className="card muted">{t.home.noResults}</div>
           )}
         </div>
-        <PaginationBar
-          labels={{
-            showing: t.home.showing,
-            previous: t.home.previous,
-            next: t.home.next,
-            page: t.home.page,
-            jumpTo: t.home.jumpTo,
-            go: t.home.go,
-          }}
-          result={result}
-          buildPageHref={buildPageHref}
-          action="/"
-          inputId="page-jump-home"
-          hiddenFields={[
-            ...(params.q?.trim() ? [{ name: "q", value: params.q.trim() }] : []),
-            ...(params.tag?.trim() ? [{ name: "tag", value: params.tag.trim() }] : []),
-            ...(selectedCategory ? [{ name: "category", value: selectedCategory }] : []),
-            ...(sort !== "hot" ? [{ name: "sort", value: sort }] : []),
-          ]}
-        />
+        {result.total_pages > 1 ? (
+          <div className="pagination-bar">
+            <p className="pagination-summary muted">
+              {t.home.showing} {(result.page - 1) * result.per_page + 1}-{Math.min(result.page * result.per_page, result.total)} / {result.total}
+            </p>
+            <div className="pagination-actions">
+              {result.has_prev ? (
+                <Link className="btn" href={buildPageHref(result.page - 1)}>
+                  {t.home.previous}
+                </Link>
+              ) : (
+                <span className="btn pagination-disabled" aria-disabled="true">
+                  {t.home.previous}
+                </span>
+              )}
+              <span className="pagination-current">
+                {t.home.page} {result.page} / {result.total_pages}
+              </span>
+              {result.has_next ? (
+                <Link className="btn btn-primary" href={buildPageHref(result.page + 1)}>
+                  {t.home.next}
+                </Link>
+              ) : (
+                <span className="btn btn-primary pagination-disabled" aria-disabled="true">
+                  {t.home.next}
+                </span>
+              )}
+            </div>
+          </div>
+        ) : null}
       </section>
     </div>
   );
