@@ -22,6 +22,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Privacy | ClawLodge",
     description: "Privacy notes for ClawLodge, including stored data, uploads, and support contact routes.",
+    site: siteConfig.xHandle,
     images: buildSocialImages(null, "ClawLodge privacy page preview").map((image) => image.url),
   },
 };

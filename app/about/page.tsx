@@ -23,6 +23,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "About | ClawLodge",
     description: "Learn what ClawLodge is and how it helps people share, discover, and reuse powerful OpenClaw setups.",
+    site: siteConfig.xHandle,
     images: buildSocialImages(null, "About ClawLodge preview").map((image) => image.url),
   },
 };

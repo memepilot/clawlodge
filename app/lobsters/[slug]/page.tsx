@@ -14,7 +14,7 @@ import { getRequestLocale } from "@/lib/server/locale";
 import { getDetailDisplayLobsterName, getDisplayAuthor } from "@/lib/lobster-display";
 import { ApiError } from "@/lib/server/errors";
 import { getComments, getLobsterBySlug, getRelatedLobsters, recordLobsterViewAndGetBySlug } from "@/lib/server/service";
-import { absoluteUrl } from "@/lib/site";
+import { absoluteUrl, siteConfig } from "@/lib/site";
 
 export const revalidate = 60;
 
@@ -116,6 +116,7 @@ export async function generateMetadata({
         card: "summary_large_image",
         title: seoTitle,
         description: lobster.summary,
+        site: siteConfig.xHandle,
         images: [absoluteUrl(getLobsterAvatarSrc(lobster.icon_url))],
       },
     };

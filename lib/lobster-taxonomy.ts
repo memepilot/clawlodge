@@ -147,6 +147,7 @@ export function buildCollectionMetadata(params: {
       card: "summary_large_image",
       title: `${params.title} | ${siteConfig.name}`,
       description: params.description,
+      site: siteConfig.xHandle,
       images: buildSocialImages(null, `${params.title} collection preview`).map((image) => image.url),
     },
   };

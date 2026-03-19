@@ -58,7 +58,7 @@ export const messages = {
       label: "About",
       title: "OpenClaw setups, skills, agents and workflows.",
       p1: "ClawLodge is a publishing and discovery hub for OpenClaw setups. It helps people browse reusable skills, agent systems, and workflows, inspect what is inside them, and publish their own configurations from the browser or the CLI.",
-      p2: "The project focuses on practical sharing: README rendering, workspace previews, downloadable snapshots, source links, creator-friendly workflow discovery, and a simple CLI flow for publishing from a local OpenClaw workspace.",
+      p2: "The project focuses on practical sharing: README rendering, workspace previews, downloadable snapshots, source links, practical workflow discovery, and a simple CLI flow for publishing from a local OpenClaw workspace.",
       p3Prefix: "ClawLodge is available at",
       p3Middle: "and the source code is maintained on",
     },

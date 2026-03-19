@@ -2,10 +2,11 @@ export const siteConfig = {
   name: "ClawLodge",
   title: "ClawLodge - Discover OpenClaw Setups, Skills, Agents and Workflows",
   description:
-    "Discover OpenClaw setups, reusable skills, agent workflows, and creator-focused automation examples for YouTube, TikTok, and more.",
+    "Discover OpenClaw setups, reusable skills, agent workflows, memory systems, and automation examples you can inspect, download, and install.",
   origin: process.env.APP_ORIGIN?.trim() || "https://clawlodge.com",
   githubUrl: "https://github.com/memepilot/clawlodge",
   xUrl: "https://x.com/realclawlodge",
+  xHandle: "@realclawlodge",
   npmCliUrl: "https://www.npmjs.com/package/clawlodge-cli",
 };
 
