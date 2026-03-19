@@ -9,14 +9,16 @@ export function LobsterAvatar({
   alt,
   size,
   className,
+  eager = false,
 }: {
   iconUrl?: string | null;
   alt: string;
   size: number;
   className?: string;
+  eager?: boolean;
 }) {
   const src = getLobsterAvatarSrc(iconUrl);
-  const eager = size >= 96;
+  const shouldEagerLoad = eager || size >= 96;
 
   return (
     <span
@@ -27,12 +29,12 @@ export function LobsterAvatar({
       <img
         src={src}
         alt={alt}
+        className="lobster-avatar-image"
+        loading={shouldEagerLoad ? "eager" : "lazy"}
+        decoding="async"
+        fetchPriority={shouldEagerLoad ? "high" : "low"}
         width={size}
         height={size}
-        className="lobster-avatar-image"
-        loading={eager ? "eager" : "lazy"}
-        decoding="async"
-        fetchPriority={eager ? "high" : "low"}
       />
     </span>
   );

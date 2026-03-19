@@ -126,7 +126,9 @@ export function LobsterCollectionPage({
 
         <div className="grid home-lobster-grid">
           {result.items.length ? (
-            result.items.map((item) => <LobsterCard key={item.slug} item={item} locale={locale} variant="home" />)
+            result.items.map((item, index) => (
+              <LobsterCard key={item.slug} item={item} locale={locale} variant="home" eagerIcon={index < 12} />
+            ))
           ) : (
             <div className="card muted">{t.home.noResults}</div>
           )}
