@@ -6,5 +6,5 @@
 - The tunnel exposes PostgreSQL at:
   - `127.0.0.1:15432`
 - For local app runs that should use production-like data, start the app with:
-  - `DATABASE_URL=postgresql://root@127.0.0.1:15432/clawlodge`
+  - `DATABASE_URL=postgresql://postgres:clawlodge123@127.0.0.1:15432/clawlodge`
 - Prefer testing local changes against this tunneled database unless the task explicitly requires isolated local seed data.

@@ -547,6 +547,7 @@ main {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
+  justify-content: space-between;
   gap: 10px;
   margin-bottom: 8px;
 }
@@ -556,10 +557,26 @@ main {
   margin-bottom: 0;
 }
 
+.home-results-bar > .section-title {
+  margin: 0;
+  flex: 1 1 auto;
+}
+
+.home-results-meta {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 20px;
+  flex: 0 0 auto;
+  min-width: fit-content;
+}
+
 .home-results-summary {
   margin: 0;
   color: var(--ink-soft);
   font-size: 0.98rem;
+  text-align: right;
 }
 
 .home-clear-link {

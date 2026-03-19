@@ -52,6 +52,7 @@ export default async function TopicPage({
       pathname={pathname}
       result={result}
       sort={sort}
+      sectionHeading={title}
       buildPageHref={(nextPage) => {
         const search = new URLSearchParams();
         if (sort !== "hot") search.set("sort", sort);

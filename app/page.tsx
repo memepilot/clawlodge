@@ -145,14 +145,17 @@ export default async function Home({
           </div>
         </div>
         <div className="home-results-bar">
-          <p className="home-results-summary">
-            {t.home.showing} {result.total} {locale === "zh" ? "个" : "items"}
-          </p>
-          {(params.q?.trim() || params.tag?.trim() || selectedCategory || sort !== "hot") ? (
-            <Link className="home-clear-link" href="/">
-              {locale === "zh" ? "清除筛选" : "clear filters"}
-            </Link>
-          ) : null}
+          <h2 className="section-title">{t.home.popularSetups}</h2>
+          <div className="home-results-meta">
+            <p className="home-results-summary">
+              {t.home.showing} {result.total} {locale === "zh" ? "个" : "items"}
+            </p>
+            {(params.q?.trim() || params.tag?.trim() || selectedCategory || sort !== "hot") ? (
+              <Link className="home-clear-link" href="/">
+                {locale === "zh" ? "清除筛选" : "clear filters"}
+              </Link>
+            ) : null}
+          </div>
         </div>
         <div className="grid home-lobster-grid">
           {result.items.length ? (

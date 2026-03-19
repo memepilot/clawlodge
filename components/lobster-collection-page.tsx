@@ -17,6 +17,7 @@ type Props = {
   sort: "hot" | "new";
   buildPageHref: (page: number) => string;
   selectedCategory?: LobsterCategory;
+  sectionHeading?: string;
 };
 
 export function LobsterCollectionPage({
@@ -28,6 +29,7 @@ export function LobsterCollectionPage({
   sort,
   buildPageHref,
   selectedCategory,
+  sectionHeading,
 }: Props) {
   const t = getTranslations(locale);
   const githubLoginUrl = `${apiOrigin}/api/v1/auth/github/start?next=/publish`;
@@ -108,14 +110,17 @@ export function LobsterCollectionPage({
         </div>
 
         <div className="home-results-bar">
-          <p className="home-results-summary">
-            {t.home.showing} {result.total} {locale === "zh" ? "个" : "items"}
-          </p>
-          {(selectedCategory || sort !== "hot") ? (
-            <Link className="home-clear-link" href="/">
-              {locale === "zh" ? "清除筛选" : "clear filters"}
-            </Link>
-          ) : null}
+          {sectionHeading ? <h2 className="section-title">{sectionHeading}</h2> : null}
+          <div className="home-results-meta">
+            <p className="home-results-summary">
+              {t.home.showing} {result.total} {locale === "zh" ? "个" : "items"}
+            </p>
+            {(selectedCategory || sort !== "hot") ? (
+              <Link className="home-clear-link" href="/">
+                {locale === "zh" ? "清除筛选" : "clear filters"}
+              </Link>
+            ) : null}
+          </div>
         </div>
 
         <div className="grid home-lobster-grid">

@@ -51,6 +51,7 @@ export default async function CategoryPage({
       result={result}
       sort={sort}
       selectedCategory={match.value}
+      sectionHeading={title}
       buildPageHref={(nextPage) => {
         const search = new URLSearchParams();
         if (sort !== "hot") search.set("sort", sort);
