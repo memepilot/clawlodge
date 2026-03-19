@@ -32,13 +32,6 @@ export default async function Home({
     per_page: 18,
   });
   const hasFilters = Boolean(params.q?.trim() || params.tag?.trim() || selectedCategory || sort !== "hot");
-  const latestUploads = hasFilters
-    ? null
-    : await listLobsters({
-        sort: "new",
-        page: 1,
-        per_page: 6,
-      });
   const githubLoginUrl = `${apiOrigin}/api/v1/auth/github/start?next=/publish`;
   const isTagResults = Boolean(params.tag);
   const buildPageHref = (nextPage: number) => {
@@ -134,7 +127,6 @@ export default async function Home({
           </div>
         </div>
         <div className="home-taxonomy-block">
-          <h2 className="home-section-heading">{t.home.browseByCategory}</h2>
           <div className="home-category-filter" aria-label="Category filter">
             <Link
               className={`home-category-pill ${!selectedCategory ? "is-active" : ""}`}
@@ -156,7 +148,6 @@ export default async function Home({
           </div>
         </div>
         <div className="home-taxonomy-block">
-          <h2 className="home-section-heading">{t.home.exploreByTopic}</h2>
           <div className="home-topic-filter" aria-label="Topic filter">
             {TOPIC_OPTIONS.map((option) => (
               <Link key={option.value} className="home-topic-pill" href={`/topics/${option.value}`}>
@@ -211,16 +202,6 @@ export default async function Home({
                   {t.home.next}
                 </span>
               )}
-            </div>
-          </div>
-        ) : null}
-        {latestUploads && latestUploads.items.length ? (
-          <div className="home-latest-section">
-            <h2 className="home-section-heading">{t.home.latestUploads}</h2>
-            <div className="grid home-lobster-grid">
-              {latestUploads.items.map((item) => (
-                <LobsterCard key={`latest-${item.slug}`} item={item} locale={locale} variant="home" />
-              ))}
             </div>
           </div>
         ) : null}
