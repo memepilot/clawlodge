@@ -2,6 +2,7 @@ import Script from "next/script";
 import Link from "next/link";
 
 import { LobsterCard } from "@/components/lobster-card";
+import { PaginationBar } from "@/components/pagination-bar";
 import { CATEGORY_OPTIONS, categoryLabel } from "@/lib/lobster-taxonomy";
 import { apiOrigin } from "@/lib/api";
 import { getTranslations } from "@/lib/i18n";
@@ -164,36 +165,26 @@ export default async function Home({
             <div className="card muted">{t.home.noResults}</div>
           )}
         </div>
-        {result.total_pages > 1 ? (
-          <div className="pagination-bar">
-            <p className="pagination-summary muted">
-              {t.home.showing} {(result.page - 1) * result.per_page + 1}-{Math.min(result.page * result.per_page, result.total)} / {result.total}
-            </p>
-            <div className="pagination-actions">
-              {result.has_prev ? (
-                <Link className="btn" href={buildPageHref(result.page - 1)}>
-                  {t.home.previous}
-                </Link>
-              ) : (
-                <span className="btn pagination-disabled" aria-disabled="true">
-                  {t.home.previous}
-                </span>
-              )}
-              <span className="pagination-current">
-                {t.home.page} {result.page} / {result.total_pages}
-              </span>
-              {result.has_next ? (
-                <Link className="btn btn-primary" href={buildPageHref(result.page + 1)}>
-                  {t.home.next}
-                </Link>
-              ) : (
-                <span className="btn btn-primary pagination-disabled" aria-disabled="true">
-                  {t.home.next}
-                </span>
-              )}
-            </div>
-          </div>
-        ) : null}
+        <PaginationBar
+          labels={{
+            showing: t.home.showing,
+            previous: t.home.previous,
+            next: t.home.next,
+            page: t.home.page,
+            jumpTo: t.home.jumpTo,
+            go: t.home.go,
+          }}
+          result={result}
+          buildPageHref={buildPageHref}
+          action="/"
+          inputId="page-jump-home"
+          hiddenFields={[
+            ...(params.q?.trim() ? [{ name: "q", value: params.q.trim() }] : []),
+            ...(params.tag?.trim() ? [{ name: "tag", value: params.tag.trim() }] : []),
+            ...(selectedCategory ? [{ name: "category", value: selectedCategory }] : []),
+            ...(sort !== "hot" ? [{ name: "sort", value: sort }] : []),
+          ]}
+        />
       </section>
     </div>
   );

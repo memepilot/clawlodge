@@ -9,12 +9,11 @@ Environment=NODE_ENV=production
 Environment=PORT=3001
 Environment=CLAWLODGE_DATA_DIR=/var/lib/clawlodge
 EnvironmentFile=/var/www/clawlodge/.env.production
-ExecStart=/bin/sh -lc 'exec ./node_modules/.bin/next start -p "${PORT}"'
-ExecStop=/bin/kill -s SIGINT $MAINPID
+ExecStart=/var/www/clawlodge/node_modules/.bin/next start -p 3001
 Restart=always
 RestartSec=5
 TimeoutStopSec=20
-KillMode=mixed
+KillMode=control-group
 
 [Install]
 WantedBy=multi-user.target

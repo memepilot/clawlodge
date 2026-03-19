@@ -916,18 +916,64 @@ main {
 
 .pagination-actions {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 14px;
   flex-wrap: wrap;
   justify-content: flex-end;
 }
 
 .pagination-current {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 108px;
+  min-height: 44px;
   text-align: center;
   color: var(--ink-soft);
   font-size: 0.92rem;
   font-weight: 600;
+}
+
+.pagination-jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+  min-height: 44px;
+}
+
+.pagination-jump-label {
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.pagination-jump-input {
+  width: 88px;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: 10px 14px;
+  background: var(--surface);
+  color: var(--ink);
+  text-align: center;
+  font: inherit;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.pagination-jump-input:focus {
+  border-color: var(--border-ui-hover);
+  box-shadow: 0 0 0 3px rgba(230, 92, 70, 0.12);
+}
+
+.pagination-jump-button {
+  min-width: 0;
+  min-height: 44px;
+  padding-left: 14px;
+  padding-right: 14px;
 }
 
 .pagination-disabled {
@@ -1942,9 +1988,13 @@ main {
 }
 
 .markdown pre code {
+  display: block;
   padding: 0;
   background: transparent;
   font-size: inherit;
+  white-space: inherit;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 @media (max-width: 900px) {
