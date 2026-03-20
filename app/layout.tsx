@@ -69,9 +69,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <Link href="/publish">{t.nav.publish}</Link>
                 <Link href="/mcp">{t.nav.pluginUpload}</Link>
                 <Link href="/settings">{t.nav.settings}</Link>
-                <a href={siteConfig.githubUrl} target="_blank" rel="noreferrer">
-                  {t.nav.github}
-                </a>
               </nav>
               <div className="nav-actions">
                 <LocaleSwitcher />

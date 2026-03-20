@@ -63,9 +63,6 @@ export default async function GuidePage({
             { label: guide.title },
           ]}
         />
-        <div className="detail-kickers">
-          <span className="tag tag-topic">Guide</span>
-        </div>
         <h1 className="page-title">{guide.title}</h1>
         <p className="page-subtitle">{guide.intro}</p>
       </section>

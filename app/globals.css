@@ -619,6 +619,33 @@ main {
   line-height: 1.6;
 }
 
+.detail-breadcrumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 18px;
+  color: rgba(42, 31, 25, 0.6);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.detail-breadcrumb-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.detail-breadcrumb-separator {
+  color: rgba(42, 31, 25, 0.35);
+}
+
+.guide-related-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 14px;
+  margin-top: 8px;
+}
+
 .stat {
   color: var(--ink-soft);
   font-size: 0.9rem;
