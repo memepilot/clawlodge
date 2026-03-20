@@ -157,7 +157,6 @@ export default async function LobsterDetailPage({
   const t = getTranslations(locale);
   const displayName = getDetailDisplayLobsterName(lobster);
   const author = getDisplayAuthor(lobster, latest?.source_repo);
-
   return (
     <div className="page-shell stack-lg">
       <section className="shell page-panel detail-hero">
@@ -250,6 +249,9 @@ export default async function LobsterDetailPage({
                   {t.detail.viewOnGithub}
                 </a>
               ) : null}
+              <Link className="btn" href="/guides/openclaw-config-file">
+                  OpenClaw Config File Guide
+              </Link>
             </div>
           </div>
         </aside>

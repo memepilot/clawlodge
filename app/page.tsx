@@ -4,7 +4,6 @@ import Link from "next/link";
 import { LobsterCard } from "@/components/lobster-card";
 import { PaginationBar } from "@/components/pagination-bar";
 import { CATEGORY_OPTIONS, categoryLabel } from "@/lib/lobster-taxonomy";
-import { apiOrigin } from "@/lib/api";
 import { getTranslations } from "@/lib/i18n";
 import { getRequestLocale } from "@/lib/server/locale";
 import { listLobsters } from "@/lib/server/service";
@@ -33,7 +32,6 @@ export default async function Home({
     page,
     per_page: 18,
   });
-  const githubLoginUrl = `${apiOrigin}/api/v1/auth/github/start?next=/publish`;
   const isTagResults = Boolean(params.tag);
   const buildPageHref = (nextPage: number) => {
     const search = new URLSearchParams();
@@ -95,9 +93,9 @@ export default async function Home({
               <a className="btn" href={siteConfig.npmCliUrl} target="_blank" rel="noreferrer">
                 {t.nav.installCli}
               </a>
-              <a className="btn" href={githubLoginUrl}>
-                {t.auth.loginWithGithub}
-              </a>
+              <Link className="btn" href="/guides/openclaw-multi-agent-config">
+                Multi-Agent Guides
+              </Link>
             </div>
           </div>
         </div>

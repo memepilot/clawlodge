@@ -1806,6 +1806,26 @@ main {
   padding-left: 1.4em;
 }
 
+.markdown ul {
+  list-style: disc;
+}
+
+.markdown ol {
+  list-style: decimal;
+}
+
+.markdown li::marker {
+  color: rgba(255, 107, 74, 0.9);
+}
+
+.markdown ul ul,
+.markdown ol ol,
+.markdown ul ol,
+.markdown ol ul {
+  margin-top: 0.45em;
+  margin-bottom: 0.45em;
+}
+
 .markdown li + li {
   margin-top: 0.35em;
 }
