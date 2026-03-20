@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Bricolage_Grotesque, IBM_Plex_Mono, Manrope } from "next/font/google";
 
 import { HeaderAuth } from "@/components/header-auth";
+import { GoogleAnalytics } from "@/components/google-analytics";
 import { LocaleProvider } from "@/components/locale-provider";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { getTranslations } from "@/lib/i18n";
@@ -54,6 +55,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={locale === "zh" ? "zh-CN" : "en"} className={`${displayFont.variable} ${bodyFont.variable} ${monoFont.variable}`}>
       <body style={{ fontFamily: "var(--font-body)" }}>
+        <GoogleAnalytics />
         <LocaleProvider locale={locale} messages={t}>
           <header className="navbar">
             <div className="navbar-inner">
