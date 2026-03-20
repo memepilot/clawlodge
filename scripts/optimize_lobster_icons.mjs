@@ -5,6 +5,8 @@ import sharp from "sharp";
 
 const storageRoot = path.resolve(process.argv[2] || process.env.CLAWLODGE_STORAGE_DIR || path.join(process.cwd(), "data", "storage", "lobsters"));
 const thumbSize = Number(process.argv[3] || process.env.CLAWLODGE_ICON_THUMB_SIZE || 52);
+const renderSize = Number(process.argv[4] || process.env.CLAWLODGE_ICON_THUMB_RENDER_SIZE || 104);
+const webpQuality = Number(process.env.CLAWLODGE_ICON_THUMB_WEBP_QUALITY || 95);
 
 async function walk(dir) {
   const entries = await fs.readdir(dir, { withFileTypes: true });
@@ -16,7 +18,7 @@ async function walk(dir) {
       continue;
     }
     if (!entry.isFile()) continue;
-    if (/^icon\.(png|jpg|jpeg|webp|svg)$/i.test(entry.name)) {
+    if (/^icon\.png$/i.test(entry.name)) {
       files.push(fullPath);
     }
   }
@@ -31,54 +33,16 @@ async function writeMeta(filePath, contentType) {
   await fs.writeFile(metaPath(filePath), JSON.stringify({ contentType }, null, 2), "utf8");
 }
 
-async function optimizeOriginal(filePath) {
-  const ext = path.extname(filePath).toLowerCase();
-  if (ext === ".svg") {
-    return false;
-  }
-
-  const input = await fs.readFile(filePath);
-  const image = sharp(input, { animated: false }).rotate();
-  const metadata = await image.metadata();
-  const optimized = await image
-    .png({
-      compressionLevel: 9,
-      palette: true,
-      effort: 10,
-      quality: 90,
-    })
-    .toBuffer();
-
-  if (optimized.length >= input.length && ext === ".png") {
-    return false;
-  }
-
-  const targetPath = filePath.replace(/\.(jpg|jpeg|webp)$/i, ".png");
-  await fs.writeFile(targetPath, optimized);
-  await writeMeta(targetPath, "image/png");
-  if (targetPath !== filePath) {
-    await fs.rm(filePath, { force: true });
-    await fs.rm(metaPath(filePath), { force: true });
-  }
-  return {
-    originalBytes: input.length,
-    optimizedBytes: optimized.length,
-    width: metadata.width ?? null,
-    height: metadata.height ?? null,
-    targetPath,
-  };
-}
-
-async function createThumb(filePath, size) {
+async function createThumb(filePath, size, targetSize) {
   const thumbPath = filePath.replace(/\.[^.]+$/i, `-${size}.webp`);
   const buffer = await sharp(filePath, { animated: false })
-    .resize(size, size, {
+    .resize(targetSize, targetSize, {
       fit: "contain",
       position: "centre",
       background: { r: 0, g: 0, b: 0, alpha: 0 },
       withoutEnlargement: false,
     })
-    .webp({ quality: 82, effort: 6, alphaQuality: 90 })
+    .webp({ quality: webpQuality, effort: 6, alphaQuality: 100 })
     .toBuffer();
   await fs.writeFile(thumbPath, buffer);
   await writeMeta(thumbPath, "image/webp");
@@ -87,18 +51,10 @@ async function createThumb(filePath, size) {
 
 async function main() {
   const files = await walk(storageRoot);
-  let optimizedCount = 0;
   let thumbCount = 0;
-  let savedBytes = 0;
 
   for (const filePath of files) {
-    const original = await optimizeOriginal(filePath);
-    const currentPath = typeof original === "object" ? original.targetPath : filePath;
-    if (original) {
-      optimizedCount += 1;
-      savedBytes += original.originalBytes - original.optimizedBytes;
-    }
-    await createThumb(currentPath, thumbSize);
+    await createThumb(filePath, thumbSize, renderSize);
     thumbCount += 1;
   }
 
@@ -107,10 +63,10 @@ async function main() {
       {
         storageRoot,
         files: files.length,
-        optimizedCount,
         thumbCount,
         thumbSize,
-        savedBytes,
+        renderSize,
+        webpQuality,
       },
       null,
       2,

@@ -4,6 +4,14 @@ export function getLobsterAvatarSrc(iconUrl?: string | null) {
   return iconUrl || FALLBACK_ICON;
 }
 
+export function getLobsterCardAvatarSrc(iconUrl?: string | null) {
+  if (!iconUrl) return FALLBACK_ICON;
+  if (!/\/icon\.png(?:\?[^#]*)?$/i.test(iconUrl)) {
+    return iconUrl;
+  }
+  return iconUrl.replace(/\/icon\.png((?:\?[^#]*)?)$/i, "/icon-52.webp$1");
+}
+
 export function LobsterAvatar({
   iconUrl,
   alt,

@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { LobsterAvatar } from "@/components/lobster-avatar";
+import { LobsterAvatar, getLobsterCardAvatarSrc } from "@/components/lobster-avatar";
 import { Locale, getTranslations } from "@/lib/i18n";
 import { categoryLabel as localizedCategoryLabel, topicLabel as localizedTopicLabel } from "@/lib/lobster-taxonomy";
 import { getDisplayAuthor, getDisplayLobsterName, getDisplaySummary } from "@/lib/lobster-display";
@@ -42,7 +42,13 @@ export function LobsterCard({
       {isHomeCard ? (
         <>
           <div className="lobster-card-header lobster-card-home-header">
-            <LobsterAvatar iconUrl={item.icon_url} alt={`${item.name} icon`} size={52} className="lobster-card-avatar lobster-card-home-avatar" eager={eagerIcon} />
+            <LobsterAvatar
+              iconUrl={getLobsterCardAvatarSrc(item.icon_url)}
+              alt={`${item.name} icon`}
+              size={52}
+              className="lobster-card-avatar lobster-card-home-avatar"
+              eager={eagerIcon}
+            />
             <div className="lobster-card-heading">
               <h3 className="lobster-card-title lobster-card-home-title">
                 <Link href={`/lobsters/${item.slug}`}>{displayName}</Link>
