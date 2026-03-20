@@ -782,22 +782,23 @@ export async function listLobsters(params?: {
 }) {
   let items = await readCachedLobsterSummaries();
   if (params?.sort !== "new") {
-    const hasPendingGithubStars = items.some(
+    const pendingGithubStars = items.filter(
       ({ lobster }) => lobster.status === "active" && lobster.sourceUrl && parseGithubRepoRef(lobster.sourceUrl) && lobster.githubStars == null,
     );
-    if (hasPendingGithubStars) {
+    if (pendingGithubStars.length) {
+      const starUpdates = await Promise.all(
+        pendingGithubStars.map(async ({ lobster }) => ({
+          id: lobster.id,
+          stars: (await fetchGithubRepoSignals(lobster.sourceUrl))?.stars ?? 0,
+        })),
+      );
       await mutateDb(async (db) => {
-        const pending = db.lobsters.filter(
-          (item) => item.status === "active" && item.sourceUrl && parseGithubRepoRef(item.sourceUrl) && item.githubStars == null,
-        );
-        if (!pending.length) return;
-
-        await Promise.all(
-          pending.map(async (item) => {
-            const signals = await fetchGithubRepoSignals(item.sourceUrl);
-            item.githubStars = signals?.stars ?? 0;
-          }),
-        );
+        const byId = new Map(starUpdates.map((item) => [item.id, item.stars]));
+        for (const item of db.lobsters) {
+          const stars = byId.get(item.id);
+          if (stars == null) continue;
+          item.githubStars = stars;
+        }
       });
       items = await readMirroredLobsterSummaries();
     }
@@ -1191,6 +1192,95 @@ export async function createVersion(
   if (!semverRe.test(payload.version)) throw new ApiError(400, "Invalid version");
   if (!payload.changelog.trim() || !payload.readme_markdown.trim()) throw new ApiError(400, "Invalid payload");
 
+  const snapshot = await readDb();
+  const existingLobster = snapshot.lobsters.find((item) => item.slug === slug);
+  if (!existingLobster) throw new ApiError(404, "Lobster not found");
+  if (existingLobster.ownerId !== userId) throw new ApiError(403, "Only owner can publish versions");
+  if (snapshot.lobsterVersions.some((item) => item.lobsterId === existingLobster.id && item.version === payload.version)) {
+    throw new ApiError(409, "version already exists");
+  }
+
+  const migratedReadmeMarkdown = await mirrorGithubReadmeAssets({
+    lobsterSlug: existingLobster.slug,
+    version: payload.version,
+    readmeMarkdown: payload.readme_markdown,
+    sourceRepo: payload.source_repo,
+    sourceCommit: payload.source_commit,
+  });
+  const generatedSummary = await generateWorkspaceSummary(existingLobster.name, migratedReadmeMarkdown);
+  const repoSignals = await fetchGithubRepoSignals(payload.source_repo);
+  const manifest = {
+    schema_version: "1.0",
+    lobster_slug: existingLobster.slug,
+    version: payload.version,
+    name: existingLobster.name,
+    summary: generatedSummary,
+    license: existingLobster.license,
+    readme_path: "README.md",
+    skills: payload.skills,
+    settings: payload.settings,
+    source: {
+      repo_url: payload.source_repo,
+      commit: payload.source_commit,
+    },
+  };
+  const proceduralIcon = generateProceduralLobsterIcon({
+    slug: existingLobster.slug,
+    version: payload.version,
+    tags: existingLobster.tags,
+    sourceType: existingLobster.sourceType,
+    workspacePaths: (payload.workspace_files ?? []).map((file) => file.path),
+    readmeText: migratedReadmeMarkdown,
+    summary: generatedSummary,
+  });
+  const icon = payload.icon_base64?.trim() && payload.icon_content_type?.trim()
+    ? {
+        body: Buffer.from(payload.icon_base64, "base64"),
+        contentType: payload.icon_content_type.trim(),
+        seed: payload.icon_seed?.trim() || proceduralIcon.seed,
+        specVersion: payload.icon_spec_version?.trim() || "uploaded-local-v1",
+      }
+    : proceduralIcon;
+
+  const readmeUrl = await putObject(
+    `lobsters/${existingLobster.slug}/${payload.version}/README.md`,
+    Buffer.from(migratedReadmeMarkdown, "utf8"),
+    "text/markdown",
+  );
+  const manifestUrl = await putObject(
+    `lobsters/${existingLobster.slug}/${payload.version}/manifest.json`,
+    Buffer.from(JSON.stringify(manifest, null, 2), "utf8"),
+    "application/json",
+  );
+  const iconUrl = await putObject(
+    iconStorageKey(existingLobster.slug, payload.version, icon.contentType),
+    icon.body,
+    icon.contentType,
+  );
+  const workspaceFiles = await Promise.all((payload.workspace_files ?? []).map(async (file) => {
+    let storageUrl: string | null = null;
+    let contentType: string | null = file.content_type ?? null;
+    if (file.kind === "binary" && file.content_base64) {
+      const body = Buffer.from(file.content_base64, "base64");
+      contentType = file.content_type ?? "application/octet-stream";
+      storageUrl = await putObject(
+        normalizeWorkspaceFileStorageKey(existingLobster.slug, payload.version, file.path),
+        body,
+        contentType,
+      );
+    }
+    return {
+      path: file.path,
+      size: file.size,
+      kind: file.kind,
+      contentExcerpt: file.content_excerpt ?? null,
+      contentText: file.content_text ?? null,
+      contentType,
+      storageUrl,
+      maskedCount: file.masked_count ?? 0,
+    };
+  }));
+
   let createdId = 0;
   let shouldQueueIcon = false;
   const version = await mutateDb(async (db, { allocateId }) => {
@@ -1200,90 +1290,7 @@ export async function createVersion(
     if (db.lobsterVersions.some((item) => item.lobsterId === lobster.id && item.version === payload.version)) {
       throw new ApiError(409, "version already exists");
     }
-    const migratedReadmeMarkdown = await mirrorGithubReadmeAssets({
-      lobsterSlug: lobster.slug,
-      version: payload.version,
-      readmeMarkdown: payload.readme_markdown,
-      sourceRepo: payload.source_repo,
-      sourceCommit: payload.source_commit,
-    });
-    const generatedSummary = await generateWorkspaceSummary(lobster.name, migratedReadmeMarkdown);
-    const repoSignals = await fetchGithubRepoSignals(payload.source_repo);
-
-    const manifest = {
-      schema_version: "1.0",
-      lobster_slug: lobster.slug,
-      version: payload.version,
-      name: lobster.name,
-      summary: generatedSummary,
-      license: lobster.license,
-      readme_path: "README.md",
-      skills: payload.skills,
-      settings: payload.settings,
-      source: {
-        repo_url: payload.source_repo,
-        commit: payload.source_commit,
-      },
-    };
-    const proceduralIcon = generateProceduralLobsterIcon({
-      slug: lobster.slug,
-      version: payload.version,
-      tags: lobster.tags,
-      sourceType: lobster.sourceType,
-      workspacePaths: (payload.workspace_files ?? []).map((file) => file.path),
-      readmeText: migratedReadmeMarkdown,
-      summary: generatedSummary,
-    });
-    const icon = payload.icon_base64?.trim() && payload.icon_content_type?.trim()
-      ? {
-          body: Buffer.from(payload.icon_base64, "base64"),
-          contentType: payload.icon_content_type.trim(),
-          seed: payload.icon_seed?.trim() || proceduralIcon.seed,
-          specVersion: payload.icon_spec_version?.trim() || "uploaded-local-v1",
-        }
-      : proceduralIcon;
-
-    const readmeUrl = await putObject(
-      `lobsters/${lobster.slug}/${payload.version}/README.md`,
-      Buffer.from(migratedReadmeMarkdown, "utf8"),
-      "text/markdown",
-    );
-    const manifestUrl = await putObject(
-      `lobsters/${lobster.slug}/${payload.version}/manifest.json`,
-      Buffer.from(JSON.stringify(manifest, null, 2), "utf8"),
-      "application/json",
-    );
-    const iconUrl = await putObject(
-      iconStorageKey(lobster.slug, payload.version, icon.contentType),
-      icon.body,
-      icon.contentType,
-    );
-
     const now = new Date().toISOString();
-    const workspaceFiles = await Promise.all((payload.workspace_files ?? []).map(async (file) => {
-      let storageUrl: string | null = null;
-      let contentType: string | null = file.content_type ?? null;
-      if (file.kind === "binary" && file.content_base64) {
-        const body = Buffer.from(file.content_base64, "base64");
-        contentType = file.content_type ?? "application/octet-stream";
-        storageUrl = await putObject(
-          normalizeWorkspaceFileStorageKey(lobster.slug, payload.version, file.path),
-          body,
-          contentType,
-        );
-      }
-      return {
-        path: file.path,
-        size: file.size,
-        kind: file.kind,
-        contentExcerpt: file.content_excerpt ?? null,
-        contentText: file.content_text ?? null,
-        contentType,
-        storageUrl,
-        maskedCount: file.masked_count ?? 0,
-      };
-    }));
-
     const created: DbLobsterVersion = {
       id: await allocateId("lobsterVersion"),
       lobsterId: lobster.id,
@@ -1694,19 +1701,56 @@ export async function uploadViaMcp(
 ) {
   if (!(await allowRate(`mcp:${userId}`, 30, 3600))) throw new ApiError(429, "MCP upload rate limit exceeded");
   const manifest = parseAndValidateManifest(files.manifestRaw);
+  const slug = slugify(manifest.lobster_slug);
+
+  const snapshot = await readDb();
+  const existing = snapshot.lobsters.find((item) => item.slug === slug);
+  if (existing && existing.ownerId !== userId) {
+    throw new ApiError(403, "Cannot upload version for another author");
+  }
+  if (existing && snapshot.lobsterVersions.some((item) => item.lobsterId === existing.id && item.version === manifest.version)) {
+    throw new ApiError(409, "version already exists");
+  }
+
+  const base = `lobsters/${slug}/${manifest.version}`;
+  const migratedReadmeText = await mirrorGithubReadmeAssets({
+    lobsterSlug: slug,
+    version: manifest.version,
+    readmeMarkdown: files.readmeRaw.toString("utf8"),
+    sourceRepo: manifest.source?.repo_url,
+    sourceCommit: manifest.source?.commit,
+  });
+  const repoSignals = await fetchGithubRepoSignals(manifest.source?.repo_url);
+  const readmeUrl = await putObject(
+    `${base}/README.md`,
+    Buffer.from(migratedReadmeText, "utf8"),
+    "text/markdown",
+  );
+  const manifestUrl = await putObject(`${base}/manifest.json`, files.manifestRaw, "application/json");
+  const skillsBundleUrl = await putObject(`${base}/skills_bundle.zip`, files.skillsRaw, "application/zip");
+  const icon = generateProceduralLobsterIcon({
+    slug,
+    version: manifest.version,
+    tags: existing?.tags ?? [],
+    sourceType: existing?.sourceType ?? "community",
+    workspacePaths: [],
+    readmeText: migratedReadmeText,
+    summary: existing?.summary ?? manifest.summary,
+  });
+  const iconUrl = await putObject(iconStorageKey(slug, manifest.version, icon.contentType), icon.body, icon.contentType);
 
   const result = await mutateDb(async (db, { allocateId }) => {
-    let lobster = db.lobsters.find((item) => item.slug === slugify(manifest.lobster_slug));
+    let lobster = db.lobsters.find((item) => item.slug === slug);
     if (!lobster) {
       const now = new Date().toISOString();
       lobster = {
         id: await allocateId("lobster"),
-        slug: slugify(manifest.lobster_slug),
+        slug,
         ownerId: userId,
         name: manifest.name,
         summary: manifest.summary,
         category: classifyLobsterCategory({
-          slug: slugify(manifest.lobster_slug),
+          slug,
           name: manifest.name,
           summary: manifest.summary,
           sourceUrl: manifest.source?.repo_url ?? null,
@@ -1722,7 +1766,7 @@ export async function uploadViaMcp(
         status: "active",
         reportPenalty: 0,
         searchDocument: buildLobsterSearchDocument({
-          slug: slugify(manifest.lobster_slug),
+          slug,
           name: manifest.name,
           summary: manifest.summary,
           topics: [],
@@ -1748,32 +1792,6 @@ export async function uploadViaMcp(
       throw new ApiError(409, "version already exists");
     }
 
-    const base = `lobsters/${lobster.slug}/${manifest.version}`;
-    const migratedReadmeText = await mirrorGithubReadmeAssets({
-      lobsterSlug: lobster.slug,
-      version: manifest.version,
-      readmeMarkdown: files.readmeRaw.toString("utf8"),
-      sourceRepo: manifest.source?.repo_url,
-      sourceCommit: manifest.source?.commit,
-    });
-    const repoSignals = await fetchGithubRepoSignals(manifest.source?.repo_url);
-    const readmeUrl = await putObject(
-      `${base}/README.md`,
-      Buffer.from(migratedReadmeText, "utf8"),
-      "text/markdown",
-    );
-    const manifestUrl = await putObject(`${base}/manifest.json`, files.manifestRaw, "application/json");
-    const skillsBundleUrl = await putObject(`${base}/skills_bundle.zip`, files.skillsRaw, "application/zip");
-    const icon = generateProceduralLobsterIcon({
-      slug: lobster.slug,
-      version: manifest.version,
-      tags: lobster.tags,
-      sourceType: lobster.sourceType,
-      workspacePaths: [],
-      readmeText: migratedReadmeText,
-      summary: lobster.summary,
-    });
-    const iconUrl = await putObject(iconStorageKey(lobster.slug, manifest.version, icon.contentType), icon.body, icon.contentType);
     const now = new Date().toISOString();
 
     const createdVersion = {
