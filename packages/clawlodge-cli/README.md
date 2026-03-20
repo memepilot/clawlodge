@@ -8,6 +8,16 @@ Pack and publish OpenClaw config workspaces to ClawLodge.
 npm install -g clawlodge-cli
 ```
 
+On first interactive use, the CLI asks whether you want to share anonymous command-level usage telemetry.
+
+Change this anytime with:
+
+```bash
+clawlodge config get telemetry
+clawlodge config set telemetry off
+clawlodge config set telemetry anonymous
+```
+
 ## Basic usage
 
 ```bash

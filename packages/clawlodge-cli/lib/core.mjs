@@ -26,7 +26,7 @@ const MAX_FILE_BYTES = 128 * 1024;
 const MAX_EXCERPT_CHARS = 1600;
 const MAX_BINARY_EMBED_BYTES = 8 * 1024 * 1024;
 const DEFAULT_ORIGIN = "https://clawlodge.com";
-const CLI_VERSION = "0.1.11";
+const CLI_VERSION = "0.1.12";
 const CONFIG_PATH = path.join(os.homedir(), ".config", "clawlodge", "config.json");
 const ANALYTICS_DIR = path.join(os.homedir(), ".clawlodge", "analytics");
 const ANALYTICS_PATH = path.join(ANALYTICS_DIR, "usage.jsonl");
@@ -80,6 +80,7 @@ function printHelp() {
 
 Basic usage:
   clawlodge login
+  clawlodge config get telemetry
   clawlodge --version
   clawlodge search "memory"
   clawlodge show openclaw-config
@@ -105,6 +106,12 @@ Commands:
 
   clawlodge logout
     Remove the saved local PAT
+
+  clawlodge config get telemetry
+    Show the saved telemetry mode
+
+  clawlodge config set telemetry off|anonymous
+    Update the saved telemetry preference
 
   clawlodge search
     Search published workspaces
@@ -147,6 +154,7 @@ Commands:
 
 Advanced usage:
   clawlodge login --origin https://clawlodge.com
+  clawlodge config set telemetry off
   clawlodge --version
   clawlodge search "openclaw" --sort new
   clawlodge show cft0808-edict
@@ -489,6 +497,11 @@ function getTelemetryMode(config = {}) {
   return "anonymous";
 }
 
+function shouldPromptTelemetry(command) {
+  const normalized = normalizeTelemetryCommand(command);
+  return !new Set(["help", "version", "config"]).has(normalized);
+}
+
 async function ensureInstallationId(config = {}) {
   const existing = typeof config.installationId === "string" ? config.installationId.trim() : "";
   if (existing) return existing;
@@ -526,6 +539,56 @@ async function promptForToken(origin) {
   } finally {
     rl.close();
   }
+}
+
+async function promptTelemetryConsent(config = {}) {
+  if (!input.isTTY || !output.isTTY) {
+    const next = { ...config, telemetry: "off", telemetryPrompted: true };
+    await writeConfig(next);
+    return next;
+  }
+
+  console.log("Help ClawLodge get better!\n");
+  console.log("Anonymous telemetry helps us understand which commands are useful, how long they take, and where installs fail.\n");
+  console.log("What we collect:");
+  console.log("- command name, such as search, download, or install");
+  console.log("- duration and success/failure");
+  console.log("- CLI version, OS, and architecture");
+  console.log("- whether the command invoked openclaw");
+  console.log("- the lobster slug when you explicitly named one\n");
+  console.log("What we never collect:");
+  console.log("- prompts");
+  console.log("- code");
+  console.log("- file contents");
+  console.log("- local file paths");
+  console.log("- workspace contents\n");
+  console.log("You can change this anytime with:");
+  console.log("clawlodge config set telemetry off\n");
+
+  const rl = readline.createInterface({ input, output });
+  try {
+    const answer = (await rl.question("Allow anonymous usage telemetry? [Y/n] ")).trim().toLowerCase();
+    const telemetry = answer === "n" || answer === "no" ? "off" : "anonymous";
+    const next = { ...config, telemetry, telemetryPrompted: true };
+    await writeConfig(next);
+    return next;
+  } finally {
+    rl.close();
+  }
+}
+
+async function ensureTelemetryPreference(command) {
+  const config = await readConfig();
+  if (!shouldPromptTelemetry(command)) {
+    return config;
+  }
+  if (process.env.CLAWLODGE_TELEMETRY?.trim()) {
+    return config;
+  }
+  if (config.telemetryPrompted) {
+    return config;
+  }
+  return promptTelemetryConsent(config);
 }
 
 async function requestJson(url, token, init = {}) {
@@ -684,6 +747,50 @@ async function runWhoAmI(options) {
 async function runLogout() {
   await clearConfig();
   console.log(JSON.stringify({ ok: true, mode: "logout", config_path: CONFIG_PATH }, null, 2));
+}
+
+async function runConfig(options, positionals) {
+  const config = await readConfig();
+  const subcommand = positionals[0]?.trim();
+  const key = positionals[1]?.trim();
+  const value = positionals[2]?.trim();
+
+  if (subcommand === "get") {
+    if (key !== "telemetry") {
+      throw new Error("Supported config keys: telemetry");
+    }
+    console.log(JSON.stringify({
+      ok: true,
+      mode: "config",
+      action: "get",
+      key: "telemetry",
+      value: getTelemetryMode(config),
+      config_path: CONFIG_PATH,
+    }, null, 2));
+    return;
+  }
+
+  if (subcommand === "set") {
+    if (key !== "telemetry") {
+      throw new Error("Supported config keys: telemetry");
+    }
+    if (value !== "off" && value !== "anonymous") {
+      throw new Error("Telemetry must be one of: off, anonymous");
+    }
+    const next = { ...config, telemetry: value, telemetryPrompted: true };
+    await writeConfig(next);
+    console.log(JSON.stringify({
+      ok: true,
+      mode: "config",
+      action: "set",
+      key: "telemetry",
+      value,
+      config_path: CONFIG_PATH,
+    }, null, 2));
+    return;
+  }
+
+  throw new Error("Usage: clawlodge config get telemetry | clawlodge config set telemetry off|anonymous");
 }
 
 function requirePositional(positionals, label) {
@@ -878,6 +985,8 @@ export async function runCli(argv = process.argv.slice(2)) {
   const { command, options, positionals } = parseArgs(argv);
   const startedAt = Date.now();
   try {
+    await ensureTelemetryPreference(command);
+
     if (command === "help" || command === "--help" || command === "-h") {
       printHelp();
       return;
@@ -900,6 +1009,11 @@ export async function runCli(argv = process.argv.slice(2)) {
 
     if (command === "logout") {
       await runLogout();
+      return;
+    }
+
+    if (command === "config") {
+      await runConfig(options, positionals);
       return;
     }
 
