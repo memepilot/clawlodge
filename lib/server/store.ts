@@ -1,4 +1,5 @@
 export {
+  insertCliTelemetryEvent,
   mutateDb,
   readDb,
   readMirroredComments,

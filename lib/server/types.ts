@@ -163,6 +163,23 @@ export type DbIconJob = {
   completedAt: string | null;
 };
 
+export type DbCliTelemetryEvent = {
+  id: number;
+  receivedAt: string;
+  eventTimestamp: string;
+  eventType: "command_run";
+  command: string;
+  slug: string | null;
+  durationMs: number | null;
+  outcome: "success" | "error";
+  errorClass: string | null;
+  usedOpenClaw: boolean;
+  cliVersion: string;
+  os: string;
+  arch: string;
+  installationId: string | null;
+};
+
 export type DbLegacyNextIds = {
   user: number;
   session: number;

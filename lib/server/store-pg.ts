@@ -1,6 +1,7 @@
 import { Pool, type PoolClient, type QueryResultRow } from "pg";
 
 import type {
+  DbCliTelemetryEvent,
   DbComment,
   DbLegacyNextIds,
   DbLobster,
@@ -280,11 +281,29 @@ async function ensureSchema(client: PoolClient) {
       content TEXT NOT NULL,
       created_at TIMESTAMPTZ NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS cli_telemetry_events (
+      id BIGSERIAL PRIMARY KEY,
+      received_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      event_timestamp TIMESTAMPTZ NOT NULL,
+      event_type TEXT NOT NULL DEFAULT 'command_run',
+      command TEXT NOT NULL,
+      slug TEXT,
+      duration_ms INTEGER,
+      outcome TEXT NOT NULL,
+      error_class TEXT,
+      used_openclaw BOOLEAN NOT NULL DEFAULT false,
+      cli_version TEXT NOT NULL,
+      os TEXT NOT NULL,
+      arch TEXT NOT NULL,
+      installation_id TEXT
+    );
     CREATE INDEX IF NOT EXISTS idx_lobsters_mirror_status_slug ON lobsters_mirror(status, slug);
     CREATE INDEX IF NOT EXISTS idx_lobsters_mirror_owner ON lobsters_mirror(owner_id);
     CREATE INDEX IF NOT EXISTS idx_versions_mirror_lobster_created ON lobster_versions_mirror(lobster_id, created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_workspace_entries_version_path ON workspace_entries(version_id, path);
     CREATE INDEX IF NOT EXISTS idx_comments_mirror_lobster_created ON comments_mirror(lobster_id, created_at ASC);
+    CREATE INDEX IF NOT EXISTS idx_cli_telemetry_events_ts ON cli_telemetry_events(event_timestamp DESC);
+    CREATE INDEX IF NOT EXISTS idx_cli_telemetry_events_command ON cli_telemetry_events(command, event_timestamp DESC);
     ALTER TABLE lobsters_mirror
       ADD COLUMN IF NOT EXISTS topics_json JSONB NOT NULL DEFAULT '[]'::jsonb;
     ALTER TABLE lobsters_mirror
@@ -867,6 +886,29 @@ export async function readMirroredComments(slug: string) {
     userHandle: String(row.handle),
     userDisplayName: row.display_name == null ? null : String(row.display_name),
   }));
+}
+
+export async function insertCliTelemetryEvent(event: Omit<DbCliTelemetryEvent, "id" | "receivedAt">) {
+  await ensureDatabase();
+  await query(
+    `INSERT INTO cli_telemetry_events
+      (event_timestamp, event_type, command, slug, duration_ms, outcome, error_class, used_openclaw, cli_version, os, arch, installation_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+    [
+      event.eventTimestamp,
+      event.eventType,
+      event.command,
+      event.slug,
+      event.durationMs,
+      event.outcome,
+      event.errorClass,
+      event.usedOpenClaw,
+      event.cliVersion,
+      event.os,
+      event.arch,
+      event.installationId,
+    ],
+  );
 }
 
 export async function readMirroredUserProfiles() {

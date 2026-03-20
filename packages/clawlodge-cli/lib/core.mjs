@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import crypto from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import readline from "node:readline/promises";
@@ -25,8 +26,10 @@ const MAX_FILE_BYTES = 128 * 1024;
 const MAX_EXCERPT_CHARS = 1600;
 const MAX_BINARY_EMBED_BYTES = 8 * 1024 * 1024;
 const DEFAULT_ORIGIN = "https://clawlodge.com";
-const CLI_VERSION = "0.1.9";
+const CLI_VERSION = "0.1.11";
 const CONFIG_PATH = path.join(os.homedir(), ".config", "clawlodge", "config.json");
+const ANALYTICS_DIR = path.join(os.homedir(), ".clawlodge", "analytics");
+const ANALYTICS_PATH = path.join(ANALYTICS_DIR, "usage.jsonl");
 const execFileAsync = promisify(execFile);
 const REDACTION_RULES = [
   [/\bsk-[A-Za-z0-9]{20,}\b/g, "[REDACTED_OPENAI_KEY]"],
@@ -164,6 +167,7 @@ Advanced usage:
 Environment variables:
   CLAWLODGE_PAT
   CLAWLODGE_ORIGIN
+  CLAWLODGE_TELEMETRY=off
 `);
 }
 
@@ -479,6 +483,20 @@ async function readConfig() {
   }
 }
 
+function getTelemetryMode(config = {}) {
+  const raw = (process.env.CLAWLODGE_TELEMETRY || config.telemetry || "anonymous").trim().toLowerCase();
+  if (raw === "off") return "off";
+  return "anonymous";
+}
+
+async function ensureInstallationId(config = {}) {
+  const existing = typeof config.installationId === "string" ? config.installationId.trim() : "";
+  if (existing) return existing;
+  const installationId = crypto.randomUUID();
+  await writeConfig({ ...config, installationId });
+  return installationId;
+}
+
 async function writeConfig(config) {
   await fs.mkdir(path.dirname(CONFIG_PATH), { recursive: true, mode: 0o700 });
   await fs.writeFile(CONFIG_PATH, JSON.stringify(config, null, 2), { encoding: "utf8", mode: 0o600 });
@@ -525,6 +543,79 @@ async function requestJson(url, token, init = {}) {
     throw new Error(body?.detail || `Request failed: ${response.status}`);
   }
   return body;
+}
+
+function normalizeTelemetryCommand(command) {
+  if (command === "get") return "show";
+  if (command === "adopt") return "install";
+  if (command === "--version" || command === "-v" || command === "version") return "version";
+  if (command === "--help" || command === "-h" || command === "help") return "help";
+  return command || "help";
+}
+
+function inferTelemetrySlug(command, options, positionals) {
+  const normalized = normalizeTelemetryCommand(command);
+  const slugCommands = new Set(["show", "download", "install", "favorite", "unfavorite", "comment", "report"]);
+  if (!slugCommands.has(normalized)) return null;
+  const slug = options.slug?.trim() || positionals[0]?.trim() || "";
+  return slug || null;
+}
+
+function shouldMarkOpenClaw(command) {
+  return normalizeTelemetryCommand(command) === "install";
+}
+
+async function appendTelemetryEvent(event) {
+  await fs.mkdir(ANALYTICS_DIR, { recursive: true, mode: 0o700 });
+  await fs.appendFile(ANALYTICS_PATH, `${JSON.stringify(event)}\n`, { encoding: "utf8", mode: 0o600 });
+}
+
+async function postTelemetryEvent(origin, event) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 1200);
+  try {
+    await fetch(`${origin.replace(/\/$/, "")}/api/v1/telemetry`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(event),
+      signal: controller.signal,
+    });
+  } catch {
+    // best effort only
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function recordTelemetry({ command, options, positionals, startedAt, outcome, error }) {
+  const config = await readConfig();
+  if (getTelemetryMode(config) === "off") {
+    return;
+  }
+
+  const origin = resolveOrigin(options, config);
+  const event = {
+    event_type: "command_run",
+    event_timestamp: new Date().toISOString(),
+    command: normalizeTelemetryCommand(command),
+    slug: inferTelemetrySlug(command, options, positionals),
+    duration_ms: Math.max(0, Date.now() - startedAt),
+    outcome,
+    error_class: error instanceof Error ? (error.name || "Error") : error ? "Error" : null,
+    used_openclaw: shouldMarkOpenClaw(command),
+    cli_version: CLI_VERSION,
+    os: os.platform(),
+    arch: os.arch(),
+    installation_id: await ensureInstallationId(config),
+  };
+
+  try {
+    await appendTelemetryEvent(event);
+  } catch {
+    // best effort only
+  }
+
+  await postTelemetryEvent(origin, event);
 }
 
 async function requestBuffer(url, token, init = {}) {
@@ -785,96 +876,103 @@ async function runReport(options, positionals) {
 
 export async function runCli(argv = process.argv.slice(2)) {
   const { command, options, positionals } = parseArgs(argv);
-  if (command === "help" || command === "--help" || command === "-h") {
-    printHelp();
-    return;
-  }
+  const startedAt = Date.now();
+  try {
+    if (command === "help" || command === "--help" || command === "-h") {
+      printHelp();
+      return;
+    }
 
-  if (command === "version" || command === "--version" || command === "-v") {
-    printVersion();
-    return;
-  }
+    if (command === "version" || command === "--version" || command === "-v") {
+      printVersion();
+      return;
+    }
 
-  if (command === "login") {
-    await runLogin(options);
-    return;
-  }
+    if (command === "login") {
+      await runLogin(options);
+      return;
+    }
 
-  if (command === "whoami") {
-    await runWhoAmI(options);
-    return;
-  }
+    if (command === "whoami") {
+      await runWhoAmI(options);
+      return;
+    }
 
-  if (command === "logout") {
-    await runLogout();
-    return;
-  }
+    if (command === "logout") {
+      await runLogout();
+      return;
+    }
 
-  if (command === "search") {
-    await runSearch(options, positionals);
-    return;
-  }
+    if (command === "search") {
+      await runSearch(options, positionals);
+      return;
+    }
 
-  if (command === "show" || command === "get") {
-    await runShow(options, positionals);
-    return;
-  }
+    if (command === "show" || command === "get") {
+      await runShow(options, positionals);
+      return;
+    }
 
-  if (command === "download") {
-    await runDownload(options, positionals);
-    return;
-  }
+    if (command === "download") {
+      await runDownload(options, positionals);
+      return;
+    }
 
-  if (command === "install" || command === "adopt") {
-    await runInstall(options, positionals);
-    return;
-  }
+    if (command === "install" || command === "adopt") {
+      await runInstall(options, positionals);
+      return;
+    }
 
-  if (command === "favorite") {
-    await runFavorite(options, positionals);
-    return;
-  }
+    if (command === "favorite") {
+      await runFavorite(options, positionals);
+      return;
+    }
 
-  if (command === "unfavorite") {
-    await runUnfavorite(options, positionals);
-    return;
-  }
+    if (command === "unfavorite") {
+      await runUnfavorite(options, positionals);
+      return;
+    }
 
-  if (command === "comment") {
-    await runComment(options, positionals);
-    return;
-  }
+    if (command === "comment") {
+      await runComment(options, positionals);
+      return;
+    }
 
-  if (command === "report") {
-    await runReport(options, positionals);
-    return;
-  }
+    if (command === "report") {
+      await runReport(options, positionals);
+      return;
+    }
 
-  const { workspaceRoot, payload } = await buildPayload(options);
-  const out = path.resolve(options.out ?? path.join(workspaceRoot, ".clawlodge", "workspace-publish.json"));
+    const { workspaceRoot, payload } = await buildPayload(options);
+    const out = path.resolve(options.out ?? path.join(workspaceRoot, ".clawlodge", "workspace-publish.json"));
 
-  if (command === "pack") {
+    if (command === "pack") {
+      await writePack(out, payload);
+      console.log(JSON.stringify({ ok: true, mode: "pack", out, stats: payload.stats }, null, 2));
+      return;
+    }
+
+    if (command !== "publish") {
+      throw new Error(`Unsupported command: ${command}`);
+    }
+
+    const config = await readConfig();
+    const origin = resolveOrigin(options, config);
+    const token = resolveToken(options, config);
+    if (!token) {
+      throw new Error(`Missing PAT. Create one at ${origin}/settings, then run clawlodge login, pass --token, or set CLAWLODGE_PAT.`);
+    }
+
     await writePack(out, payload);
-    console.log(JSON.stringify({ ok: true, mode: "pack", out, stats: payload.stats }, null, 2));
-    return;
+    const body = await requestJson(`${origin.replace(/\/$/, "")}/api/v1/workspace/publish`, token, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+
+    console.log(JSON.stringify({ ok: true, mode: "publish", out, origin, result: body }, null, 2));
+  } catch (error) {
+    await recordTelemetry({ command, options, positionals, startedAt, outcome: "error", error });
+    throw error;
   }
-
-  if (command !== "publish") {
-    throw new Error(`Unsupported command: ${command}`);
-  }
-
-  const config = await readConfig();
-  const origin = resolveOrigin(options, config);
-  const token = resolveToken(options, config);
-  if (!token) {
-    throw new Error(`Missing PAT. Create one at ${origin}/settings, then run clawlodge login, pass --token, or set CLAWLODGE_PAT.`);
-  }
-
-  await writePack(out, payload);
-  const body = await requestJson(`${origin.replace(/\/$/, "")}/api/v1/workspace/publish`, token, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-
-  console.log(JSON.stringify({ ok: true, mode: "publish", out, origin, result: body }, null, 2));
+  await recordTelemetry({ command, options, positionals, startedAt, outcome: "success", error: null });
 }
