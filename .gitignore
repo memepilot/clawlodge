@@ -61,3 +61,4 @@ backend-archive/
 nginx/
 deploy/nginx*.conf
 scripts/
+AGENTS.md

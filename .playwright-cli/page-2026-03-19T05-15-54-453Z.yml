@@ -1,0 +1,535 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "ClawLodge logo 龙虾客栈" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img "ClawLodge logo" [ref=e6]
+        - generic [ref=e7]: 龙虾客栈
+      - navigation [ref=e8]:
+        - link "发布" [ref=e9] [cursor=pointer]:
+          - /url: /publish
+        - link "插件上传" [ref=e10] [cursor=pointer]:
+          - /url: /mcp
+        - link "设置" [ref=e11] [cursor=pointer]:
+          - /url: /settings
+        - link "GitHub" [ref=e12] [cursor=pointer]:
+          - /url: https://github.com/memepilot/clawlodge
+      - generic [ref=e13]:
+        - link "EN" [ref=e14] [cursor=pointer]:
+          - /url: /api/v1/locale?locale=en&next=%2F
+        - generic [ref=e15]: ...
+  - main [ref=e16]:
+    - generic [ref=e17]:
+      - generic [ref=e20]:
+        - navigation "Breadcrumb" [ref=e21]:
+          - list [ref=e22]:
+            - listitem [ref=e23]:
+              - generic [ref=e24]: 首页
+        - generic [ref=e25]: OpenClaw 配置、技能与工作流
+        - heading "发现并分享强大的 OpenClaw 配置。" [level=1] [ref=e26]
+        - paragraph [ref=e27]: 浏览真实智能体配置，查看里面的 prompts、skills、workflows 和 integrations，也可以发布你自己的方案。
+        - generic [ref=e28]:
+          - link "发布你的配置" [ref=e29] [cursor=pointer]:
+            - /url: /publish
+          - link "安装 CLI" [ref=e30] [cursor=pointer]:
+            - /url: https://www.npmjs.com/package/clawlodge-cli
+          - link "使用 GitHub 登录" [ref=e31] [cursor=pointer]:
+            - /url: /api/v1/auth/github/start?next=/publish
+      - generic [ref=e32]:
+        - heading "热门指南" [level=2] [ref=e34]
+        - generic [ref=e35]:
+          - link "OpenClaw 记忆分配策略 用长期记忆、工作记忆和项目上下文来组织 OpenClaw memory 的实用指南。" [ref=e36] [cursor=pointer]:
+            - /url: /guides/openclaw-memory-allocation-strategies
+            - strong [ref=e37]: OpenClaw 记忆分配策略
+            - generic [ref=e38]: 用长期记忆、工作记忆和项目上下文来组织 OpenClaw memory 的实用指南。
+          - link "OpenClaw 配置文件指南 了解 OpenClaw 配置文件通常包含什么、应该比较哪些维度，以及哪些社区配置值得直接起步。" [ref=e39] [cursor=pointer]:
+            - /url: /guides/openclaw-config-file
+            - strong [ref=e40]: OpenClaw 配置文件指南
+            - generic [ref=e41]: 了解 OpenClaw 配置文件通常包含什么、应该比较哪些维度，以及哪些社区配置值得直接起步。
+          - link "OpenClaw 多智能体工作流 面向角色分工、编排和可复用多智能体操作模式的 OpenClaw 配置指南。" [ref=e42] [cursor=pointer]:
+            - /url: /guides/openclaw-multi-agent-workflows
+            - strong [ref=e43]: OpenClaw 多智能体工作流
+            - generic [ref=e44]: 面向角色分工、编排和可复用多智能体操作模式的 OpenClaw 配置指南。
+      - generic [ref=e45]:
+        - generic [ref=e46]:
+          - generic [ref=e49]:
+            - img [ref=e51]
+            - textbox "搜索名称、标签、README..." [ref=e54]
+          - generic "Category filter" [ref=e55]:
+            - link "◍ 全部" [ref=e56] [cursor=pointer]:
+              - /url: /
+              - generic [ref=e57]: ◍
+              - generic [ref=e58]: 全部
+            - link "▣ 工作区" [ref=e59] [cursor=pointer]:
+              - /url: /categories/workspace
+              - generic [ref=e60]: ▣
+              - generic [ref=e61]: 工作区
+            - link "✦ 技能" [ref=e62] [cursor=pointer]:
+              - /url: /categories/skill
+              - generic [ref=e63]: ✦
+              - generic [ref=e64]: 技能
+            - link "◉ 智能体" [ref=e65] [cursor=pointer]:
+              - /url: /categories/agent
+              - generic [ref=e66]: ◉
+              - generic [ref=e67]: 智能体
+            - link "⌘ 工具" [ref=e68] [cursor=pointer]:
+              - /url: /categories/tooling
+              - generic [ref=e69]: ⌘
+              - generic [ref=e70]: 工具
+            - link "⇄ 工作流" [ref=e71] [cursor=pointer]:
+              - /url: /categories/workflow
+              - generic [ref=e72]: ⇄
+              - generic [ref=e73]: 工作流
+            - link "◌ 记忆" [ref=e74] [cursor=pointer]:
+              - /url: /categories/memory
+              - generic [ref=e75]: ◌
+              - generic [ref=e76]: 记忆
+        - paragraph [ref=e78]: 显示 170 个
+        - generic [ref=e79]:
+          - article [ref=e80]:
+            - generic [ref=e81]:
+              - img [ref=e83]
+              - heading "Edict" [level=3] [ref=e85]:
+                - link "Edict" [ref=e86] [cursor=pointer]:
+                  - /url: /lobsters/cft0808-edict
+            - link "Workspace" [ref=e88] [cursor=pointer]:
+              - /url: /categories/workspace
+            - paragraph [ref=e89]: Edict is an OpenClaw multi-agent orchestration system inspired by ancient Chinese bureaucracy, offering real-time dashboards, full audit trails, and strict t...
+            - generic [ref=e90]:
+              - generic [ref=e91]: "@cft0808"
+              - generic "769 views" [ref=e92]:
+                - img [ref=e93]
+                - generic [ref=e96]: "769"
+              - generic "1 downloads" [ref=e97]:
+                - img [ref=e98]
+                - generic [ref=e100]: "1"
+              - generic "1 favorites" [ref=e101]:
+                - img [ref=e102]
+                - generic [ref=e104]: "1"
+              - generic "1 comments" [ref=e105]:
+                - img [ref=e106]
+                - generic [ref=e108]: "1"
+          - article [ref=e109]:
+            - generic [ref=e110]:
+              - img [ref=e112]
+              - heading "OpenClaw 中文社区版" [level=3] [ref=e114]:
+                - link "OpenClaw 中文社区版" [ref=e115] [cursor=pointer]:
+                  - /url: /lobsters/openclaw-cn
+            - link "Workspace" [ref=e117] [cursor=pointer]:
+              - /url: /categories/workspace
+            - paragraph [ref=e118]: 🧞 Openclaw 中文社区版 私有化部署的 AI 智能助手，完整中文本地化。 ⚠️ 声明： 本项目非官方 cn 版本，此项目的目的是为了让国内用户快速接入使用，并更加适配国内网络环境。本项目已将所有 GitHub 依赖包构建为 npm 包，让国内用户使用淘宝镜像源可快速下载，避免因网络原因无法安装原版。 ...
+            - generic [ref=e119]:
+              - generic [ref=e120]: "@jiulingyun"
+              - generic "619 views" [ref=e121]:
+                - img [ref=e122]
+                - generic [ref=e125]: "619"
+              - generic "0 downloads" [ref=e126]:
+                - img [ref=e127]
+                - generic [ref=e129]: "0"
+              - generic "0 favorites" [ref=e130]:
+                - img [ref=e131]
+                - generic [ref=e133]: "0"
+              - generic "0 comments" [ref=e134]:
+                - img [ref=e135]
+                - generic [ref=e137]: "0"
+          - article [ref=e138]:
+            - generic [ref=e139]:
+              - img [ref=e141]
+              - heading "OpenClaw Memory Management" [level=3] [ref=e143]:
+                - link "OpenClaw Memory Management" [ref=e144] [cursor=pointer]:
+                  - /url: /lobsters/openclaw-memory-management
+            - link "Memory" [ref=e146] [cursor=pointer]:
+              - /url: /categories/memory
+            - paragraph [ref=e147]: This workspace helps OpenClaw AI agents manage memory efficiently with an automated archival system and a priority-based architecture.
+            - generic [ref=e148]:
+              - generic [ref=e149]: "@jzOcb"
+              - generic "586 views" [ref=e150]:
+                - img [ref=e151]
+                - generic [ref=e154]: "586"
+              - generic "13 downloads" [ref=e155]:
+                - img [ref=e156]
+                - generic [ref=e158]: "13"
+              - generic "0 favorites" [ref=e159]:
+                - img [ref=e160]
+                - generic [ref=e162]: "0"
+              - generic "0 comments" [ref=e163]:
+                - img [ref=e164]
+                - generic [ref=e166]: "0"
+          - article [ref=e167]:
+            - generic [ref=e168]:
+              - img [ref=e170]
+              - heading "OpenClaw Config" [level=3] [ref=e172]:
+                - link "OpenClaw Config" [ref=e173] [cursor=pointer]:
+                  - /url: /lobsters/openclaw-config
+            - link "Workspace" [ref=e175] [cursor=pointer]:
+              - /url: /categories/workspace
+            - paragraph [ref=e176]: Give your AI assistant memory, skills, and autonomy. A shareable config that turns Claude Code into an AI that remembers you, connects to your tools, and run...
+            - generic [ref=e177]:
+              - generic [ref=e178]: "@TechNickAI"
+              - generic "585 views" [ref=e179]:
+                - img [ref=e180]
+                - generic [ref=e183]: "585"
+              - generic "13 downloads" [ref=e184]:
+                - img [ref=e185]
+                - generic [ref=e187]: "13"
+              - generic "0 favorites" [ref=e188]:
+                - img [ref=e189]
+                - generic [ref=e191]: "0"
+              - generic "0 comments" [ref=e192]:
+                - img [ref=e193]
+                - generic [ref=e195]: "0"
+          - article [ref=e196]:
+            - generic [ref=e197]:
+              - img [ref=e199]
+              - heading "OpenClaw Starter Kit" [level=3] [ref=e201]:
+                - link "OpenClaw Starter Kit" [ref=e202] [cursor=pointer]:
+                  - /url: /lobsters/jeffweisbein-openclaw-starter-kit
+            - link "Workspace" [ref=e204] [cursor=pointer]:
+              - /url: /categories/workspace
+            - paragraph [ref=e205]: A comprehensive OpenClaw workspace template to create AI agents with memory, personality, autonomy, and multi-agent collaboration.
+            - generic [ref=e206]:
+              - generic [ref=e207]: "@jeffweisbein"
+              - generic "474 views" [ref=e208]:
+                - img [ref=e209]
+                - generic [ref=e212]: "474"
+              - generic "9 downloads" [ref=e213]:
+                - img [ref=e214]
+                - generic [ref=e216]: "9"
+              - generic "0 favorites" [ref=e217]:
+                - img [ref=e218]
+                - generic [ref=e220]: "0"
+              - generic "0 comments" [ref=e221]:
+                - img [ref=e222]
+                - generic [ref=e224]: "0"
+          - article [ref=e225]:
+            - generic [ref=e226]:
+              - img [ref=e228]
+              - heading "OpenClaw Config" [level=3] [ref=e230]:
+                - link "OpenClaw Config" [ref=e231] [cursor=pointer]:
+                  - /url: /lobsters/unisone-openclaw-config
+            - link "Workspace" [ref=e233] [cursor=pointer]:
+              - /url: /categories/workspace
+            - paragraph [ref=e234]: Production-ready configs, hardening guides, scripts, and workspace templates for OpenClaw to improve security and reliability for advanced users.
+            - generic [ref=e235]:
+              - generic [ref=e236]: "@unisone"
+              - generic "473 views" [ref=e237]:
+                - img [ref=e238]
+                - generic [ref=e241]: "473"
+              - generic "8 downloads" [ref=e242]:
+                - img [ref=e243]
+                - generic [ref=e245]: "8"
+              - generic "0 favorites" [ref=e246]:
+                - img [ref=e247]
+                - generic [ref=e249]: "0"
+              - generic "0 comments" [ref=e250]:
+                - img [ref=e251]
+                - generic [ref=e253]: "0"
+          - article [ref=e254]:
+            - generic [ref=e255]:
+              - img [ref=e257]
+              - heading "OpenClaw Sofia Skill" [level=3] [ref=e259]:
+                - link "OpenClaw Sofia Skill" [ref=e260] [cursor=pointer]:
+                  - /url: /lobsters/benjacord-openclaw-sofia-skill
+            - link "Skill" [ref=e262] [cursor=pointer]:
+              - /url: /categories/skill
+            - paragraph [ref=e263]: Sofia is an AI-powered OpenClaw skill that generates YouTube thumbnails using a photo and logo bank, ideal for content creators and automation workflows.
+            - generic [ref=e264]:
+              - generic [ref=e265]: "@benjacord"
+              - generic "461 views" [ref=e266]:
+                - img [ref=e267]
+                - generic [ref=e270]: "461"
+              - generic "21 downloads" [ref=e271]:
+                - img [ref=e272]
+                - generic [ref=e274]: "21"
+              - generic "0 favorites" [ref=e275]:
+                - img [ref=e276]
+                - generic [ref=e278]: "0"
+              - generic "0 comments" [ref=e279]:
+                - img [ref=e280]
+                - generic [ref=e282]: "0"
+          - article [ref=e283]:
+            - generic [ref=e284]:
+              - img [ref=e286]
+              - heading "Openclaw Workspace" [level=3] [ref=e288]:
+                - link "Openclaw Workspace" [ref=e289] [cursor=pointer]:
+                  - /url: /lobsters/ariffazil-openclaw-workspace
+            - generic [ref=e290]:
+              - link "Workspace" [ref=e291] [cursor=pointer]:
+                - /url: /categories/workspace
+              - link "Dev" [ref=e292] [cursor=pointer]:
+                - /url: /topics/dev
+            - paragraph [ref=e293]: 🧠🔥💎 openclaw-workspace The reality capture of arifOS_bot. This repository is the living workspace of arifOS_bot — the constitutional AI agent built by and fo...
+            - generic [ref=e294]:
+              - generic [ref=e295]: "@ariffazil"
+              - generic "354 views" [ref=e296]:
+                - img [ref=e297]
+                - generic [ref=e300]: "354"
+              - generic "13 downloads" [ref=e301]:
+                - img [ref=e302]
+                - generic [ref=e304]: "13"
+              - generic "0 favorites" [ref=e305]:
+                - img [ref=e306]
+                - generic [ref=e308]: "0"
+              - generic "0 comments" [ref=e309]:
+                - img [ref=e310]
+                - generic [ref=e312]: "0"
+          - article [ref=e313]:
+            - generic [ref=e314]:
+              - img [ref=e316]
+              - heading "OpenClaw Skills" [level=3] [ref=e318]:
+                - link "OpenClaw Skills" [ref=e319] [cursor=pointer]:
+                  - /url: /lobsters/amirofcodes-openclaw-skills
+            - link "Skill" [ref=e321] [cursor=pointer]:
+              - /url: /categories/skill
+            - paragraph [ref=e322]: Provides public OpenClaw skill definitions and agent behavior patterns for building reliable autonomous assistance workflows.
+            - generic [ref=e323]:
+              - generic [ref=e324]: "@Amirofcodes"
+              - generic "344 views" [ref=e325]:
+                - img [ref=e326]
+                - generic [ref=e329]: "344"
+              - generic "13 downloads" [ref=e330]:
+                - img [ref=e331]
+                - generic [ref=e333]: "13"
+              - generic "0 favorites" [ref=e334]:
+                - img [ref=e335]
+                - generic [ref=e337]: "0"
+              - generic "0 comments" [ref=e338]:
+                - img [ref=e339]
+                - generic [ref=e341]: "0"
+          - article [ref=e342]:
+            - generic [ref=e343]:
+              - img [ref=e345]
+              - heading "Claw Kernel" [level=3] [ref=e347]:
+                - link "Claw Kernel" [ref=e348] [cursor=pointer]:
+                  - /url: /lobsters/claw-kernel
+            - link "Tooling" [ref=e350] [cursor=pointer]:
+              - /url: /categories/tooling
+            - paragraph [ref=e351]: Claw Kernel A streamlined, production-focused fork of OpenClaw — the multi-channel AI gateway runtime. Claw Kernel removes 27 unused extensions from upstream...
+            - generic [ref=e352]:
+              - generic [ref=e353]: "@openclaw"
+              - generic "18 views" [ref=e354]:
+                - img [ref=e355]
+                - generic [ref=e358]: "18"
+              - generic "4 downloads" [ref=e359]:
+                - img [ref=e360]
+                - generic [ref=e362]: "4"
+              - generic "0 favorites" [ref=e363]:
+                - img [ref=e364]
+                - generic [ref=e366]: "0"
+              - generic "0 comments" [ref=e367]:
+                - img [ref=e368]
+                - generic [ref=e370]: "0"
+          - article [ref=e371]:
+            - generic [ref=e372]:
+              - img [ref=e374]
+              - heading "Claw Agents" [level=3] [ref=e376]:
+                - link "Claw Agents" [ref=e377] [cursor=pointer]:
+                  - /url: /lobsters/claw-agents
+            - link "Workflow" [ref=e379] [cursor=pointer]:
+              - /url: /categories/workflow
+            - paragraph [ref=e380]: OpenClaw Agents OpenClaw 多智能体配置说明与示例，遵循 OpenClaw Multi-Agent 官方约定：在一个网关实例中运行多个隔离智能体（独立 workspace、agentDir、sessions），通过 bindings 路由入站消息。 官方文档 - Multi-Agent Ro...
+            - generic [ref=e381]:
+              - generic [ref=e382]: "@openclaw"
+              - generic "9 views" [ref=e383]:
+                - img [ref=e384]
+                - generic [ref=e387]: "9"
+              - generic "2 downloads" [ref=e388]:
+                - img [ref=e389]
+                - generic [ref=e391]: "2"
+              - generic "0 favorites" [ref=e392]:
+                - img [ref=e393]
+                - generic [ref=e395]: "0"
+              - generic "0 comments" [ref=e396]:
+                - img [ref=e397]
+                - generic [ref=e399]: "0"
+          - article [ref=e400]:
+            - generic [ref=e401]:
+              - img [ref=e403]
+              - heading "OpenClaw Starter Kit" [level=3] [ref=e405]:
+                - link "OpenClaw Starter Kit" [ref=e406] [cursor=pointer]:
+                  - /url: /lobsters/bar-bruhis-openclaw-starter-kit
+            - link "Workspace" [ref=e408] [cursor=pointer]:
+              - /url: /categories/workspace
+            - paragraph [ref=e409]: A starter kit for creating personalized AI agent workspaces in OpenClaw with memory, security, and proactive task features.
+            - generic [ref=e410]:
+              - generic [ref=e411]: "@bar-bruhis"
+              - generic "281 views" [ref=e412]:
+                - img [ref=e413]
+                - generic [ref=e416]: "281"
+              - generic "12 downloads" [ref=e417]:
+                - img [ref=e418]
+                - generic [ref=e420]: "12"
+              - generic "0 favorites" [ref=e421]:
+                - img [ref=e422]
+                - generic [ref=e424]: "0"
+              - generic "0 comments" [ref=e425]:
+                - img [ref=e426]
+                - generic [ref=e428]: "0"
+          - article [ref=e429]:
+            - generic [ref=e430]:
+              - img [ref=e432]
+              - heading "OpenClaw Brain" [level=3] [ref=e434]:
+                - link "OpenClaw Brain" [ref=e435] [cursor=pointer]:
+                  - /url: /lobsters/matskevich-openclaw-brain
+            - link "Workspace" [ref=e437] [cursor=pointer]:
+              - /url: /categories/workspace
+            - paragraph [ref=e438]: A template for building personal AI assistants with customizable memory, personality, and skills management.
+            - generic [ref=e439]:
+              - generic [ref=e440]: "@matskevich"
+              - generic "269 views" [ref=e441]:
+                - img [ref=e442]
+                - generic [ref=e445]: "269"
+              - generic "7 downloads" [ref=e446]:
+                - img [ref=e447]
+                - generic [ref=e449]: "7"
+              - generic "0 favorites" [ref=e450]:
+                - img [ref=e451]
+                - generic [ref=e453]: "0"
+              - generic "0 comments" [ref=e454]:
+                - img [ref=e455]
+                - generic [ref=e457]: "0"
+          - article [ref=e458]:
+            - generic [ref=e459]:
+              - img [ref=e461]
+              - heading "Merit Systems CraigClaw" [level=3] [ref=e463]:
+                - link "Merit Systems CraigClaw" [ref=e464] [cursor=pointer]:
+                  - /url: /lobsters/merit-systems-craigclaw
+            - generic [ref=e465]:
+              - link "Workspace" [ref=e466] [cursor=pointer]:
+                - /url: /categories/workspace
+              - link "Dev" [ref=e467] [cursor=pointer]:
+                - /url: /topics/dev
+            - paragraph [ref=e468]: CraigClaw Craig2 is Merit-Systems' AI agent, powered by OpenClaw. He lives on Discord, has write access to every repo in the Merit-Systems org (but can't mer...
+            - generic [ref=e469]:
+              - generic [ref=e470]: "@Merit-Systems"
+              - generic "258 views" [ref=e471]:
+                - img [ref=e472]
+                - generic [ref=e475]: "258"
+              - generic "9 downloads" [ref=e476]:
+                - img [ref=e477]
+                - generic [ref=e479]: "9"
+              - generic "0 favorites" [ref=e480]:
+                - img [ref=e481]
+                - generic [ref=e483]: "0"
+              - generic "0 comments" [ref=e484]:
+                - img [ref=e485]
+                - generic [ref=e487]: "0"
+          - article [ref=e488]:
+            - generic [ref=e489]:
+              - img [ref=e491]
+              - heading "OpenClaw Config" [level=3] [ref=e493]:
+                - link "OpenClaw Config" [ref=e494] [cursor=pointer]:
+                  - /url: /lobsters/technickai-openclaw-config
+            - link "Workspace" [ref=e496] [cursor=pointer]:
+              - /url: /categories/workspace
+            - paragraph [ref=e497]: A shareable configuration for Claude Code-based AI assistants, enabling persistent memory, tool integrations, and autonomous workflows for productivity.
+            - generic [ref=e498]:
+              - generic [ref=e499]: "@TechNickAI"
+              - generic "245 views" [ref=e500]:
+                - img [ref=e501]
+                - generic [ref=e504]: "245"
+              - generic "10 downloads" [ref=e505]:
+                - img [ref=e506]
+                - generic [ref=e508]: "10"
+              - generic "0 favorites" [ref=e509]:
+                - img [ref=e510]
+                - generic [ref=e512]: "0"
+              - generic "0 comments" [ref=e513]:
+                - img [ref=e514]
+                - generic [ref=e516]: "0"
+          - article [ref=e517]:
+            - generic [ref=e518]:
+              - img [ref=e520]
+              - heading "Claude Code Workflow Plugins" [level=3] [ref=e522]:
+                - link "Claude Code Workflow Plugins" [ref=e523] [cursor=pointer]:
+                  - /url: /lobsters/macroman5-claude-code-workflow-plugins
+            - link "Workflow" [ref=e525] [cursor=pointer]:
+              - /url: /categories/workflow
+            - paragraph [ref=e526]: Enhance Claude Code with automated workflows, persistent memory, and multi-agent skills for efficient, high-quality AI-assisted development.
+            - generic [ref=e527]:
+              - generic [ref=e528]: "@MacroMan5"
+              - generic "226 views" [ref=e529]:
+                - img [ref=e530]
+                - generic [ref=e533]: "226"
+              - generic "7 downloads" [ref=e534]:
+                - img [ref=e535]
+                - generic [ref=e537]: "7"
+              - generic "0 favorites" [ref=e538]:
+                - img [ref=e539]
+                - generic [ref=e541]: "0"
+              - generic "0 comments" [ref=e542]:
+                - img [ref=e543]
+                - generic [ref=e545]: "0"
+          - article [ref=e546]:
+            - generic [ref=e547]:
+              - img [ref=e549]
+              - heading "Skeleton" [level=3] [ref=e551]:
+                - link "Skeleton" [ref=e552] [cursor=pointer]:
+                  - /url: /lobsters/alexwoo-awso-skeleton
+            - link "Workspace" [ref=e554] [cursor=pointer]:
+              - /url: /categories/workspace
+            - paragraph [ref=e555]: A template for building AI coding agents with persistent memory, task tracking, and modular skills, compatible with AGENTS.md-enabled tools.
+            - generic [ref=e556]:
+              - generic [ref=e557]: "@alexwoo-awso"
+              - generic "225 views" [ref=e558]:
+                - img [ref=e559]
+                - generic [ref=e562]: "225"
+              - generic "8 downloads" [ref=e563]:
+                - img [ref=e564]
+                - generic [ref=e566]: "8"
+              - generic "0 favorites" [ref=e567]:
+                - img [ref=e568]
+                - generic [ref=e570]: "0"
+              - generic "0 comments" [ref=e571]:
+                - img [ref=e572]
+                - generic [ref=e574]: "0"
+          - article [ref=e575]:
+            - generic [ref=e576]:
+              - img [ref=e578]
+              - heading "All OpenClaw Agents" [level=3] [ref=e580]:
+                - link "All OpenClaw Agents" [ref=e581] [cursor=pointer]:
+                  - /url: /lobsters/patvscode-all-openclaw-agents
+            - link "Tooling" [ref=e583] [cursor=pointer]:
+              - /url: /categories/tooling
+            - paragraph [ref=e584]: Centralized backup and recovery repository for OpenClaw agents, preserving workspaces, memory logs, skill data, and runtime configurations.
+            - generic [ref=e585]:
+              - generic [ref=e586]: "@Patvscode"
+              - generic "224 views" [ref=e587]:
+                - img [ref=e588]
+                - generic [ref=e591]: "224"
+              - generic "10 downloads" [ref=e592]:
+                - img [ref=e593]
+                - generic [ref=e595]: "10"
+              - generic "0 favorites" [ref=e596]:
+                - img [ref=e597]
+                - generic [ref=e599]: "0"
+              - generic "0 comments" [ref=e600]:
+                - img [ref=e601]
+                - generic [ref=e603]: "0"
+        - generic [ref=e604]:
+          - paragraph [ref=e605]: 显示 1-18 / 170
+          - generic [ref=e606]:
+            - generic: 上一页
+            - generic [ref=e607]: 第 1 / 10
+            - generic [ref=e608]:
+              - generic [ref=e609]: 跳到
+              - spinbutton "跳到" [ref=e610]: "1"
+              - button "前往" [ref=e611] [cursor=pointer]
+            - link "下一页" [ref=e612] [cursor=pointer]:
+              - /url: /?page=2
+  - contentinfo [ref=e613]:
+    - generic [ref=e614]:
+      - generic [ref=e615]: 龙虾客栈是一个用于分享和发现真实 OpenClaw 配置、技能、智能体与工作流的资料库。
+      - generic [ref=e616]:
+        - link "关于" [ref=e617] [cursor=pointer]:
+          - /url: /about
+        - link "隐私" [ref=e618] [cursor=pointer]:
+          - /url: /privacy
+        - link "GitHub" [ref=e619] [cursor=pointer]:
+          - /url: https://github.com/memepilot/clawlodge
+        - link "Twitter" [ref=e620] [cursor=pointer]:
+          - /url: https://x.com/realclawlodge
+        - link "安装 CLI" [ref=e621] [cursor=pointer]:
+          - /url: https://www.npmjs.com/package/clawlodge-cli
+  - button "Open Next.js Dev Tools" [ref=e627] [cursor=pointer]:
+    - img [ref=e628]
