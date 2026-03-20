@@ -73,8 +73,9 @@ async function createThumb(filePath, size) {
   const thumbPath = filePath.replace(/\.[^.]+$/i, `-${size}.webp`);
   const buffer = await sharp(filePath, { animated: false })
     .resize(size, size, {
-      fit: "cover",
+      fit: "contain",
       position: "centre",
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
       withoutEnlargement: false,
     })
     .webp({ quality: 82, effort: 6, alphaQuality: 90 })
