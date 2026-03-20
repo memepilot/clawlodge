@@ -7,6 +7,7 @@ import { cache } from "react";
 import { LobsterActions } from "@/components/lobster-actions";
 import { LobsterCard } from "@/components/lobster-card";
 import { getLobsterAvatarSrc, LobsterAvatar } from "@/components/lobster-avatar";
+import { MarkdownContent } from "@/components/markdown-content";
 import { DownloadLink } from "@/components/download-link";
 import { WorkspaceBrowser } from "@/components/workspace-browser";
 import { getTranslations } from "@/lib/i18n";
@@ -207,6 +208,7 @@ export default async function LobsterDetailPage({
             ))}
           </div>
           <div className="detail-jump-links">
+            <a className="detail-jump-link" href="#readme">{t.detail.readme}</a>
             <a className="detail-jump-link" href="#workspace">{t.detail.workspace}</a>
             <a className="detail-jump-link" href="#community">{t.detail.community}</a>
           </div>
@@ -253,6 +255,14 @@ export default async function LobsterDetailPage({
             </div>
           </div>
         </aside>
+      </section>
+
+      <section id="readme" className="shell page-panel p-5 md:p-6">
+        {latest ? (
+          <MarkdownContent value={latest.readme_text} />
+        ) : (
+          <p className="muted mt-2">{t.detail.noVersionYet}</p>
+        )}
       </section>
 
       {latest?.workspace_files?.length ? (
