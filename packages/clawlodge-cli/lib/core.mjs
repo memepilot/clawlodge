@@ -26,7 +26,7 @@ const MAX_FILE_BYTES = 128 * 1024;
 const MAX_EXCERPT_CHARS = 1600;
 const MAX_BINARY_EMBED_BYTES = 8 * 1024 * 1024;
 const DEFAULT_ORIGIN = "https://clawlodge.com";
-const CLI_VERSION = "0.1.12";
+const CLI_VERSION = "0.1.13";
 const CONFIG_PATH = path.join(os.homedir(), ".config", "clawlodge", "config.json");
 const ANALYTICS_DIR = path.join(os.homedir(), ".clawlodge", "analytics");
 const ANALYTICS_PATH = path.join(ANALYTICS_DIR, "usage.jsonl");
@@ -989,101 +989,60 @@ export async function runCli(argv = process.argv.slice(2)) {
 
     if (command === "help" || command === "--help" || command === "-h") {
       printHelp();
-      return;
-    }
-
-    if (command === "version" || command === "--version" || command === "-v") {
+    } else if (command === "version" || command === "--version" || command === "-v") {
       printVersion();
-      return;
-    }
-
-    if (command === "login") {
+    } else if (command === "login") {
       await runLogin(options);
-      return;
-    }
-
-    if (command === "whoami") {
+    } else if (command === "whoami") {
       await runWhoAmI(options);
-      return;
-    }
-
-    if (command === "logout") {
+    } else if (command === "logout") {
       await runLogout();
-      return;
-    }
-
-    if (command === "config") {
+    } else if (command === "config") {
       await runConfig(options, positionals);
-      return;
-    }
-
-    if (command === "search") {
+    } else if (command === "search") {
       await runSearch(options, positionals);
-      return;
-    }
-
-    if (command === "show" || command === "get") {
+    } else if (command === "show" || command === "get") {
       await runShow(options, positionals);
-      return;
-    }
-
-    if (command === "download") {
+    } else if (command === "download") {
       await runDownload(options, positionals);
-      return;
-    }
-
-    if (command === "install" || command === "adopt") {
+    } else if (command === "install" || command === "adopt") {
       await runInstall(options, positionals);
-      return;
-    }
-
-    if (command === "favorite") {
+    } else if (command === "favorite") {
       await runFavorite(options, positionals);
-      return;
-    }
-
-    if (command === "unfavorite") {
+    } else if (command === "unfavorite") {
       await runUnfavorite(options, positionals);
-      return;
-    }
-
-    if (command === "comment") {
+    } else if (command === "comment") {
       await runComment(options, positionals);
-      return;
-    }
-
-    if (command === "report") {
+    } else if (command === "report") {
       await runReport(options, positionals);
-      return;
+    } else {
+      const { workspaceRoot, payload } = await buildPayload(options);
+      const out = path.resolve(options.out ?? path.join(workspaceRoot, ".clawlodge", "workspace-publish.json"));
+
+      if (command === "pack") {
+        await writePack(out, payload);
+        console.log(JSON.stringify({ ok: true, mode: "pack", out, stats: payload.stats }, null, 2));
+      } else {
+        if (command !== "publish") {
+          throw new Error(`Unsupported command: ${command}`);
+        }
+
+        const config = await readConfig();
+        const origin = resolveOrigin(options, config);
+        const token = resolveToken(options, config);
+        if (!token) {
+          throw new Error(`Missing PAT. Create one at ${origin}/settings, then run clawlodge login, pass --token, or set CLAWLODGE_PAT.`);
+        }
+
+        await writePack(out, payload);
+        const body = await requestJson(`${origin.replace(/\/$/, "")}/api/v1/workspace/publish`, token, {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+
+        console.log(JSON.stringify({ ok: true, mode: "publish", out, origin, result: body }, null, 2));
+      }
     }
-
-    const { workspaceRoot, payload } = await buildPayload(options);
-    const out = path.resolve(options.out ?? path.join(workspaceRoot, ".clawlodge", "workspace-publish.json"));
-
-    if (command === "pack") {
-      await writePack(out, payload);
-      console.log(JSON.stringify({ ok: true, mode: "pack", out, stats: payload.stats }, null, 2));
-      return;
-    }
-
-    if (command !== "publish") {
-      throw new Error(`Unsupported command: ${command}`);
-    }
-
-    const config = await readConfig();
-    const origin = resolveOrigin(options, config);
-    const token = resolveToken(options, config);
-    if (!token) {
-      throw new Error(`Missing PAT. Create one at ${origin}/settings, then run clawlodge login, pass --token, or set CLAWLODGE_PAT.`);
-    }
-
-    await writePack(out, payload);
-    const body = await requestJson(`${origin.replace(/\/$/, "")}/api/v1/workspace/publish`, token, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-
-    console.log(JSON.stringify({ ok: true, mode: "publish", out, origin, result: body }, null, 2));
   } catch (error) {
     await recordTelemetry({ command, options, positionals, startedAt, outcome: "error", error });
     throw error;
