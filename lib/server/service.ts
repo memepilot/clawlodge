@@ -856,6 +856,13 @@ export async function listLobsters(params?: {
       return +new Date(b.summary.created_at) - +new Date(a.summary.created_at);
     }
     if (params?.sort === "new") return +new Date(b.summary.created_at) - +new Date(a.summary.created_at);
+    if (params?.sort === "downloads") {
+      if (b.summary.download_count !== a.summary.download_count) {
+        return b.summary.download_count - a.summary.download_count;
+      }
+      if (b.summary.hot_score !== a.summary.hot_score) return b.summary.hot_score - a.summary.hot_score;
+      return +new Date(b.summary.created_at) - +new Date(a.summary.created_at);
+    }
     const scoreDiff = rankingScore(b.item, b.summary) - rankingScore(a.item, a.summary);
     if (scoreDiff !== 0) return scoreDiff;
     if (b.summary.hot_score !== a.summary.hot_score) return b.summary.hot_score - a.summary.hot_score;

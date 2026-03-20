@@ -19,7 +19,8 @@ export default async function Home({
   searchParams: Promise<{ sort?: string; tag?: string; q?: string; category?: string; page?: string }>;
 }) {
   const params = await searchParams;
-  const sort = params.sort === "new" ? "new" : "hot";
+  const defaultSort = "downloads";
+  const sort = params.sort === "new" ? "new" : defaultSort;
   const page = Number.isFinite(Number(params.page)) ? Math.max(1, Math.floor(Number(params.page))) : 1;
   const locale = await getRequestLocale();
   const t = getTranslations(locale);
@@ -39,14 +40,14 @@ export default async function Home({
     if (params.q?.trim()) search.set("q", params.q.trim());
     if (params.tag?.trim()) search.set("tag", params.tag.trim());
     if (selectedCategory) search.set("category", selectedCategory);
-    if (sort !== "hot") search.set("sort", sort);
+    if (sort !== defaultSort) search.set("sort", sort);
     if (nextPage > 1) search.set("page", String(nextPage));
     const query = search.toString();
     return query ? `/?${query}` : "/";
   };
   const buildCategoryHref = (category?: LobsterCategory) => {
     const search = new URLSearchParams();
-    if (sort !== "hot") search.set("sort", sort);
+    if (sort !== defaultSort) search.set("sort", sort);
     const query = search.toString();
     if (!category) return query ? `/?${query}` : "/";
     return query ? `/categories/${category}?${query}` : `/categories/${category}`;
@@ -151,7 +152,7 @@ export default async function Home({
             <p className="home-results-summary">
               {t.home.showing} {result.total} {locale === "zh" ? "个" : "items"}
             </p>
-            {(params.q?.trim() || params.tag?.trim() || selectedCategory || sort !== "hot") ? (
+            {(params.q?.trim() || params.tag?.trim() || selectedCategory || sort !== defaultSort) ? (
               <Link className="home-clear-link" href="/">
                 {locale === "zh" ? "清除筛选" : "clear filters"}
               </Link>
@@ -184,7 +185,7 @@ export default async function Home({
             ...(params.q?.trim() ? [{ name: "q", value: params.q.trim() }] : []),
             ...(params.tag?.trim() ? [{ name: "tag", value: params.tag.trim() }] : []),
             ...(selectedCategory ? [{ name: "category", value: selectedCategory }] : []),
-            ...(sort !== "hot" ? [{ name: "sort", value: sort }] : []),
+            ...(sort !== defaultSort ? [{ name: "sort", value: sort }] : []),
           ]}
         />
       </section>
