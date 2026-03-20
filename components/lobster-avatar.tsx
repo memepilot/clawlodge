@@ -1,4 +1,16 @@
 const FALLBACK_ICON = "/logo-mark.svg";
+const ICON_CACHE_VERSION = "20260320b";
+
+function appendIconVersion(url: string) {
+  if (!url.startsWith("/api/v1/storage/")) {
+    return url;
+  }
+  const separator = url.includes("?") ? "&" : "?";
+  if (url.includes("v=")) {
+    return url;
+  }
+  return `${url}${separator}v=${ICON_CACHE_VERSION}`;
+}
 
 function getThumbnailSrc(iconUrl: string) {
   if (!iconUrl.startsWith("/api/v1/storage/")) {
@@ -11,14 +23,14 @@ function getThumbnailSrc(iconUrl: string) {
   }
 
   const [, prefix, filename] = suffixMatch;
-  return `${prefix}${filename}-52.webp`;
+  return appendIconVersion(`${prefix}${filename}-52.webp`);
 }
 
 export function getLobsterAvatarSrc(iconUrl?: string | null, size?: number) {
   if (!iconUrl) {
     return FALLBACK_ICON;
   }
-  return size && size <= 56 ? getThumbnailSrc(iconUrl) : iconUrl;
+  return size && size <= 56 ? getThumbnailSrc(iconUrl) : appendIconVersion(iconUrl);
 }
 
 export function LobsterAvatar({
