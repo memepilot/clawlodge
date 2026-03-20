@@ -13,11 +13,20 @@ export default function SettingsPage() {
   const [seeds, setSeeds] = useState<SeedRecord[]>([]);
   const [token, setToken] = useState("");
   const [message, setMessage] = useState("");
+  const [authRequired, setAuthRequired] = useState(false);
 
   useEffect(() => {
     getMe()
       .then(setProfile)
-      .catch((error) => setMessage(error instanceof Error ? error.message : t.settings.failedToFetchProfile));
+      .catch((error) => {
+        const detail = error instanceof Error ? error.message : "";
+        if (detail.includes("Authentication required")) {
+          setAuthRequired(true);
+          setMessage("");
+          return;
+        }
+        setMessage(t.settings.failedToFetchProfile);
+      });
     getSeeds().then(setSeeds).catch(() => {});
   }, [t.settings.failedToFetchProfile]);
 
@@ -91,71 +100,84 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      <section className="shell page-panel p-5 md:p-6">
-        <h2 className="panel-title">{t.settings.mcpToken}</h2>
-        <p className="page-subtitle">
-          {t.settings.activePrefix}: {profile?.active_token_prefix ?? t.settings.none} / {t.settings.lastUsed}: {profile?.active_token_last_used_at ?? "-"}
-        </p>
-        <button className="btn mt-3" onClick={onRotate}>
-          {t.settings.rotateToken}
-        </button>
-        {token ? (
-          <div className="callout mt-3 text-sm">
-            <strong>{t.settings.copyNow}</strong> {token}
-          </div>
-        ) : null}
-      </section>
-
-      <section className="shell page-panel p-5 md:p-6">
-        <h2 className="panel-title">{t.settings.hireProfile}</h2>
-        <form className="form-grid mt-3" onSubmit={onSaveHire}>
-          <select className="select" name="status" defaultValue={profile?.hire_profile?.status ?? "closed"}>
-            <option value="closed">closed</option>
-            <option value="open">open</option>
-          </select>
-          <input className="input" name="contact_type" placeholder="contact type (email/discord/url)" defaultValue={profile?.hire_profile?.contact_type ?? ""} />
-          <input className="input" name="contact_value" placeholder="contact value" defaultValue={profile?.hire_profile?.contact_value ?? ""} />
-          <input className="input" name="timezone" placeholder="timezone" defaultValue={profile?.hire_profile?.timezone ?? ""} />
-          <input className="input" type="number" min={1} max={720} name="response_sla_hours" placeholder="response SLA (hours)" defaultValue={profile?.hire_profile?.response_sla_hours ?? ""} />
-          <button className="btn btn-primary" type="submit">
-            {t.settings.save}
-          </button>
-        </form>
-      </section>
-
-      <section className="shell page-panel p-5 md:p-6">
-        <h2 className="panel-title">{t.settings.seedContent}</h2>
-        <p className="page-subtitle">{t.settings.seedHint}</p>
-        <div className="seed-list mt-4">
-          {seeds.map((seed) => (
-            <div key={seed.slug} className="subcard">
-                <div className="font-medium">{seed.slug}</div>
-                <div className="muted text-sm">
-                {seed.source_type} {seed.verified ? `· ${t.settings.verified}` : ""}
+      {profile ? (
+        <>
+          <section className="shell page-panel p-5 md:p-6">
+            <h2 className="panel-title">{t.settings.mcpToken}</h2>
+            <p className="page-subtitle">
+              {t.settings.activePrefix}: {profile.active_token_prefix ?? t.settings.none} / {t.settings.lastUsed}: {profile.active_token_last_used_at ?? "-"}
+            </p>
+            <button className="btn mt-3" onClick={onRotate}>
+              {t.settings.rotateToken}
+            </button>
+            {token ? (
+              <div className="callout mt-3 text-sm">
+                <strong>{t.settings.copyNow}</strong> {token}
               </div>
+            ) : null}
+          </section>
+
+          <section className="shell page-panel p-5 md:p-6">
+            <h2 className="panel-title">{t.settings.hireProfile}</h2>
+            <form className="form-grid mt-3" onSubmit={onSaveHire}>
+              <select className="select" name="status" defaultValue={profile.hire_profile?.status ?? "closed"}>
+                <option value="closed">closed</option>
+                <option value="open">open</option>
+              </select>
+              <input className="input" name="contact_type" placeholder="contact type (email/discord/url)" defaultValue={profile.hire_profile?.contact_type ?? ""} />
+              <input className="input" name="contact_value" placeholder="contact value" defaultValue={profile.hire_profile?.contact_value ?? ""} />
+              <input className="input" name="timezone" placeholder="timezone" defaultValue={profile.hire_profile?.timezone ?? ""} />
+              <input className="input" type="number" min={1} max={720} name="response_sla_hours" placeholder="response SLA (hours)" defaultValue={profile.hire_profile?.response_sla_hours ?? ""} />
+              <button className="btn btn-primary" type="submit">
+                {t.settings.save}
+              </button>
+            </form>
+          </section>
+
+          <section className="shell page-panel p-5 md:p-6">
+            <h2 className="panel-title">{t.settings.seedContent}</h2>
+            <p className="page-subtitle">{t.settings.seedHint}</p>
+            <div className="seed-list mt-4">
+              {seeds.map((seed) => (
+                <div key={seed.slug} className="subcard">
+                  <div className="font-medium">{seed.slug}</div>
+                  <div className="muted text-sm">
+                    {seed.source_type} {seed.verified ? `· ${t.settings.verified}` : ""}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        <form className="form-grid mt-4" onSubmit={onSaveSeed}>
-          <input className="input" name="slug" placeholder="lobster slug" required />
-          <select className="select" name="source_type" defaultValue="curated">
-            <option value="official">official</option>
-            <option value="curated">curated</option>
-            <option value="community">community</option>
-            <option value="demo">demo</option>
-          </select>
-          <input className="input" name="source_url" placeholder="source url" />
-          <input className="input" name="original_author" placeholder="original author" />
-          <textarea className="textarea min-h-24" name="curation_note" placeholder="curation note" />
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" name="verified" />
-            {t.settings.verified}
-          </label>
-          <button className="btn btn-primary" type="submit">
-            {t.settings.saveSeedMetadata}
-          </button>
-        </form>
-      </section>
+            <form className="form-grid mt-4" onSubmit={onSaveSeed}>
+              <input className="input" name="slug" placeholder="lobster slug" required />
+              <select className="select" name="source_type" defaultValue="curated">
+                <option value="official">official</option>
+                <option value="curated">curated</option>
+                <option value="community">community</option>
+                <option value="demo">demo</option>
+              </select>
+              <input className="input" name="source_url" placeholder="source url" />
+              <input className="input" name="original_author" placeholder="original author" />
+              <textarea className="textarea min-h-24" name="curation_note" placeholder="curation note" />
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" name="verified" />
+                {t.settings.verified}
+              </label>
+              <button className="btn btn-primary" type="submit">
+                {t.settings.saveSeedMetadata}
+              </button>
+            </form>
+          </section>
+        </>
+      ) : authRequired ? (
+        <section className="shell page-panel p-5 md:p-6">
+          <p className="page-subtitle">{t.settings.loginRequiredHint}</p>
+          <div className="mt-4">
+            <Link className="btn btn-primary" href={githubLoginUrl}>
+              {t.auth.loginWithGithub}
+            </Link>
+          </div>
+        </section>
+      ) : null}
 
       {message ? <p className="text-sm text-[var(--brand)]">{message}</p> : null}
     </div>
