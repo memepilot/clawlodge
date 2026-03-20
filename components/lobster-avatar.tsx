@@ -1,36 +1,7 @@
 const FALLBACK_ICON = "/logo-mark.svg";
-const ICON_CACHE_VERSION = "20260320b";
 
-function appendIconVersion(url: string) {
-  if (!url.startsWith("/api/v1/storage/")) {
-    return url;
-  }
-  const separator = url.includes("?") ? "&" : "?";
-  if (url.includes("v=")) {
-    return url;
-  }
-  return `${url}${separator}v=${ICON_CACHE_VERSION}`;
-}
-
-function getThumbnailSrc(iconUrl: string) {
-  if (!iconUrl.startsWith("/api/v1/storage/")) {
-    return iconUrl;
-  }
-
-  const suffixMatch = iconUrl.match(/^(.*\/)([^/?]+?)(\.[^./?]+)(\?.*)?$/);
-  if (!suffixMatch) {
-    return iconUrl;
-  }
-
-  const [, prefix, filename] = suffixMatch;
-  return appendIconVersion(`${prefix}${filename}-52.webp`);
-}
-
-export function getLobsterAvatarSrc(iconUrl?: string | null, size?: number) {
-  if (!iconUrl) {
-    return FALLBACK_ICON;
-  }
-  return size && size <= 56 ? getThumbnailSrc(iconUrl) : appendIconVersion(iconUrl);
+export function getLobsterAvatarSrc(iconUrl?: string | null) {
+  return iconUrl || FALLBACK_ICON;
 }
 
 export function LobsterAvatar({
@@ -46,7 +17,7 @@ export function LobsterAvatar({
   className?: string;
   eager?: boolean;
 }) {
-  const src = getLobsterAvatarSrc(iconUrl, size);
+  const src = getLobsterAvatarSrc(iconUrl);
   const shouldEagerLoad = eager || size >= 96;
 
   return (
