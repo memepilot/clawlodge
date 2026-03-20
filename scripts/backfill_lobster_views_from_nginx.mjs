@@ -115,7 +115,11 @@ async function main() {
     throw new Error("DATABASE_URL is required");
   }
 
-  const pool = new pg.Pool({ connectionString });
+  const pool = new pg.Pool({
+    connectionString,
+    application_name: "clawlodge-backfill-views-read",
+    idle_in_transaction_session_timeout: 10_000,
+  });
   const client = await pool.connect();
   let db;
   try {
@@ -155,7 +159,11 @@ async function main() {
     lobster.viewCount = count;
   }
 
-  const updatePool = new pg.Pool({ connectionString });
+  const updatePool = new pg.Pool({
+    connectionString,
+    application_name: "clawlodge-backfill-views-write",
+    idle_in_transaction_session_timeout: 10_000,
+  });
   const updateClient = await updatePool.connect();
   try {
     await updateClient.query("BEGIN");

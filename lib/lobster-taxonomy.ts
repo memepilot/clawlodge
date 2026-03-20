@@ -266,7 +266,7 @@ export function categoryGuideSlugs(category: LobsterCategory) {
       return ["openclaw-memory-allocation-strategies"];
     case "workflow":
     case "agent":
-      return ["openclaw-multi-agent-workflows"];
+      return ["openclaw-multi-agent-config"];
     case "workspace":
     case "skill":
     case "tooling":
@@ -279,7 +279,7 @@ export function topicGuideSlugs(topic: LobsterTopic) {
   switch (topic) {
     case "multiagent":
     case "automation":
-      return ["openclaw-multi-agent-workflows"];
+      return ["openclaw-multi-agent-config"];
     case "research":
     case "productivity":
       return ["openclaw-memory-allocation-strategies"];

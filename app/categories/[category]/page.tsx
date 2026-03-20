@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { LobsterCollectionPage } from "@/components/lobster-collection-page";
-import { buildCollectionMetadata, categoryIntro, categorySeoTitle, CATEGORY_OPTIONS } from "@/lib/lobster-taxonomy";
+import { buildCollectionMetadata, categoryGuideSlugs, categoryIntro, categorySeoTitle, CATEGORY_OPTIONS } from "@/lib/lobster-taxonomy";
 import { getRequestLocale } from "@/lib/server/locale";
 import { listLobsters } from "@/lib/server/service";
 
@@ -52,6 +52,7 @@ export default async function CategoryPage({
       sort={sort}
       selectedCategory={match.value}
       sectionHeading={title}
+      guideSlugs={categoryGuideSlugs(match.value)}
       buildPageHref={(nextPage) => {
         const search = new URLSearchParams();
         if (sort !== "hot") search.set("sort", sort);

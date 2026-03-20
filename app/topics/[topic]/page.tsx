@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { LobsterCollectionPage } from "@/components/lobster-collection-page";
-import { buildCollectionMetadata, topicIntro, topicSeoTitle } from "@/lib/lobster-taxonomy";
+import { buildCollectionMetadata, topicGuideSlugs, topicIntro, topicSeoTitle } from "@/lib/lobster-taxonomy";
 import { getRequestLocale } from "@/lib/server/locale";
 import { listLobsters } from "@/lib/server/service";
 import type { LobsterTopic } from "@/lib/types";
@@ -53,6 +53,7 @@ export default async function TopicPage({
       result={result}
       sort={sort}
       sectionHeading={title}
+      guideSlugs={topicGuideSlugs(typedTopic)}
       buildPageHref={(nextPage) => {
         const search = new URLSearchParams();
         if (sort !== "hot") search.set("sort", sort);

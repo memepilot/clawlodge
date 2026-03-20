@@ -62,7 +62,11 @@ function getPool() {
   if (!pool) {
     const connectionString = process.env.DATABASE_URL?.trim();
     if (!connectionString) throw new Error("DATABASE_URL is required");
-    pool = new Pool({ connectionString });
+    pool = new Pool({
+      connectionString,
+      application_name: "clawlodge-backfill-icons",
+      idle_in_transaction_session_timeout: 10_000,
+    });
   }
   return pool;
 }

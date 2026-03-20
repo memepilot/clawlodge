@@ -151,7 +151,7 @@ export function LobsterCard({
           ) : null}
           <div className="lobster-card-tags">
             {item.tags.map((tag) => (
-              <Link key={tag} className="tag" href={`/?tag=${encodeURIComponent(tag)}`}>
+              <Link key={tag} className="tag" href={`/tags/${encodeURIComponent(tag)}`}>
                 #{tag}
               </Link>
             ))}

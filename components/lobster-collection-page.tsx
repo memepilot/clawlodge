@@ -4,7 +4,8 @@ import Script from "next/script";
 import { LobsterCard } from "@/components/lobster-card";
 import { PaginationBar } from "@/components/pagination-bar";
 import { apiOrigin } from "@/lib/api";
-import { buildCollectionJsonLd, CATEGORY_OPTIONS, categoryLabel } from "@/lib/lobster-taxonomy";
+import { getGuideBySlug } from "@/lib/guides";
+import { buildCollectionJsonLd, CATEGORY_OPTIONS, categoryGuideSlugs, categoryLabel } from "@/lib/lobster-taxonomy";
 import { getTranslations } from "@/lib/i18n";
 import { siteConfig } from "@/lib/site";
 import type { LobsterCategory, LobsterListResult } from "@/lib/types";
@@ -19,6 +20,7 @@ type Props = {
   buildPageHref: (page: number) => string;
   selectedCategory?: LobsterCategory;
   sectionHeading?: string;
+  guideSlugs?: string[];
 };
 
 export function LobsterCollectionPage({
@@ -31,6 +33,7 @@ export function LobsterCollectionPage({
   buildPageHref,
   selectedCategory,
   sectionHeading,
+  guideSlugs,
 }: Props) {
   const t = getTranslations(locale);
   const githubLoginUrl = `${apiOrigin}/api/v1/auth/github/start?next=/publish`;
@@ -39,6 +42,8 @@ export function LobsterCollectionPage({
     description: intro,
     pathname,
   });
+  const resolvedGuideSlugs = guideSlugs ?? (selectedCategory ? categoryGuideSlugs(selectedCategory) : ["openclaw-multi-agent-config"]);
+  const guides = resolvedGuideSlugs.map((slug) => getGuideBySlug(slug)).filter(Boolean);
   const buildCategoryHref = (category?: LobsterCategory) => {
     const search = new URLSearchParams();
     if (sort !== "hot") search.set("sort", sort);
@@ -123,6 +128,17 @@ export function LobsterCollectionPage({
             ) : null}
           </div>
         </div>
+
+        {guides.length ? (
+          <div className="guide-link-row">
+            <span className="guide-link-label">Guides:</span>
+            {guides.map((guide) => (
+              <Link key={guide!.slug} className="inline-link" href={`/guides/${guide!.slug}`}>
+                {guide!.title}
+              </Link>
+            ))}
+          </div>
+        ) : null}
 
         <div className="grid home-lobster-grid">
           {result.items.length ? (

@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 
+import { getGuides } from "@/lib/guides";
 import { CATEGORY_OPTIONS } from "@/lib/lobster-taxonomy";
 import { readMirroredLobsterSummaries, readMirroredUserProfiles } from "@/lib/server/store";
 import { absoluteUrl } from "@/lib/site";
@@ -31,6 +32,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly",
       priority: 0.6,
     },
+    {
+      url: absoluteUrl("/guides"),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
   ];
 
   try {
@@ -57,6 +63,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
+    const guideRoutes: MetadataRoute.Sitemap = getGuides().map((guide) => ({
+      url: absoluteUrl(`/guides/${guide.slug}`),
+      changeFrequency: "weekly" as const,
+      priority: 0.72,
+    }));
+
     const topicValues = new Set<string>();
     const tagCounts = new Map<string, number>();
     for (const { lobster } of lobsters) {
@@ -81,7 +93,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.55,
       }));
 
-    return [...staticRoutes, ...categoryRoutes, ...topicRoutes, ...tagRoutes, ...lobsterRoutes, ...userRoutes];
+    return [...staticRoutes, ...guideRoutes, ...categoryRoutes, ...topicRoutes, ...tagRoutes, ...lobsterRoutes, ...userRoutes];
   } catch (error) {
     console.error("sitemap generation fallback", error);
     return staticRoutes;

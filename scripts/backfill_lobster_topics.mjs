@@ -289,48 +289,59 @@ async function main() {
     throw new Error("DATABASE_URL is required");
   }
 
-  const pool = new Pool({ connectionString });
+  const pool = new Pool({
+    connectionString,
+    application_name: "clawlodge-backfill-topics",
+    idle_in_transaction_session_timeout: 10_000,
+  });
   try {
     const candidates = await fetchCandidates(pool, args);
     const updates = [];
     const results = [];
+    const failures = [];
 
     for (let index = 0; index < candidates.length; index += 1) {
       const item = candidates[index];
-      const topics = await classifyTopics(item);
-      const updatedAt = new Date().toISOString();
-      const update = {
-        slug: item.slug,
-        topics,
-        search_document: buildSearchDocument({
+      try {
+        const topics = await classifyTopics(item);
+        const updatedAt = new Date().toISOString();
+        const update = {
           slug: item.slug,
-          name: item.name,
-          summary: item.summary,
-          tags: item.tags,
           topics,
-          source_url: item.source_url,
-          original_author: item.original_author,
-        }),
-        updated_at: updatedAt,
-      };
-      updates.push(update);
-      results.push({
-        slug: item.slug,
-        category: item.category,
-        before_topics: item.topics,
-        after_topics: topics,
-      });
-      console.error(`[${index + 1}/${candidates.length}] ${item.slug} -> ${topics.join(", ")}`);
+          search_document: buildSearchDocument({
+            slug: item.slug,
+            name: item.name,
+            summary: item.summary,
+            tags: item.tags,
+            topics,
+            source_url: item.source_url,
+            original_author: item.original_author,
+          }),
+          updated_at: updatedAt,
+        };
+        updates.push(update);
+        results.push({
+          slug: item.slug,
+          category: item.category,
+          before_topics: item.topics,
+          after_topics: topics,
+        });
+        console.error(`[${index + 1}/${candidates.length}] ${item.slug} -> ${topics.join(", ")}`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        failures.push({ slug: item.slug, error: message });
+        console.error(`[${index + 1}/${candidates.length}] ${item.slug} FAILED: ${message}`);
+      }
     }
 
     await fs.mkdir(path.dirname(args.output), { recursive: true });
-    await fs.writeFile(args.output, JSON.stringify({ results }, null, 2) + "\n", "utf8");
+    await fs.writeFile(args.output, JSON.stringify({ results, failures }, null, 2) + "\n", "utf8");
 
     if (!args.dryRun) {
       await applyUpdates(pool, updates);
     }
 
-    console.log(JSON.stringify({ updated: updates.length, dry_run: args.dryRun, output: args.output }, null, 2));
+    console.log(JSON.stringify({ updated: updates.length, failures: failures.length, dry_run: args.dryRun, output: args.output }, null, 2));
   } finally {
     await pool.end();
   }

@@ -71,6 +71,7 @@ export default async function TagPage({
       pathname={pathname}
       result={result}
       sort={sort}
+      guideSlugs={["openclaw-config-file"]}
       buildPageHref={(nextPage) => {
         const search = new URLSearchParams();
         if (sort !== "hot") search.set("sort", sort);
