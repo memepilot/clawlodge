@@ -1022,12 +1022,17 @@ main {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  margin-bottom: 8px;
 }
 
 .community-actions {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.community-form {
+  margin-top: 0;
 }
 
 .community-label {
@@ -1108,6 +1113,26 @@ main {
   overflow-wrap: anywhere;
 }
 
+.community-empty-row,
+.community-report-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.community-empty-row {
+  padding-top: 12px;
+}
+
+.community-empty-row .muted {
+  margin: 0;
+}
+
+.community-report-row {
+  padding-top: 12px;
+}
+
 .report-link {
   border: none;
   padding: 0;
@@ -1122,6 +1147,15 @@ main {
 .report-link:hover {
   color: var(--accent-deep);
   text-decoration-color: rgba(191, 63, 48, 0.42);
+}
+
+@media (max-width: 720px) {
+  .community-empty-row,
+  .community-report-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
 }
 
 .modal-backdrop {

@@ -127,7 +127,6 @@ export function LobsterActions({
     <>
       <section className="shell page-panel p-4 md:p-5">
         <div className="community-header">
-          <h3 className="panel-title">{t.community.title}</h3>
           <div className="community-actions">
             <button
               className={`icon-action ${favorited ? "is-active" : ""}`}
@@ -150,7 +149,7 @@ export function LobsterActions({
           </div>
         </div>
 
-        <form className="mt-4 space-y-2" onSubmit={onCommentSubmit}>
+        <form className="community-form space-y-2" onSubmit={onCommentSubmit}>
           <label className="text-sm community-label">{t.community.comment}</label>
           <textarea
             className="textarea min-h-24"
@@ -177,13 +176,23 @@ export function LobsterActions({
               </article>
             ))
           ) : (
-            <p className="muted">{t.community.noComments}</p>
+            <div className="community-empty-row">
+              <p className="muted">{t.community.noComments}</p>
+              <button className="report-link" type="button" onClick={onReport}>
+                {t.community.report}
+              </button>
+            </div>
           )}
         </div>
 
-        <button className="report-link mt-4" type="button" onClick={onReport}>
-          {t.community.report}
-        </button>
+        {hasComments ? (
+          <div className="community-report-row">
+            <span />
+            <button className="report-link" type="button" onClick={onReport}>
+              {t.community.report}
+            </button>
+          </div>
+        ) : null}
         {message ? <p className="mt-3 text-sm text-[var(--brand)]">{message}</p> : null}
       </section>
 
