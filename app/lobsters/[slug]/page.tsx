@@ -266,7 +266,7 @@ export default async function LobsterDetailPage({
                 </a>
               ) : null}
               <Link className="btn" href={localizePath("/guides/openclaw-config-file", locale)}>
-                  OpenClaw Config File Guide
+                {t.home.configGuideCta}
               </Link>
             </div>
           </div>
