@@ -11,6 +11,7 @@ import { MarkdownContent } from "@/components/markdown-content";
 import { DownloadLink } from "@/components/download-link";
 import { WorkspaceBrowser } from "@/components/workspace-browser";
 import { getTranslations, type Locale } from "@/lib/i18n";
+import { categoryLabel } from "@/lib/lobster-taxonomy";
 import { localizePath } from "@/lib/locale-routing";
 import { getRequestLocale } from "@/lib/server/locale";
 import { getDetailDisplayLobsterName, getDisplayAuthor } from "@/lib/lobster-display";
@@ -76,6 +77,27 @@ function topicLabel(value: string, locale: Locale) {
         return "多智能体";
       case "automation":
         return "自动化";
+      default:
+        return value;
+    }
+  }
+
+  if (locale === "ja") {
+    switch (value) {
+      case "dev":
+        return "開発";
+      case "design":
+        return "デザイン";
+      case "research":
+        return "リサーチ";
+      case "writing":
+        return "執筆";
+      case "productivity":
+        return "生産性";
+      case "multiagent":
+        return "マルチエージェント";
+      case "automation":
+        return "自動化";
       default:
         return value;
     }
@@ -203,7 +225,7 @@ export default async function LobsterDetailPage({
           {lobster.category ? (
             <div className="detail-topic-row">
               <Link className="tag tag-category" href={localizePath(`/categories/${lobster.category}`, locale)}>
-                {lobster.category}
+                {categoryLabel(lobster.category, locale)}
               </Link>
             </div>
           ) : null}
