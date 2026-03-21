@@ -10,7 +10,8 @@ import { getLobsterAvatarSrc, LobsterAvatar } from "@/components/lobster-avatar"
 import { MarkdownContent } from "@/components/markdown-content";
 import { DownloadLink } from "@/components/download-link";
 import { WorkspaceBrowser } from "@/components/workspace-browser";
-import { getTranslations } from "@/lib/i18n";
+import { getTranslations, type Locale } from "@/lib/i18n";
+import { localizePath } from "@/lib/locale-routing";
 import { getRequestLocale } from "@/lib/server/locale";
 import { getDetailDisplayLobsterName, getDisplayAuthor } from "@/lib/lobster-display";
 import { ApiError } from "@/lib/server/errors";
@@ -58,7 +59,7 @@ function detailSeoTitle(name: string, category: string | null | undefined) {
 
 const getCachedLobster = cache(async (slug: string) => getLobsterBySlug(slug));
 
-function topicLabel(value: string, locale: "en" | "zh") {
+function topicLabel(value: string, locale: Locale) {
   if (locale === "zh") {
     switch (value) {
       case "dev":
@@ -201,7 +202,7 @@ export default async function LobsterDetailPage({
           <p className="detail-summary">{lobster.summary}</p>
           {lobster.category ? (
             <div className="detail-topic-row">
-              <Link className="tag tag-category" href={`/categories/${lobster.category}`}>
+              <Link className="tag tag-category" href={localizePath(`/categories/${lobster.category}`, locale)}>
                 {lobster.category}
               </Link>
             </div>
@@ -209,7 +210,7 @@ export default async function LobsterDetailPage({
           {lobster.topics?.length ? (
             <div className="detail-topic-row">
               {lobster.topics.map((topic) => (
-                <Link key={topic} className="tag tag-topic" href={`/topics/${topic}`}>
+                <Link key={topic} className="tag tag-topic" href={localizePath(`/topics/${topic}`, locale)}>
                   {topicLabel(topic, locale)}
                 </Link>
               ))}
@@ -217,7 +218,7 @@ export default async function LobsterDetailPage({
           ) : null}
           <div className="lobster-card-tags detail-tags">
             {lobster.tags.map((tag) => (
-              <Link key={tag} className="tag" href={`/tags/${encodeURIComponent(tag)}`}>
+              <Link key={tag} className="tag" href={localizePath(`/tags/${encodeURIComponent(tag)}`, locale)}>
                 #{tag}
               </Link>
             ))}
@@ -264,7 +265,7 @@ export default async function LobsterDetailPage({
                   {t.detail.viewOnGithub}
                 </a>
               ) : null}
-              <Link className="btn" href="/guides/openclaw-config-file">
+              <Link className="btn" href={localizePath("/guides/openclaw-config-file", locale)}>
                   OpenClaw Config File Guide
               </Link>
             </div>

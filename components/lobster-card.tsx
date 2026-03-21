@@ -3,15 +3,16 @@ import Link from "next/link";
 import { LobsterAvatar, getLobsterCardAvatarSrc } from "@/components/lobster-avatar";
 import { Locale, getTranslations } from "@/lib/i18n";
 import { categoryLabel as localizedCategoryLabel, topicLabel as localizedTopicLabel } from "@/lib/lobster-taxonomy";
+import { localizePath } from "@/lib/locale-routing";
 import { getDisplayAuthor, getDisplayLobsterName, getDisplaySummary } from "@/lib/lobster-display";
 import { LobsterSummary } from "@/lib/types";
 
-function categoryLabel(value: LobsterSummary["category"]) {
-  return value ? localizedCategoryLabel(value, "en") : null;
+function categoryLabel(value: LobsterSummary["category"], locale: Locale) {
+  return value ? localizedCategoryLabel(value, locale) : null;
 }
 
-function topicLabel(value: NonNullable<LobsterSummary["topics"]>[number]) {
-  return localizedTopicLabel(value, "en");
+function topicLabel(value: NonNullable<LobsterSummary["topics"]>[number], locale: Locale) {
+  return localizedTopicLabel(value, locale);
 }
 
 export function LobsterCard({
@@ -19,19 +20,22 @@ export function LobsterCard({
   locale = "en",
   variant = "default",
   eagerIcon = false,
+  routeLocale,
 }: {
   item: LobsterSummary;
   locale?: Locale;
   variant?: "default" | "home";
   eagerIcon?: boolean;
+  routeLocale?: Locale;
 }) {
   const t = getTranslations(locale);
+  const pathLocale = routeLocale ?? locale;
   const displayName = getDisplayLobsterName(item, item.latest_source_repo);
   const author = getDisplayAuthor(item, item.latest_source_repo);
   const summary = getDisplaySummary(item, item.latest_source_repo);
   const isHomeCard = variant === "home";
   const cardClassName = ["card", "lobster-card", isHomeCard ? "lobster-card-home" : ""].filter(Boolean).join(" ");
-  const category = categoryLabel(item.category);
+  const category = categoryLabel(item.category, locale);
   return (
     <article className={cardClassName}>
       {item.recommended && !isHomeCard ? (
@@ -51,19 +55,19 @@ export function LobsterCard({
             />
             <div className="lobster-card-heading">
               <h3 className="lobster-card-title lobster-card-home-title">
-                <Link href={`/lobsters/${item.slug}`}>{displayName}</Link>
+                <Link href={localizePath(`/lobsters/${item.slug}`, pathLocale)}>{displayName}</Link>
               </h3>
             </div>
           </div>
           <div className="lobster-card-meta lobster-card-home-meta">
             {category && item.category ? (
-              <Link className="tag tag-category" href={`/categories/${item.category}`}>
+              <Link className="tag tag-category" href={localizePath(`/categories/${item.category}`, pathLocale)}>
                 {category}
               </Link>
             ) : null}
             {item.topics?.slice(0, 2).map((topic) => (
-              <Link key={topic} className="tag tag-topic" href={`/topics/${topic}`}>
-                {topicLabel(topic)}
+              <Link key={topic} className="tag tag-topic" href={localizePath(`/topics/${topic}`, pathLocale)}>
+                {topicLabel(topic, locale)}
               </Link>
             ))}
           </div>
@@ -117,7 +121,7 @@ export function LobsterCard({
                 <LobsterAvatar iconUrl={item.icon_url} alt={`${item.name} icon`} size={56} className="lobster-card-avatar" eager={eagerIcon} />
                 <div className="lobster-card-heading">
                   <h3 className="lobster-card-title">
-                    <Link href={`/lobsters/${item.slug}`}>{displayName}</Link>
+                    <Link href={localizePath(`/lobsters/${item.slug}`, pathLocale)}>{displayName}</Link>
                   </h3>
                   <p className="muted text-sm">
                     {t.card.by}{" "}
@@ -143,15 +147,15 @@ export function LobsterCard({
           {item.topics?.length ? (
             <div className="lobster-card-topics">
               {item.topics.map((topic) => (
-                <Link key={topic} className="tag tag-topic" href={`/topics/${topic}`}>
-                  {topicLabel(topic)}
+                <Link key={topic} className="tag tag-topic" href={localizePath(`/topics/${topic}`, pathLocale)}>
+                  {topicLabel(topic, locale)}
                 </Link>
               ))}
             </div>
           ) : null}
           <div className="lobster-card-tags">
             {item.tags.map((tag) => (
-              <Link key={tag} className="tag" href={`/tags/${encodeURIComponent(tag)}`}>
+              <Link key={tag} className="tag" href={localizePath(`/tags/${encodeURIComponent(tag)}`, pathLocale)}>
                 #{tag}
               </Link>
             ))}

@@ -205,6 +205,48 @@ main {
   flex-shrink: 0;
 }
 
+.locale-switcher {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.locale-select {
+  min-width: 112px;
+  appearance: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.86)),
+    var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 12px 40px 12px 16px;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(42, 31, 25, 0.06);
+}
+
+.locale-switcher::after {
+  content: "";
+  position: absolute;
+  right: 16px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  color: var(--ink-soft);
+  transform: translateY(-2px) rotate(45deg);
+  pointer-events: none;
+}
+
+.locale-select:focus {
+  outline: none;
+  border-color: rgba(191, 63, 48, 0.35);
+  box-shadow: 0 0 0 4px rgba(191, 63, 48, 0.12);
+}
+
 .auth-cluster {
   display: flex;
   align-items: center;
@@ -2253,6 +2295,11 @@ main {
   .auth-cluster .btn,
   .auth-cluster .btn-quiet {
     padding-inline: 12px;
+  }
+
+  .locale-select {
+    min-width: 96px;
+    padding: 10px 34px 10px 14px;
   }
 
   .filters-row {

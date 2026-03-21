@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 
 import { getGuides } from "@/lib/guides";
 import { CATEGORY_OPTIONS } from "@/lib/lobster-taxonomy";
+import { localizePath } from "@/lib/locale-routing";
 import { readMirroredLobsterSummaries, readMirroredUserProfiles } from "@/lib/server/store";
 import { absoluteUrl } from "@/lib/site";
 
@@ -38,6 +39,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     },
   ];
+  const localizedLocales = ["zh", "ja"] as const;
+  const localizedStaticRoutes: MetadataRoute.Sitemap = localizedLocales.flatMap((locale) => [
+    {
+      url: absoluteUrl(localizePath("/", locale)),
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
+    {
+      url: absoluteUrl(localizePath("/about", locale)),
+      changeFrequency: "monthly",
+      priority: 0.65,
+    },
+    {
+      url: absoluteUrl(localizePath("/guides", locale)),
+      changeFrequency: "weekly",
+      priority: 0.75,
+    },
+  ]);
 
   try {
     const lobsters = await readMirroredLobsterSummaries();
@@ -62,12 +81,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly" as const,
       priority: 0.7,
     }));
+    const localizedCategoryRoutes: MetadataRoute.Sitemap = localizedLocales.flatMap((locale) =>
+      CATEGORY_OPTIONS.map((category) => ({
+        url: absoluteUrl(localizePath(`/categories/${category.value}`, locale)),
+        changeFrequency: "weekly" as const,
+        priority: 0.65,
+      })),
+    );
 
     const guideRoutes: MetadataRoute.Sitemap = getGuides().map((guide) => ({
       url: absoluteUrl(`/guides/${guide.slug}`),
       changeFrequency: "weekly" as const,
       priority: 0.72,
     }));
+    const localizedGuideRoutes: MetadataRoute.Sitemap = localizedLocales.flatMap((locale) =>
+      getGuides(locale).map((guide) => ({
+        url: absoluteUrl(localizePath(`/guides/${guide.slug}`, locale)),
+        changeFrequency: "weekly" as const,
+        priority: 0.68,
+      })),
+    );
 
     const topicValues = new Set<string>();
     const tagCounts = new Map<string, number>();
@@ -81,6 +114,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly" as const,
       priority: 0.65,
     }));
+    const localizedTopicRoutes: MetadataRoute.Sitemap = localizedLocales.flatMap((locale) =>
+      [...topicValues].sort().map((topic) => ({
+        url: absoluteUrl(localizePath(`/topics/${topic}`, locale)),
+        changeFrequency: "weekly" as const,
+        priority: 0.6,
+      })),
+    );
 
     const tagRoutes: MetadataRoute.Sitemap = [...tagCounts.entries()]
       .sort((a, b) => {
@@ -93,9 +133,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.55,
       }));
 
-    return [...staticRoutes, ...guideRoutes, ...categoryRoutes, ...topicRoutes, ...tagRoutes, ...lobsterRoutes, ...userRoutes];
+    return [
+      ...staticRoutes,
+      ...localizedStaticRoutes,
+      ...guideRoutes,
+      ...localizedGuideRoutes,
+      ...categoryRoutes,
+      ...localizedCategoryRoutes,
+      ...topicRoutes,
+      ...localizedTopicRoutes,
+      ...tagRoutes,
+      ...lobsterRoutes,
+      ...userRoutes,
+    ];
   } catch (error) {
     console.error("sitemap generation fallback", error);
-    return staticRoutes;
+    return [...staticRoutes, ...localizedStaticRoutes];
   }
 }

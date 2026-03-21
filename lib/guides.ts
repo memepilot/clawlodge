@@ -1,5 +1,9 @@
+import fs from "node:fs";
+import path from "node:path";
 import type { Metadata } from "next";
 
+import type { Locale } from "@/lib/i18n";
+import { buildLocaleAlternates, localizePath } from "@/lib/locale-routing";
 import { absoluteUrl, buildSocialImages, siteConfig } from "@/lib/site";
 
 export type Guide = {
@@ -12,6 +16,29 @@ export type Guide = {
   relatedTopicSlugs?: string[];
   relatedLobsterSlugs?: string[];
 };
+
+type LocalizedGuideCopy = Partial<Record<Locale, Pick<Guide, "title" | "description" | "intro">>>;
+
+const guideContentDir = path.join(process.cwd(), "content", "guides");
+
+function readLocalizedGuideMarkdown(slug: string, locale: Locale) {
+  if (locale === "en") return null;
+
+  const filename =
+    slug === "openclaw-multi-agent-config"
+      ? locale === "zh"
+        ? "multi-agent-config-zh.md"
+        : locale === "ja"
+          ? "multi-agent-config-ja.md"
+          : null
+      : null;
+
+  if (!filename) return null;
+
+  const fullPath = path.join(guideContentDir, filename);
+  if (!fs.existsSync(fullPath)) return null;
+  return fs.readFileSync(fullPath, "utf8");
+}
 
 const guides: Guide[] = [
   {
@@ -266,25 +293,81 @@ The best OpenClaw config file is not a single magic file. It is a clean entry po
   },
 ];
 
-export function getGuides() {
-  return guides;
+const localizedGuideCopy: Record<string, LocalizedGuideCopy> = {
+  "openclaw-multi-agent-config": {
+    zh: {
+      title: "OpenClaw 多智能体配置指南",
+      description: "学习如何为 OpenClaw 设计多智能体工作区，包括角色分工、记忆结构、评审流程和协作规则。",
+      intro: "把 OpenClaw 从单个助手升级为有角色、有工作流、有记忆和验证环节的协作系统。",
+    },
+    ja: {
+      title: "OpenClawマルチエージェント設定ガイド",
+      description: "OpenClawで役割分担、メモリ、レビュー、連携ルールを備えたマルチエージェント構成を作るための実践ガイド。",
+      intro: "OpenClawを単体アシスタントから、役割・ワークフロー・メモリ・検証を備えた協調システムへ変えるためのガイド。",
+    },
+  },
+  "openclaw-memory-allocation-strategies": {
+    zh: {
+      title: "OpenClaw 记忆分配策略",
+      description: "理解 OpenClaw 工作区中的记忆结构，从决策记录到长期上下文，并查看龙虾客栈里的记忆型示例。",
+      intro: "一份关于 OpenClaw 记忆结构的实用指南：该记什么、存在哪里，以及记忆如何改变工作区质量。",
+    },
+    ja: {
+      title: "OpenClawメモリ戦略ガイド",
+      description: "意思決定ログから長期コンテキストまで、OpenClawワークスペースのメモリ設計を理解するための実践ガイド。",
+      intro: "OpenClawのメモリ構造で何を記録し、どこに保存し、どう品質向上につなげるかを整理したガイド。",
+    },
+  },
+  "openclaw-config-file": {
+    zh: {
+      title: "OpenClaw 配置文件指南",
+      description: "理解 OpenClaw config file 的作用、工作区结构，以及如何在龙虾客栈中挑选可复用配置。",
+      intro: "了解 OpenClaw 配置文件通常包含什么，它在工作区中承担什么角色，以及去哪里找高质量示例。",
+    },
+    ja: {
+      title: "OpenClaw設定ファイルガイド",
+      description: "OpenClawのconfig fileが何を担うのか、ワークスペース構造の中でどう機能するのかを整理したガイド。",
+      intro: "OpenClawの設定ファイルに含まれる内容と、再利用可能な構成例を見分けるポイントをまとめました。",
+    },
+  },
+};
+
+export function getGuides(locale: Locale = "en") {
+  return guides.map((guide) => getGuideBySlug(guide.slug, locale)!);
 }
 
-export function getGuideBySlug(slug: string) {
-  return guides.find((guide) => guide.slug === slug) ?? null;
+export function getGuideBySlug(slug: string, locale: Locale = "en") {
+  const guide = guides.find((entry) => entry.slug === slug) ?? null;
+  if (!guide) return null;
+  const overrides = localizedGuideCopy[slug]?.[locale];
+  const merged = overrides
+    ? {
+        ...guide,
+        ...overrides,
+      }
+    : guide;
+  if (locale === "en") return merged;
+  const localizedMarkdown = readLocalizedGuideMarkdown(slug, locale) ?? merged.markdown;
+  return {
+    ...merged,
+    markdown: localizedMarkdown.replace(/\]\((\/(?:categories|topics|tags|guides|lobsters)\/[^)]+)\)/g, (_match, path) => {
+      return `](${localizePath(path, locale)})`;
+    }),
+  };
 }
 
-export function buildGuideMetadata(guide: Guide): Metadata {
+export function buildGuideMetadata(guide: Guide, locale: Locale = "en"): Metadata {
+  const pathname = localizePath(`/guides/${guide.slug}`, locale);
   return {
     title: guide.title,
     description: guide.description,
     alternates: {
-      canonical: absoluteUrl(`/guides/${guide.slug}`),
+      ...buildLocaleAlternates(`/guides/${guide.slug}`, locale),
     },
     openGraph: {
       title: `${guide.title} | ${siteConfig.name}`,
       description: guide.description,
-      url: absoluteUrl(`/guides/${guide.slug}`),
+      url: absoluteUrl(pathname),
       type: "article",
       siteName: siteConfig.name,
       images: buildSocialImages(null, `${guide.title} guide preview`),

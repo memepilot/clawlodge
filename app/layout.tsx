@@ -8,6 +8,7 @@ import { GoogleAnalytics } from "@/components/google-analytics";
 import { LocaleProvider } from "@/components/locale-provider";
 import { LocaleSwitcher } from "@/components/locale-switcher";
 import { getTranslations } from "@/lib/i18n";
+import { localeHtmlLang, localizePath } from "@/lib/locale-routing";
 import { getRequestLocale } from "@/lib/server/locale";
 import { absoluteUrl, buildSocialImages, siteConfig } from "@/lib/site";
 
@@ -51,15 +52,16 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getRequestLocale();
   const t = getTranslations(locale);
+  const homeHref = localizePath("/", locale);
 
   return (
-    <html lang={locale === "zh" ? "zh-CN" : "en"} className={`${displayFont.variable} ${bodyFont.variable} ${monoFont.variable}`}>
+    <html lang={localeHtmlLang(locale)} className={`${displayFont.variable} ${bodyFont.variable} ${monoFont.variable}`}>
       <body style={{ fontFamily: "var(--font-body)" }}>
         <GoogleAnalytics />
         <LocaleProvider locale={locale} messages={t}>
           <header className="navbar">
             <div className="navbar-inner">
-              <Link href="/" className="brand-name">
+              <Link href={homeHref} className="brand-name">
                 <span className="brand-mark">
                   <Image src="/logo-mark.svg" alt="ClawLodge logo" width={36} height={36} className="brand-mark-image" priority />
                 </span>
@@ -81,7 +83,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
               <div className="muted">{t.brand.footer}</div>
               <div className="flex flex-wrap gap-4">
-                <Link className="inline-link" href="/about">
+                <Link className="inline-link" href={localizePath("/about", locale)}>
                   {t.nav.about}
                 </Link>
                 <Link className="inline-link" href="/privacy">

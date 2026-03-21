@@ -3,70 +3,89 @@ import Script from "next/script";
 
 import { LobsterCard } from "@/components/lobster-card";
 import { PaginationBar } from "@/components/pagination-bar";
+import { CATEGORY_OPTIONS, categoryLabel } from "@/lib/lobster-taxonomy";
 import type { Locale } from "@/lib/i18n";
-import { buildCollectionJsonLd, CATEGORY_OPTIONS, categoryLabel } from "@/lib/lobster-taxonomy";
 import { getTranslations } from "@/lib/i18n";
 import { localizePath } from "@/lib/locale-routing";
-import { siteConfig } from "@/lib/site";
-import type { LobsterCategory, LobsterListResult } from "@/lib/types";
+import { listLobsters } from "@/lib/server/service";
+import { absoluteUrl, siteConfig } from "@/lib/site";
+import { LobsterCategory } from "@/lib/types";
 
-type Props = {
+type HomePageProps = {
   locale: Locale;
-  title: string;
-  intro: string;
-  pathname: string;
-  result: LobsterListResult;
-  sort: "hot" | "new";
-  buildPageHref: (page: number) => string;
-  selectedCategory?: LobsterCategory;
-  sectionHeading?: string;
-  guideSlugs?: string[];
-  pathLocale?: Locale;
+  searchParams: { sort?: string; tag?: string; q?: string; category?: string; page?: string };
 };
 
-export function LobsterCollectionPage({
-  locale,
-  title,
-  intro,
-  pathname,
-  result,
-  sort,
-  buildPageHref,
-  selectedCategory,
-  sectionHeading,
-  guideSlugs,
-  pathLocale,
-}: Props) {
+export async function HomePage({ locale, searchParams: params }: HomePageProps) {
+  const defaultSort = "downloads";
+  const sort = params.sort === "new" ? "new" : defaultSort;
+  const page = Number.isFinite(Number(params.page)) ? Math.max(1, Math.floor(Number(params.page))) : 1;
   const t = getTranslations(locale);
-  const structuredData = buildCollectionJsonLd({
-    title,
-    description: intro,
-    pathname,
+  const selectedCategory = CATEGORY_OPTIONS.some((option) => option.value === params.category) ? (params.category as LobsterCategory) : undefined;
+  const result = await listLobsters({
+    sort,
+    tag: params.tag,
+    q: params.q,
+    category: selectedCategory,
+    page,
+    per_page: 18,
   });
-  const routeLocale = pathLocale ?? locale;
-  const rootPath = localizePath("/", routeLocale);
+  const isTagResults = Boolean(params.tag);
+  const rootPath = localizePath("/", locale);
+  const buildPageHref = (nextPage: number) => {
+    const search = new URLSearchParams();
+    if (params.q?.trim()) search.set("q", params.q.trim());
+    if (params.tag?.trim()) search.set("tag", params.tag.trim());
+    if (selectedCategory) search.set("category", selectedCategory);
+    if (sort !== defaultSort) search.set("sort", sort);
+    if (nextPage > 1) search.set("page", String(nextPage));
+    const query = search.toString();
+    return query ? `${rootPath}?${query}` : rootPath;
+  };
   const buildCategoryHref = (category?: LobsterCategory) => {
     const search = new URLSearchParams();
-    if (sort !== "hot") search.set("sort", sort);
+    if (sort !== defaultSort) search.set("sort", sort);
     const query = search.toString();
     if (!category) return query ? `${rootPath}?${query}` : rootPath;
-    const categoryPath = localizePath(`/categories/${category}`, routeLocale);
-    return query ? `${categoryPath}?${query}` : categoryPath;
+    const target = localizePath(`/categories/${category}`, locale);
+    return query ? `${target}?${query}` : target;
+  };
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        name: siteConfig.name,
+        url: siteConfig.origin,
+        sameAs: [siteConfig.githubUrl],
+      },
+      {
+        "@type": "WebSite",
+        name: siteConfig.name,
+        url: absoluteUrl(rootPath),
+        description: siteConfig.description,
+        potentialAction: {
+          "@type": "SearchAction",
+          target: `${absoluteUrl(rootPath)}?q={search_term_string}`,
+          "query-input": "required name=search_term_string",
+        },
+      },
+    ],
   };
 
   return (
     <div>
       <Script
-        id={`collection-jsonld-${pathname.replace(/[^\w-]+/g, "-")}`}
+        id="home-jsonld"
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       <section className="hero">
         <div className="hero-inner">
           <div className="hero-copy">
-            <span className="hero-badge">{selectedCategory ? categoryLabel(selectedCategory, locale) : t.home.badge}</span>
-            <h1 className="hero-title">{title}</h1>
-            <p className="hero-subtitle">{intro}</p>
+            <span className="hero-badge">{t.home.badge}</span>
+            <h1 className="hero-title">{t.home.title}</h1>
+            <p className="hero-subtitle">{t.home.subtitle}</p>
             <div className="hero-actions">
               <Link className="btn btn-primary" href="/publish">
                 {t.home.publishCta}
@@ -74,15 +93,15 @@ export function LobsterCollectionPage({
               <a className="btn" href={siteConfig.npmCliUrl} target="_blank" rel="noreferrer">
                 {t.nav.installCli}
               </a>
-              <Link className="btn" href={localizePath("/guides/openclaw-config-file", locale)}>
-                {t.home.configGuideCta}
+              <Link className="btn" href={localizePath("/guides/openclaw-multi-agent-config", locale)}>
+                {t.home.guidesCta}
               </Link>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="section">
+      <section className={`section ${isTagResults ? "section-tight section-topless" : ""}`}>
         <div className="home-toolbar">
           <div className="home-toolbar-copy">
             <form className="home-inline-search" method="get" action={rootPath}>
@@ -93,9 +112,10 @@ export function LobsterCollectionPage({
                     <path d="m12.7 12.7 4 4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
                   </svg>
                 </span>
-                <input className="search-input" name="q" placeholder={t.home.searchPlaceholder} />
+                <input className="search-input" name="q" defaultValue={params.q ?? ""} placeholder={t.home.searchPlaceholder} />
               </div>
               <input type="hidden" name="sort" value={sort} />
+              {params.tag?.trim() ? <input type="hidden" name="tag" value={params.tag.trim()} /> : null}
               {selectedCategory ? <input type="hidden" name="category" value={selectedCategory} /> : null}
             </form>
           </div>
@@ -116,14 +136,13 @@ export function LobsterCollectionPage({
             ))}
           </div>
         </div>
-
         <div className="home-results-bar">
-          {sectionHeading ? <h2 className="section-title">{sectionHeading}</h2> : null}
+          <h2 className="section-title">{t.home.popularSetups}</h2>
           <div className="home-results-meta">
             <p className="home-results-summary">
               {t.home.showing} {result.total} {locale === "zh" ? "个" : locale === "ja" ? "件" : "items"}
             </p>
-            {(selectedCategory || sort !== "hot") ? (
+            {(params.q?.trim() || params.tag?.trim() || selectedCategory || sort !== defaultSort) ? (
               <Link className="home-clear-link" href={rootPath}>
                 {locale === "zh" ? "清除筛选" : locale === "ja" ? "絞り込みを解除" : "clear filters"}
               </Link>
@@ -139,7 +158,6 @@ export function LobsterCollectionPage({
             <div className="card muted">{t.home.noResults}</div>
           )}
         </div>
-
         <PaginationBar
           labels={{
             showing: t.home.showing,
@@ -151,11 +169,13 @@ export function LobsterCollectionPage({
           }}
           result={result}
           buildPageHref={buildPageHref}
-          action={pathname}
-          inputId={`page-jump-${pathname.replace(/[^a-z0-9]+/gi, "-")}`}
+          action={rootPath}
+          inputId={`page-jump-home-${locale}`}
           hiddenFields={[
+            ...(params.q?.trim() ? [{ name: "q", value: params.q.trim() }] : []),
+            ...(params.tag?.trim() ? [{ name: "tag", value: params.tag.trim() }] : []),
             ...(selectedCategory ? [{ name: "category", value: selectedCategory }] : []),
-            ...(sort !== "hot" ? [{ name: "sort", value: sort }] : []),
+            ...(sort !== defaultSort ? [{ name: "sort", value: sort }] : []),
           ]}
         />
       </section>

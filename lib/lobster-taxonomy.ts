@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 
+import type { Locale } from "@/lib/i18n";
 import { LobsterCategory, LobsterTopic } from "@/lib/types";
+import { buildLocaleAlternates } from "@/lib/locale-routing";
 import { absoluteUrl, buildSocialImages, siteConfig } from "@/lib/site";
 
 export const CATEGORY_OPTIONS: Array<{ value: LobsterCategory; icon: string }> = [
@@ -22,7 +24,7 @@ export const TOPIC_OPTIONS: Array<{ value: LobsterTopic; icon: string }> = [
   { value: "automation", icon: "⚙" },
 ];
 
-export function categoryLabel(category: LobsterCategory, locale: "en" | "zh") {
+export function categoryLabel(category: LobsterCategory, locale: Locale) {
   if (locale === "zh") {
     switch (category) {
       case "workspace":
@@ -37,6 +39,22 @@ export function categoryLabel(category: LobsterCategory, locale: "en" | "zh") {
         return "工作流";
       case "memory":
         return "记忆";
+    }
+  }
+  if (locale === "ja") {
+    switch (category) {
+      case "workspace":
+        return "ワークスペース";
+      case "skill":
+        return "スキル";
+      case "agent":
+        return "エージェント";
+      case "tooling":
+        return "ツール";
+      case "workflow":
+        return "ワークフロー";
+      case "memory":
+        return "メモリ";
     }
   }
   switch (category) {
@@ -55,7 +73,7 @@ export function categoryLabel(category: LobsterCategory, locale: "en" | "zh") {
   }
 }
 
-export function topicLabel(topic: LobsterTopic, locale: "en" | "zh") {
+export function topicLabel(topic: LobsterTopic, locale: Locale) {
   if (locale === "zh") {
     switch (topic) {
       case "dev":
@@ -72,6 +90,24 @@ export function topicLabel(topic: LobsterTopic, locale: "en" | "zh") {
         return "多智能体";
       case "automation":
         return "自动化";
+    }
+  }
+  if (locale === "ja") {
+    switch (topic) {
+      case "dev":
+        return "開発";
+      case "design":
+        return "デザイン";
+      case "research":
+        return "リサーチ";
+      case "writing":
+        return "ライティング";
+      case "productivity":
+        return "生産性";
+      case "multiagent":
+        return "マルチエージェント";
+      case "automation":
+        return "自動化";
     }
   }
   switch (topic) {
@@ -92,7 +128,7 @@ export function topicLabel(topic: LobsterTopic, locale: "en" | "zh") {
   }
 }
 
-export function categoryIntro(category: LobsterCategory, locale: "en" | "zh") {
+export function categoryIntro(category: LobsterCategory, locale: Locale) {
   const en: Record<LobsterCategory, string> = {
     workspace: "Complete OpenClaw workspaces with prompts, skills, workflows, docs, and installable structure.",
     skill: "Focused OpenClaw skills and skill bundles that add a specific capability to an existing setup.",
@@ -109,10 +145,20 @@ export function categoryIntro(category: LobsterCategory, locale: "en" | "zh") {
     workflow: "面向研究、自动化和团队协作的可复用 OpenClaw 工作流。",
     memory: "适用于 OpenClaw 的记忆系统、记忆运维和记忆架构模式。",
   };
-  return locale === "zh" ? zh[category] : en[category];
+  const ja: Record<LobsterCategory, string> = {
+    workspace: "prompts、skills、workflows、ドキュメント、インストール可能な構成を備えた完全な OpenClaw ワークスペース。",
+    skill: "既存の構成に追加しやすい、特定能力に特化した OpenClaw スキルやスキルパック。",
+    agent: "OpenClaw 内で独立した役割として導入できる、ロール指向のエージェントやペルソナ構成。",
+    tooling: "OpenClaw ワークフローを支える開発ツール、コンソール、スタジオ、ユーティリティ。",
+    workflow: "リサーチ、自動化、チーム運用向けの再利用可能な OpenClaw ワークフロー。",
+    memory: "OpenClaw 向けのメモリシステム、メモリ運用、再利用可能なメモリアーキテクチャ。",
+  };
+  if (locale === "zh") return zh[category];
+  if (locale === "ja") return ja[category];
+  return en[category];
 }
 
-export function topicIntro(topic: LobsterTopic, locale: "en" | "zh") {
+export function topicIntro(topic: LobsterTopic, locale: Locale) {
   const en: Record<LobsterTopic, string> = {
     dev: "OpenClaw setups for coding, development workflows, code review, and engineering automation.",
     design: "OpenClaw setups for design work, visual systems, thumbnails, branding, and creative production.",
@@ -131,19 +177,31 @@ export function topicIntro(topic: LobsterTopic, locale: "en" | "zh") {
     multiagent: "围绕多智能体协作、编排和角色分工构建的 OpenClaw 配置。",
     automation: "聚焦自动化、流水线和运营流程的 OpenClaw 配置。",
   };
-  return locale === "zh" ? zh[topic] : en[topic];
+  const ja: Record<LobsterTopic, string> = {
+    dev: "コーディング、開発フロー、コードレビュー、エンジニアリング自動化に向いた OpenClaw 構成。",
+    design: "デザイン、ビジュアルシステム、サムネイル、ブランディング、制作作業向けの OpenClaw 構成。",
+    research: "調査、分析、競合リサーチ、知識作業向けの OpenClaw 構成。",
+    writing: "執筆、編集、コンテンツ制作、公開運用向けの OpenClaw 構成。",
+    productivity: "日々の実行、計画、ツール横断の個人ワークフローを改善する OpenClaw 構成。",
+    multiagent: "マルチエージェント協調、オーケストレーション、役割分担を中心に作られた OpenClaw 構成。",
+    automation: "自動化、パイプライン、運用フローに特化した OpenClaw 構成。",
+  };
+  if (locale === "zh") return zh[topic];
+  if (locale === "ja") return ja[topic];
+  return en[topic];
 }
 
 export function buildCollectionMetadata(params: {
   title: string;
   description: string;
   pathname: string;
+  locale?: Locale;
 }): Metadata {
   return {
     title: params.title,
     description: params.description,
     alternates: {
-      canonical: absoluteUrl(params.pathname),
+      ...buildLocaleAlternates(params.pathname, params.locale ?? "en"),
     },
     openGraph: {
       title: `${params.title} | ${siteConfig.name}`,
@@ -163,7 +221,7 @@ export function buildCollectionMetadata(params: {
   };
 }
 
-export function categorySeoTitle(category: LobsterCategory, locale: "en" | "zh") {
+export function categorySeoTitle(category: LobsterCategory, locale: Locale) {
   if (locale === "zh") {
     switch (category) {
       case "workspace":
@@ -178,6 +236,22 @@ export function categorySeoTitle(category: LobsterCategory, locale: "en" | "zh")
         return "OpenClaw 工作流";
       case "memory":
         return "OpenClaw 记忆配置";
+    }
+  }
+  if (locale === "ja") {
+    switch (category) {
+      case "workspace":
+        return "OpenClaw ワークスペース";
+      case "skill":
+        return "OpenClaw スキル";
+      case "agent":
+        return "OpenClaw エージェント";
+      case "tooling":
+        return "OpenClaw ツール";
+      case "workflow":
+        return "OpenClaw ワークフロー";
+      case "memory":
+        return "OpenClaw メモリ構成";
     }
   }
 
@@ -197,9 +271,12 @@ export function categorySeoTitle(category: LobsterCategory, locale: "en" | "zh")
   }
 }
 
-export function topicSeoTitle(topic: LobsterTopic, locale: "en" | "zh") {
+export function topicSeoTitle(topic: LobsterTopic, locale: Locale) {
   if (locale === "zh") {
     return `${topicLabel(topic, locale)} OpenClaw 配置`;
+  }
+  if (locale === "ja") {
+    return `${topicLabel(topic, locale)} OpenClaw 構成`;
   }
 
   switch (topic) {
@@ -220,7 +297,7 @@ export function topicSeoTitle(topic: LobsterTopic, locale: "en" | "zh") {
   }
 }
 
-export function tagSeoTitle(tag: string, locale: "en" | "zh") {
+export function tagSeoTitle(tag: string, locale: Locale) {
   const normalized = tag.trim().toLowerCase();
   if (locale === "zh") {
     return `#${tag} OpenClaw 配置`;

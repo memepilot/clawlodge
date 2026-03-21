@@ -1,11 +1,19 @@
-export const locales = ["en", "zh"] as const;
+export const locales = ["en", "zh", "ja"] as const;
 export const localeCookieName = "clawlodge_locale";
 
 export type Locale = (typeof locales)[number];
 
-export type Messages = (typeof messages)[Locale];
+type DeepWiden<T> = T extends string
+  ? string
+  : T extends readonly (infer U)[]
+    ? readonly DeepWiden<U>[]
+    : T extends object
+      ? { [K in keyof T]: DeepWiden<T[K]> }
+      : T;
 
-export const messages = {
+export type Messages = DeepWiden<(typeof baseMessages)["en"]>;
+
+const baseMessages = {
   en: {
     brand: {
       name: "ClawLodge",
@@ -38,6 +46,8 @@ export const messages = {
       title: "Discover and share powerful OpenClaw setups.",
       subtitle: "Browse real agent setups, inspect what is inside them, and publish your own prompts, skills, workflows, and integrations.",
       publishCta: "Publish your setup",
+      guidesCta: "Multi-Agent Guides",
+      configGuideCta: "OpenClaw Config Guide",
       searchStat: "Search published setups by name, tag, and README.",
       searchPlaceholder: "Search name, tags, README...",
       tagPlaceholder: "Tag filter",
@@ -248,6 +258,8 @@ export const messages = {
       title: "发现并分享强大的 OpenClaw 配置。",
       subtitle: "浏览真实智能体配置，查看里面的 prompts、skills、workflows 和 integrations，也可以发布你自己的方案。",
       publishCta: "发布你的配置",
+      guidesCta: "多智能体指南",
+      configGuideCta: "OpenClaw 配置指南",
       searchStat: "按名称、标签和 README 搜索已发布配置。",
       searchPlaceholder: "搜索名称、标签、README...",
       tagPlaceholder: "标签筛选",
@@ -428,9 +440,90 @@ export const messages = {
   },
 } as const;
 
+export const messages: Record<Locale, Messages> = {
+  ...baseMessages,
+  ja: {
+    ...baseMessages.en,
+    brand: {
+      ...baseMessages.en.brand,
+      title: "ClawLodge - OpenClawの設定、スキル、エージェント、ワークフローを探す",
+      footer: "ClawLodgeは、実用的なOpenClawの設定、スキル、エージェント、ワークフローを見つけて共有するためのライブラリです。",
+    },
+    nav: {
+      ...baseMessages.en.nav,
+      publish: "公開",
+      pluginUpload: "プラグインアップロード",
+      settings: "設定",
+      about: "概要",
+      privacy: "プライバシー",
+      installCli: "CLIをインストール",
+      language: "中文",
+    },
+    auth: {
+      ...baseMessages.en.auth,
+      loginWithGithub: "GitHubでログイン",
+      reconnectGithub: "GitHubを再接続",
+      connectGithub: "GitHubを接続",
+      logout: "ログアウト",
+      checkingLogin: "ログイン状態を確認中...",
+      loginRequired: "ログインが必要です",
+      loginToComment: "コメントする前にGitHubでログインしてください。",
+      cancel: "キャンセル",
+    },
+    home: {
+      ...baseMessages.en.home,
+      badge: "OpenClawの設定、スキル、ワークフロー",
+      title: "強力なOpenClaw設定を見つけて共有する。",
+      subtitle:
+        "実際のエージェント設定を見て、中身を確認し、自分のプロンプト、スキル、ワークフロー、連携を公開できます。",
+      publishCta: "設定を公開",
+      guidesCta: "マルチエージェントガイド",
+      configGuideCta: "OpenClaw 設定ガイド",
+      searchPlaceholder: "名前、タグ、READMEを検索...",
+      noResults: "一致する設定が見つかりません。",
+      previous: "前へ",
+      next: "次へ",
+      page: "ページ",
+      showing: "表示中",
+      jumpTo: "移動",
+      go: "Go",
+      browseByCategory: "カテゴリから探す",
+      popularSetups: "人気のOpenClaw設定",
+      exploreByTopic: "トピックから探す",
+      latestUploads: "最新のコミュニティ投稿",
+    },
+    detail: {
+      ...baseMessages.en.detail,
+      by: "作成者",
+      readme: "README",
+      workspace: "Workspace",
+      source: "ソース",
+      community: "コミュニティ",
+      latestRelease: "最新リリース",
+      noVersion: "バージョンなし",
+      license: "ライセンス",
+      files: "ファイル数",
+      views: "閲覧数",
+      downloads: "ダウンロード数",
+      favorites: "お気に入り",
+      downloadZip: ".zipをダウンロード",
+      downloadWorkspaceZip: "workspace .zipをダウンロード",
+      viewOnGithub: "GitHubで見る",
+      noVersionYet: "まだ公開バージョンはありません。",
+      sourceRepo: "ソースリポジトリ",
+      sourceRepoHint: "この設定の元になったGitHubリポジトリです。",
+      related: "関連Lobster",
+      communityUpload: "コミュニティ投稿",
+      verified: "認証済み",
+    },
+  },
+} as const;
+
 export function detectLocale(input?: string | null): Locale {
   const value = (input || "").toLowerCase();
-  return value.includes("zh") ? "zh" : "en";
+  if (value.includes("ja")) return "ja";
+  if (value.includes("zh")) return "zh";
+  return "en";
 }
 
 export function getTranslations(locale: Locale): Messages {

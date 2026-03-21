@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     : siteConfig.origin;
   const response = NextResponse.redirect(new URL(safeNext, origin));
 
-  if (locale === "en" || locale === "zh") {
+  if (locale === "en" || locale === "zh" || locale === "ja") {
     response.cookies.set(localeCookieName, locale, {
       path: "/",
       sameSite: "lax",
