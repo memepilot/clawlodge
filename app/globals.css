@@ -2275,31 +2275,124 @@ main {
   }
 
   .navbar-inner {
-    gap: 12px;
-  }
-
-  .brand-name {
-    gap: 0;
+    padding: 10px 12px;
+    gap: 8px;
+    flex-wrap: nowrap;
   }
 
   .brand-mark {
-    display: none;
+    display: inline-flex;
+    width: 24px;
+    height: 24px;
+    flex: 0 0 24px;
   }
 
   .brand-name {
-    flex: 1 1 0;
+    gap: 8px;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .brand-mark-image {
+    width: 24px;
+    height: 24px;
+  }
+
+  .brand-copy {
+    font-size: 0.82rem;
+    letter-spacing: -0.02em;
   }
 
   .nav-actions .btn,
   .nav-actions .btn-quiet,
   .auth-cluster .btn,
   .auth-cluster .btn-quiet {
-    padding-inline: 12px;
+    height: 48px;
+    padding-inline: 14px;
+    white-space: nowrap;
+  }
+
+  .nav-actions {
+    gap: 6px;
+    flex: 0 0 auto;
+    justify-content: flex-end;
+  }
+
+  .auth-cluster {
+    gap: 6px;
+    flex: 0 0 auto;
+  }
+
+  .locale-switcher,
+  .auth-cluster > * {
+    min-width: 0;
+  }
+
+  .locale-switcher {
+    flex: 0 0 auto;
+  }
+
+  .user-trigger {
+    height: 40px;
+    padding: 4px 8px 4px 4px;
+    gap: 6px;
+    min-width: 0;
+    max-width: 116px;
+  }
+
+  .user-trigger .text-sm {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.78rem;
   }
 
   .locale-select {
-    min-width: 96px;
-    padding: 10px 34px 10px 14px;
+    height: 40px;
+    min-width: 82px;
+    max-width: 92px;
+    padding: 8px 26px 8px 10px;
+    font-size: 0.78rem;
+  }
+
+  .auth-cluster .btn,
+  .auth-cluster .btn-quiet {
+    flex: 0 0 auto;
+    height: 40px;
+    padding-inline: 10px;
+    font-size: 0.74rem;
+  }
+
+  .user-trigger {
+    flex: 0 0 auto;
+    height: 40px;
+    padding-inline: 10px;
+    font-size: 0.78rem;
+  }
+
+  .nav-actions > .btn,
+  .nav-actions > .btn-quiet {
+    height: 40px;
+    padding-inline: 10px;
+    font-size: 0.74rem;
+  }
+
+  .locale-switcher::after {
+    right: 10px;
+    width: 7px;
+    height: 7px;
+  }
+
+  .hero {
+    padding: 32px 16px 24px;
+  }
+
+  .hero-title {
+    margin: 12px 0;
+  }
+
+  .hero-subtitle {
+    font-size: 1rem;
   }
 
   .filters-row {
