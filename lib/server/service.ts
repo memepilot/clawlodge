@@ -689,9 +689,7 @@ function attachLatestVersion(summary: LobsterSummary, versions: DbLobsterVersion
 function rankingScore(item: DbLobster, summary: LobsterSummary) {
   const views = item.viewCount ?? 0;
   const downloads = item.downloadCount ?? 0;
-  const githubStars = item.githubStars ?? 0;
-  const recommendation = item.recommendationScore ?? 0;
-  return views * 10000 + downloads * 1000 + githubStars * 10 + recommendation + summary.hot_score;
+  return downloads * 100 + views;
 }
 
 function toMirroredSummaryResponse(params: {
@@ -858,10 +856,8 @@ export async function listLobsters(params?: {
     }
     if (params?.sort === "new") return +new Date(b.summary.created_at) - +new Date(a.summary.created_at);
     if (params?.sort === "downloads") {
-      if (b.summary.download_count !== a.summary.download_count) {
-        return b.summary.download_count - a.summary.download_count;
-      }
-      if (b.summary.hot_score !== a.summary.hot_score) return b.summary.hot_score - a.summary.hot_score;
+      const scoreDiff = rankingScore(b.item, b.summary) - rankingScore(a.item, a.summary);
+      if (scoreDiff !== 0) return scoreDiff;
       return +new Date(b.summary.created_at) - +new Date(a.summary.created_at);
     }
     const scoreDiff = rankingScore(b.item, b.summary) - rankingScore(a.item, a.summary);
