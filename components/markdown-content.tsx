@@ -58,6 +58,17 @@ function isOptimizableImageSource(src: string | undefined) {
   }
 }
 
+function isSvgSource(src: string | undefined) {
+  if (!src) return false;
+  if (src.startsWith("data:image/svg+xml")) return true;
+  try {
+    const normalized = new URL(src, "https://clawlodge.com");
+    return normalized.pathname.toLowerCase().endsWith(".svg");
+  } catch {
+    return src.toLowerCase().endsWith(".svg");
+  }
+}
+
 function parseDimension(value: string | number | undefined) {
   if (typeof value === "number" && Number.isFinite(value) && value > 0) return value;
   if (typeof value === "string") {
@@ -86,6 +97,7 @@ export function MarkdownContent({ value }: { value: string }) {
             const safeAlt = alt?.trim() || title?.trim() || "README image";
             const parsedWidth = parseDimension(width);
             const parsedHeight = parseDimension(height);
+            const usePlainImg = isSvgSource(safeSrc) && !parsedWidth && !parsedHeight;
             if (!isRenderableImageSource(safeSrc)) {
               return (
                 <a
@@ -100,7 +112,7 @@ export function MarkdownContent({ value }: { value: string }) {
               );
             }
 
-            if (isOptimizableImageSource(safeSrc) && parsedWidth && parsedHeight) {
+            if (!usePlainImg && isOptimizableImageSource(safeSrc) && parsedWidth && parsedHeight) {
               if (!safeSrc) return null;
               return (
                 <Image
@@ -116,7 +128,7 @@ export function MarkdownContent({ value }: { value: string }) {
               );
             }
 
-            if (isOptimizableImageSource(safeSrc) && !parsedWidth && !parsedHeight) {
+            if (!usePlainImg && isOptimizableImageSource(safeSrc) && !parsedWidth && !parsedHeight) {
               if (!safeSrc) return null;
               return (
                 <Image

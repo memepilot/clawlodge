@@ -1362,7 +1362,7 @@ main {
 .publish-file-excerpt,
 .workspace-excerpt {
   margin: 0;
-  max-height: 180px;
+  max-height: 132px;
   overflow: auto;
   white-space: pre-wrap;
   word-break: break-word;
@@ -1386,30 +1386,19 @@ main {
   max-width: 720px;
 }
 
+.workspace-browser-inline-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-top: 6px;
+  color: var(--ink-soft);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
 .workspace-browser-aside {
   display: grid;
   justify-items: end;
-  gap: 10px;
-}
-
-.workspace-browser-meta {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px 14px;
-  min-width: 0;
-}
-
-.workspace-meta-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 7px 12px;
-  border: 1px solid rgba(42, 31, 25, 0.08);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.78);
-  color: var(--ink-soft);
-  font-size: 0.75rem;
-  font-weight: 700;
 }
 
 .workspace-browser {
@@ -1426,7 +1415,7 @@ main {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 18px;
+  padding: 12px 18px;
   border-bottom: 1px solid rgba(22, 42, 59, 0.12);
   background: rgba(244, 238, 233, 0.75);
 }
@@ -1471,7 +1460,7 @@ main {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 18px;
+  padding: 12px 18px;
   border-bottom: 1px solid rgba(22, 42, 59, 0.1);
   color: var(--ink);
   transition: background 160ms ease;
@@ -1568,8 +1557,8 @@ main {
 
 .workspace-preview {
   display: grid;
-  gap: 12px;
-  padding: 18px;
+  gap: 10px;
+  padding: 14px 18px 16px;
   background:
     radial-gradient(700px 220px at 0 0, rgba(255, 107, 74, 0.05), transparent 55%),
     rgba(255, 252, 249, 0.88);
@@ -1959,6 +1948,17 @@ main {
   background: rgba(255, 255, 255, 0.72);
 }
 
+.markdown-table-wrap td img,
+.markdown-table-wrap th img,
+.markdown td img,
+.markdown th img {
+  max-height: 42px;
+  width: auto !important;
+  max-width: 100%;
+  display: block;
+  margin: 0 auto;
+}
+
 .markdown thead {
   background: rgba(244, 238, 233, 0.88);
 }
@@ -2095,7 +2095,6 @@ main {
     grid-template-columns: 1fr;
   }
 
-  .workspace-browser-meta,
   .workspace-preview-head,
   .workspace-browser-aside {
     justify-content: flex-start;
@@ -2143,10 +2142,6 @@ main {
   .workspace-browser-aside {
     width: 100%;
     justify-items: stretch;
-  }
-
-  .workspace-browser-meta {
-    width: 100%;
   }
 
   .detail-aside-grid {

@@ -61,7 +61,6 @@ function formatPublishedAt(value: string, locale: string) {
     minute: "2-digit",
     second: "2-digit",
     hour12: false,
-    timeZone: "UTC",
   }).format(date).replace(",", "");
 }
 
@@ -141,18 +140,17 @@ export function WorkspaceBrowser({
       <div className="workspace-browser-head">
         <div className="workspace-browser-copy">
           <h2 className="panel-title">{t.workspace.title}</h2>
-          <p className="page-subtitle mt-2">{t.workspace.snapshotHint}</p>
+          <div className="workspace-browser-inline-meta">
+            <span>{t.workspace.updated} {formatPublishedAt(publishedAt, locale)}</span>
+            {publishClient ? <span>{t.workspace.publishedVia} {publishClient}</span> : null}
+            {maskedSecretsCount ? <span>{maskedSecretsCount} {t.workspace.redactions}</span> : null}
+            {blockedFilesCount ? <span>{blockedFilesCount} {t.workspace.blocked}</span> : null}
+          </div>
         </div>
         <div className="workspace-browser-aside">
           <DownloadLink className="btn" href={downloadHref}>
             {t.workspace.downloadZip}
           </DownloadLink>
-          <div className="workspace-browser-meta">
-            <span className="workspace-meta-pill">{files.length} {t.detail.files}</span>
-            <span className="workspace-meta-pill">{t.workspace.updated} {formatPublishedAt(publishedAt, locale)} UTC</span>
-            {maskedSecretsCount ? <span className="workspace-meta-pill">{maskedSecretsCount} {t.workspace.redactions}</span> : null}
-            {blockedFilesCount ? <span className="workspace-meta-pill">{blockedFilesCount} {t.workspace.blocked}</span> : null}
-          </div>
         </div>
       </div>
 
@@ -176,7 +174,6 @@ export function WorkspaceBrowser({
               );
             })}
           </div>
-          {publishClient ? <span className="workspace-toolbar-note">{t.workspace.publishedVia} {publishClient}</span> : null}
         </div>
 
         <div className="workspace-table">

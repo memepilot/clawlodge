@@ -19,6 +19,21 @@ import { absoluteUrl, siteConfig } from "@/lib/site";
 
 export const revalidate = 60;
 
+function stripReadmeNoise(markdown: string) {
+  const sectionsToDrop = ["Sponsors", "Community"];
+  let next = markdown;
+
+  for (const title of sectionsToDrop) {
+    const pattern = new RegExp(
+      String.raw`(^|\n)##\s+${title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\s*\n[\s\S]*?(?=\n##\s+|\n#\s+|$)`,
+      "i",
+    );
+    next = next.replace(pattern, "\n");
+  }
+
+  return next.replace(/\n{3,}/g, "\n\n").trim();
+}
+
 function categorySeoNoun(category: string | null | undefined) {
   switch (category) {
     case "skill":
@@ -259,7 +274,7 @@ export default async function LobsterDetailPage({
 
       <section id="readme" className="shell page-panel p-5 md:p-6">
         {latest ? (
-          <MarkdownContent value={latest.readme_text} />
+          <MarkdownContent value={stripReadmeNoise(latest.readme_text)} />
         ) : (
           <p className="muted mt-2">{t.detail.noVersionYet}</p>
         )}
