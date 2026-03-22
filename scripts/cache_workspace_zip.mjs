@@ -12,6 +12,7 @@ if (!slug || !version) {
 
 const dataDir = path.resolve(process.env.CLAWLODGE_DATA_DIR || path.join(process.cwd(), "data"));
 const storageDir = path.join(dataDir, "storage");
+const ZIP_FETCH_CONCURRENCY = 12;
 
 function normalizeKey(key) {
   const normalized = key.replace(/\\/g, "/").replace(/^\/+/, "");
@@ -46,6 +47,21 @@ function decodeStorageKeyFromUrl(url) {
 
 function workspaceZipStorageKey(slugValue, versionValue) {
   return `lobsters/${slugValue}/${versionValue}/workspace.zip`;
+}
+
+async function mapWithConcurrency(items, concurrency, worker) {
+  const results = new Array(items.length);
+  let cursor = 0;
+
+  async function run() {
+    while (cursor < items.length) {
+      const index = cursor++;
+      results[index] = await worker(items[index], index);
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => run()));
+  return results;
 }
 
 function toGithubRawAssetUrl(assetUrl, repo, ref) {
@@ -165,19 +181,19 @@ async function main() {
       ),
     );
 
-    for (const file of files) {
-      if (file.path === "README.md") continue;
+    const fileResults = await mapWithConcurrency(files, ZIP_FETCH_CONCURRENCY, async (file) => {
+      if (file.path === "README.md") {
+        return { path: file.path, body: null, missing: false };
+      }
       if (file.kind === "text" && file.content_text) {
-        entries[`${root}/${file.path}`] = strToU8(file.content_text);
-        continue;
+        return { path: file.path, body: strToU8(file.content_text), missing: false };
       }
 
       const storedKey = decodeStorageKeyFromUrl(file.storage_url);
       if (storedKey) {
         try {
           const body = await getStoredObjectByKey(storedKey);
-          entries[`${root}/${file.path}`] = new Uint8Array(body);
-          continue;
+          return { path: file.path, body: new Uint8Array(body), missing: false };
         } catch {}
       }
 
@@ -187,11 +203,21 @@ async function main() {
         filePath: file.path,
       });
       if (githubRaw) {
-        entries[`${root}/${file.path}`] = new Uint8Array(githubRaw);
-        continue;
+        return { path: file.path, body: new Uint8Array(githubRaw), missing: false };
       }
 
-      unrecoverable.push(file.path);
+      return { path: file.path, body: null, missing: true };
+    });
+
+    for (const item of fileResults) {
+      if (item.path === "README.md") continue;
+      if (item.body) {
+        entries[`${root}/${item.path}`] = item.body;
+        continue;
+      }
+      if (item.missing) {
+        unrecoverable.push(item.path);
+      }
     }
 
     const skillsBundleKey = decodeStorageKeyFromUrl(row.skills_bundle_url);

@@ -36,6 +36,7 @@ const DEFAULT_SUMMARY_MODEL = process.env.CLAWLODGE_SUMMARY_MODEL?.trim() || DEF
 const MAX_README_CONTEXT_FILES = 24;
 const MAX_GITHUB_README_ASSET_BYTES = 8 * 1024 * 1024;
 const MAX_SUMMARY_LENGTH = 160;
+const ZIP_FETCH_CONCURRENCY = 12;
 
 function getDerivedCategory(lobster: DbLobster) {
   return lobster.category ?? classifyLobsterCategory({
@@ -83,6 +84,25 @@ function tokenizeSearchText(value: string | null | undefined) {
     .split(/[^a-z0-9\u4e00-\u9fff]+/i)
     .map((token) => token.trim())
     .filter(Boolean);
+}
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T, index: number) => Promise<R>,
+) {
+  const results: R[] = new Array(items.length);
+  let cursor = 0;
+
+  async function run() {
+    while (cursor < items.length) {
+      const index = cursor++;
+      results[index] = await worker(items[index], index);
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => run()));
+  return results;
 }
 
 function includesAllTokens(haystack: string, tokens: string[]) {
@@ -1049,18 +1069,18 @@ export async function buildLobsterVersionZip(slug: string, version: string) {
   };
   entries[`${root}/manifest.json`] = strToU8(JSON.stringify(manifest, null, 2));
 
-  for (const file of versionRecord.workspaceFiles ?? []) {
-    if (file.path === "README.md") continue;
+  const workspaceResults = await mapWithConcurrency(versionRecord.workspaceFiles ?? [], ZIP_FETCH_CONCURRENCY, async (file) => {
+    if (file.path === "README.md") {
+      return { path: file.path, body: null as Uint8Array | null, missing: false };
+    }
     if (file.kind === "text" && file.contentText) {
-      entries[`${root}/${file.path}`] = strToU8(file.contentText);
-      continue;
+      return { path: file.path, body: strToU8(file.contentText), missing: false };
     }
 
     const storedKey = decodeStorageKeyFromUrl(file.storageUrl);
     if (storedKey) {
       const stored = await getStoredObject(storedKey);
-      entries[`${root}/${file.path}`] = new Uint8Array(stored.body);
-      continue;
+      return { path: file.path, body: new Uint8Array(stored.body), missing: false };
     }
 
     const githubRaw = await fetchGithubRawWorkspaceFile({
@@ -1069,11 +1089,21 @@ export async function buildLobsterVersionZip(slug: string, version: string) {
       filePath: file.path,
     });
     if (githubRaw) {
-      entries[`${root}/${file.path}`] = new Uint8Array(githubRaw.body);
-      continue;
+      return { path: file.path, body: new Uint8Array(githubRaw.body), missing: false };
     }
 
-    unrecoverable.push(file.path);
+    return { path: file.path, body: null as Uint8Array | null, missing: true };
+  });
+
+  for (const item of workspaceResults) {
+    if (item.path === "README.md") continue;
+    if (item.body) {
+      entries[`${root}/${item.path}`] = item.body;
+      continue;
+    }
+    if (item.missing) {
+      unrecoverable.push(item.path);
+    }
   }
 
   const skillsBundleKey = decodeStorageKeyFromUrl(versionRecord.skillsBundleUrl);
