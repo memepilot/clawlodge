@@ -1,13 +1,13 @@
 {
   "name": "clawlodge-cli",
-  "version": "0.1.17",
+  "version": "0.1.18",
   "description": "CLI for packing and publishing OpenClaw configs to ClawLodge",
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/memepilot/clawlodge.git",
     "directory": "packages/clawlodge-cli"
   },
-  "homepage": "https://clawlodge.com/publish",
+  "homepage": "https://clawlodge.com",
   "bugs": {
     "url": "https://github.com/memepilot/clawlodge/issues"
   },
