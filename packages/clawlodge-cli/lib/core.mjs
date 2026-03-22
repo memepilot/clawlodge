@@ -26,7 +26,7 @@ const MAX_FILE_BYTES = 128 * 1024;
 const MAX_EXCERPT_CHARS = 1600;
 const MAX_BINARY_EMBED_BYTES = 8 * 1024 * 1024;
 const DEFAULT_ORIGIN = "https://clawlodge.com";
-const CLI_VERSION = "0.1.14";
+const CLI_VERSION = "0.1.15";
 const CONFIG_PATH = path.join(os.homedir(), ".config", "clawlodge", "config.json");
 const ANALYTICS_DIR = path.join(os.homedir(), ".clawlodge", "analytics");
 const ANALYTICS_PATH = path.join(ANALYTICS_DIR, "usage.jsonl");
@@ -88,6 +88,7 @@ Basic usage:
   clawlodge download openclaw-config
   clawlodge install openclaw-config --agent openclaw-config-test
   clawlodge adopt openclaw-config --agent openclaw-config-test
+  clawlodge uninstall openclaw-config-test
   clawlodge favorite openclaw-config
   clawlodge comment openclaw-config --content "Useful setup"
   clawlodge report openclaw-config --reason "Contains broken publish output"
@@ -131,6 +132,12 @@ Commands:
   clawlodge adopt
     Alias of clawlodge install
 
+  clawlodge uninstall
+    Delete an installed OpenClaw agent after a double confirmation
+
+  clawlodge remove
+    Alias of clawlodge uninstall
+
   clawlodge favorite
     Favorite one published workspace
 
@@ -162,6 +169,7 @@ Advanced usage:
   clawlodge download cft0808-edict --version 0.1.1 --out /tmp/cft0808-edict.zip
   clawlodge install openclaw-config --agent openclaw-config-test
   clawlodge adopt openclaw-config --agent openclaw-config-test
+  clawlodge uninstall openclaw-config-test
   clawlodge favorite cft0808-edict
   clawlodge unfavorite cft0808-edict
   clawlodge comment cft0808-edict --content "Helpful docs and workflows."
@@ -651,6 +659,7 @@ async function requestJson(url, token, init = {}) {
 function normalizeTelemetryCommand(command) {
   if (command === "get") return "show";
   if (command === "adopt") return "install";
+  if (command === "remove") return "uninstall";
   if (command === "--version" || command === "-v" || command === "version") return "version";
   if (command === "--help" || command === "-h" || command === "help") return "help";
   return command || "help";
@@ -665,7 +674,7 @@ function inferTelemetrySlug(command, options, positionals) {
 }
 
 function shouldMarkOpenClaw(command) {
-  return normalizeTelemetryCommand(command) === "install";
+  return new Set(["install", "uninstall"]).has(normalizeTelemetryCommand(command));
 }
 
 async function appendTelemetryEvent(event) {
@@ -961,6 +970,54 @@ async function detectWorkspacePath(extractDir) {
   return extractDir;
 }
 
+function parseLastJsonObject(rawText) {
+  const text = String(rawText || "").trim();
+  if (!text) return null;
+  const lines = text.split(/\r?\n/);
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+    const trimmed = lines[lineIndex].trimStart();
+    if (!(trimmed === "[" || trimmed.startsWith("{"))) {
+      continue;
+    }
+    const candidate = lines.slice(lineIndex).join("\n");
+    const start = candidate.search(/[\[{]/);
+    if (start < 0) continue;
+    const opening = candidate[start];
+    const closing = opening === "[" ? "]" : "}";
+    let depth = 0;
+    let inString = false;
+    let escaping = false;
+    for (let index = start; index < candidate.length; index += 1) {
+      const char = candidate[index];
+      if (inString) {
+        if (escaping) {
+          escaping = false;
+        } else if (char === "\\") {
+          escaping = true;
+        } else if (char === "\"") {
+          inString = false;
+        }
+        continue;
+      }
+      if (char === "\"") {
+        inString = true;
+        continue;
+      }
+      if (char === opening) {
+        depth += 1;
+        continue;
+      }
+      if (char === closing) {
+        depth -= 1;
+        if (depth === 0) {
+          return JSON.parse(candidate.slice(start, index + 1));
+        }
+      }
+    }
+  }
+  return null;
+}
+
 async function runInstall(options, positionals) {
   const origin = resolveOrigin(options);
   const slug = options.slug?.trim() || requirePositional(positionals, "slug");
@@ -1018,6 +1075,95 @@ async function runInstall(options, positionals) {
     extract_dir: extractDir,
     workspace_path: workspacePath,
     openclaw_stdout: stdout.trim() || null,
+    openclaw_stderr: stderr.trim() || null,
+  }, null, 2));
+}
+
+async function listOpenClawAgents() {
+  await ensureCommand("openclaw", "Install OpenClaw CLI and make sure it is on PATH.");
+  const { stdout } = await execFileAsync("openclaw", ["agents", "list", "--json"], { maxBuffer: 1024 * 1024 * 4 });
+  const agents = parseLastJsonObject(stdout);
+  if (!Array.isArray(agents)) {
+    throw new Error("Unexpected response from openclaw agents list");
+  }
+  return agents;
+}
+
+async function promptUninstallConfirmation(agent) {
+  if (!input.isTTY || !output.isTTY) {
+    throw new Error("clawlodge uninstall needs an interactive terminal for confirmation. Re-run in a TTY, or use openclaw agents delete directly if you really want a non-interactive path.");
+  }
+
+  console.log("This will delete the installed OpenClaw agent and prune its workspace/state.");
+  console.log(`  Agent: ${agent.id}`);
+  if (typeof agent.workspace === "string" && agent.workspace.trim()) {
+    console.log(`  Workspace: ${agent.workspace}`);
+  }
+  if (typeof agent.agentDir === "string" && agent.agentDir.trim()) {
+    console.log(`  Agent dir: ${agent.agentDir}`);
+  }
+  console.log("");
+
+  const rl = readline.createInterface({ input, output });
+  try {
+    const first = (await rl.question(`Delete agent "${agent.id}"? [y/N] `)).trim().toLowerCase();
+    if (!(first === "y" || first === "yes")) {
+      throw new Error("Uninstall cancelled.");
+    }
+    const second = (await rl.question(`Type the agent id to confirm (${agent.id}): `)).trim();
+    if (second !== agent.id) {
+      throw new Error("Uninstall cancelled: confirmation text did not match the agent id.");
+    }
+  } finally {
+    rl.close();
+  }
+}
+
+async function runUninstall(options, positionals) {
+  const agentId = (options.agent?.trim() || positionals[0]?.trim() || "").trim();
+  if (!agentId) {
+    throw new Error("Usage: clawlodge uninstall <agent-id>");
+  }
+
+  const pretty = prefersPrettyOutput(options);
+  const agents = await listOpenClawAgents();
+  const agent = agents.find((entry) => String(entry.id || "").trim() === agentId);
+  if (!agent) {
+    throw new Error(`OpenClaw agent not found: ${agentId}`);
+  }
+  if (agent.isDefault) {
+    throw new Error(`Refusing to delete the default OpenClaw agent: ${agentId}`);
+  }
+
+  if (!options.force || options.force === "false") {
+    await promptUninstallConfirmation(agent);
+  }
+
+  if (pretty) {
+    printStep("Deleting OpenClaw agent", agentId);
+  }
+  const args = ["agents", "delete", agentId, "--force", "--json"];
+  const { stdout, stderr } = await execFileAsync("openclaw", args, { maxBuffer: 1024 * 1024 * 4 });
+  const result = parseLastJsonObject(stdout) || { ok: true };
+
+  if (pretty) {
+    printStep("Uninstall complete", agentId);
+    if (agent.workspace) {
+      console.log(`  Workspace: ${agent.workspace}`);
+    }
+    if (agent.agentDir) {
+      console.log(`  Agent dir: ${agent.agentDir}`);
+    }
+    return;
+  }
+
+  console.log(JSON.stringify({
+    ok: true,
+    mode: "uninstall",
+    agent_id: agentId,
+    workspace: agent.workspace || null,
+    agent_dir: agent.agentDir || null,
+    openclaw_result: result,
     openclaw_stderr: stderr.trim() || null,
   }, null, 2));
 }
@@ -1116,6 +1262,8 @@ export async function runCli(argv = process.argv.slice(2)) {
       await runDownload(options, positionals);
     } else if (command === "install" || command === "adopt") {
       await runInstall(options, positionals);
+    } else if (command === "uninstall" || command === "remove") {
+      await runUninstall(options, positionals);
     } else if (command === "favorite") {
       await runFavorite(options, positionals);
     } else if (command === "unfavorite") {
