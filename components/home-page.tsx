@@ -3,7 +3,7 @@ import Script from "next/script";
 
 import { LobsterCard } from "@/components/lobster-card";
 import { PaginationBar } from "@/components/pagination-bar";
-import { CATEGORY_OPTIONS, categoryLabel } from "@/lib/lobster-taxonomy";
+import { CATEGORY_OPTIONS, TOPIC_OPTIONS, categoryLabel, topicLabel } from "@/lib/lobster-taxonomy";
 import type { Locale } from "@/lib/i18n";
 import { getTranslations } from "@/lib/i18n";
 import { localizePath } from "@/lib/locale-routing";
@@ -17,6 +17,8 @@ type HomePageProps = {
 };
 
 export async function HomePage({ locale, searchParams: params }: HomePageProps) {
+  const featuredTopics = TOPIC_OPTIONS.filter((option) => ["dev", "multiagent", "automation", "design", "research"].includes(option.value));
+  const featuredTags = ["openclaw", "dev", "memory", "config", "agents", "workflow"];
   const defaultSort = "downloads";
   const sort = params.sort === "new" ? "new" : defaultSort;
   const page = Number.isFinite(Number(params.page)) ? Math.max(1, Math.floor(Number(params.page))) : 1;
@@ -178,6 +180,36 @@ export async function HomePage({ locale, searchParams: params }: HomePageProps) 
             ...(sort !== defaultSort ? [{ name: "sort", value: sort }] : []),
           ]}
         />
+        <div className="home-explore-links" aria-label={locale === "zh" ? "更多浏览入口" : locale === "ja" ? "追加の閲覧リンク" : "More browsing links"}>
+          <div className="home-explore-row">
+            <span className="home-explore-label">{locale === "zh" ? "主题" : locale === "ja" ? "トピック" : "Topics"}</span>
+            <div className="home-explore-chips">
+              {featuredTopics.map((topic) => (
+                <Link
+                  key={topic.value}
+                  className="tag tag-topic home-explore-chip"
+                  href={localizePath(`/topics/${topic.value}`, locale)}
+                >
+                  {topicLabel(topic.value, locale)}
+                </Link>
+              ))}
+            </div>
+          </div>
+          <div className="home-explore-row">
+            <span className="home-explore-label">{locale === "zh" ? "标签" : locale === "ja" ? "タグ" : "Tags"}</span>
+            <div className="home-explore-chips">
+              {featuredTags.map((tag) => (
+                <Link
+                  key={tag}
+                  className="tag home-explore-chip"
+                  href={localizePath(`/tags/${encodeURIComponent(tag)}`, locale)}
+                >
+                  #{tag}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
       </section>
     </div>
   );

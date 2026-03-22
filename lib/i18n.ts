@@ -66,6 +66,7 @@ const baseMessages = {
       browseByCategory: "Browse by Category",
       popularSetups: "Popular OpenClaw Setups",
       exploreByTopic: "Explore by Topic",
+      exploreTags: "Popular Tags",
       latestUploads: "Latest Community Uploads",
     },
     about: {
@@ -278,6 +279,7 @@ const baseMessages = {
       browseByCategory: "按分类浏览",
       popularSetups: "热门 OpenClaw 配置",
       exploreByTopic: "按主题探索",
+      exploreTags: "热门标签",
       latestUploads: "最新社区上传",
     },
     about: {
@@ -490,6 +492,7 @@ export const messages: Record<Locale, Messages> = {
       browseByCategory: "カテゴリから探す",
       popularSetups: "人気のOpenClaw設定",
       exploreByTopic: "トピックから探す",
+      exploreTags: "人気のタグ",
       latestUploads: "最新のコミュニティ投稿",
     },
     detail: {
