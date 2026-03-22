@@ -63,7 +63,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <div className="navbar-inner">
               <Link href={homeHref} className="brand-name">
                 <span className="brand-mark">
-                  <Image src="/logo-mark.svg" alt="ClawLodge logo" width={36} height={36} className="brand-mark-image" priority />
+                  <Image src="/icon.png" alt="ClawLodge logo" width={36} height={36} className="brand-mark-image" priority />
                 </span>
                 <span className="brand-copy">{t.brand.name}</span>
               </Link>

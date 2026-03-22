@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Script from "next/script";
 
+import { ExploreLinks } from "@/components/explore-links";
 import { LobsterCard } from "@/components/lobster-card";
 import { PaginationBar } from "@/components/pagination-bar";
 import { CATEGORY_OPTIONS, TOPIC_OPTIONS, categoryLabel, topicLabel } from "@/lib/lobster-taxonomy";
@@ -180,36 +181,29 @@ export async function HomePage({ locale, searchParams: params }: HomePageProps) 
             ...(sort !== defaultSort ? [{ name: "sort", value: sort }] : []),
           ]}
         />
-        <div className="home-explore-links" aria-label={locale === "zh" ? "更多浏览入口" : locale === "ja" ? "追加の閲覧リンク" : "More browsing links"}>
-          <div className="home-explore-row">
-            <span className="home-explore-label">{locale === "zh" ? "主题" : locale === "ja" ? "トピック" : "Topics"}</span>
-            <div className="home-explore-chips">
-              {featuredTopics.map((topic) => (
-                <Link
-                  key={topic.value}
-                  className="tag tag-topic home-explore-chip"
-                  href={localizePath(`/topics/${topic.value}`, locale)}
-                >
-                  {topicLabel(topic.value, locale)}
-                </Link>
-              ))}
-            </div>
-          </div>
-          <div className="home-explore-row">
-            <span className="home-explore-label">{locale === "zh" ? "标签" : locale === "ja" ? "タグ" : "Tags"}</span>
-            <div className="home-explore-chips">
-              {featuredTags.map((tag) => (
-                <Link
-                  key={tag}
-                  className="tag home-explore-chip"
-                  href={localizePath(`/tags/${encodeURIComponent(tag)}`, locale)}
-                >
-                  #{tag}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
+        <ExploreLinks
+          locale={locale}
+          rows={[
+            {
+              label: locale === "zh" ? "主题" : locale === "ja" ? "トピック" : "Topics",
+              items: featuredTopics.map((topic) => ({
+                key: topic.value,
+                href: `/topics/${topic.value}`,
+                text: topicLabel(topic.value, locale),
+                className: "tag tag-topic home-explore-chip",
+              })),
+            },
+            {
+              label: locale === "zh" ? "标签" : locale === "ja" ? "タグ" : "Tags",
+              items: featuredTags.map((tag) => ({
+                key: tag,
+                href: `/tags/${encodeURIComponent(tag)}`,
+                text: `#${tag}`,
+                className: "tag home-explore-chip",
+              })),
+            },
+          ]}
+        />
       </section>
     </div>
   );

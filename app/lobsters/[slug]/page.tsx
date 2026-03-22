@@ -9,6 +9,7 @@ import { LobsterCard } from "@/components/lobster-card";
 import { getLobsterAvatarSrc, LobsterAvatar } from "@/components/lobster-avatar";
 import { MarkdownContent } from "@/components/markdown-content";
 import { DownloadLink } from "@/components/download-link";
+import { ExploreLinks } from "@/components/explore-links";
 import { WorkspaceBrowser } from "@/components/workspace-browser";
 import { getTranslations, type Locale } from "@/lib/i18n";
 import { categoryLabel } from "@/lib/lobster-taxonomy";
@@ -197,6 +198,8 @@ export default async function LobsterDetailPage({
   const relatedPromise = getRelatedLobsters(slug, 6, lobster);
   const [comments, related, locale] = await Promise.all([commentsPromise, relatedPromise, localePromise]);
   const latest = lobster.versions[0];
+  const topics = lobster.topics ?? [];
+  const tags = lobster.tags ?? [];
   const t = getTranslations(locale);
   const displayName = getDetailDisplayLobsterName(lobster);
   const author = getDisplayAuthor(lobster, latest?.source_repo);
@@ -341,6 +344,34 @@ export default async function LobsterDetailPage({
             ))}
           </div>
         </section>
+      ) : null}
+
+      {topics.length || tags.length ? (
+        <div>
+          <ExploreLinks
+            locale={locale}
+            rows={[
+              {
+                label: t.detail.topics,
+                items: topics.map((topic) => ({
+                  key: topic,
+                  href: `/topics/${encodeURIComponent(topic)}`,
+                  text: topicLabel(topic, locale),
+                  className: "tag tag-topic home-explore-chip",
+                })),
+              },
+              {
+                label: t.detail.tags,
+                items: tags.map((tag) => ({
+                  key: tag,
+                  href: `/tags/${encodeURIComponent(tag)}`,
+                  text: `#${tag}`,
+                  className: "tag home-explore-chip",
+                })),
+              },
+            ]}
+          />
+        </div>
       ) : null}
     </div>
   );

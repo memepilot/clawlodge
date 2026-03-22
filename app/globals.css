@@ -173,12 +173,15 @@ main {
   align-items: center;
   justify-content: center;
   flex: 0 0 36px;
+  border-radius: 999px;
+  overflow: hidden;
 }
 
 .brand-mark-image {
   width: 36px;
   height: 36px;
   display: block;
+  border-radius: 999px;
 }
 
 .brand-copy {
@@ -2327,6 +2330,8 @@ main {
     width: 24px;
     height: 24px;
     flex: 0 0 24px;
+    border-radius: 999px;
+    overflow: hidden;
   }
 
   .brand-name {
@@ -2338,6 +2343,7 @@ main {
   .brand-mark-image {
     width: 24px;
     height: 24px;
+    border-radius: 999px;
   }
 
   .brand-copy {
