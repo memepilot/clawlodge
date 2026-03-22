@@ -28,7 +28,9 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const description =
     locale === "zh"
       ? `浏览带有 ${decoded} 标签的 OpenClaw 配置、技能和工作流。`
-      : `Browse OpenClaw workspaces, skills, and workflows tagged with ${decoded}.`;
+      : locale === "ja"
+        ? `${decoded} タグが付いた OpenClaw の設定、スキル、ワークフローをまとめて確認できます。`
+        : `Browse OpenClaw workspaces, skills, and workflows tagged with ${decoded}.`;
   return buildCollectionMetadata({
     title,
     description,
@@ -77,6 +79,7 @@ export default async function LocalizedTagPage({
       pathname={pathname}
       result={result}
       sort={sort}
+      sectionHeading={title}
       guideSlugs={["openclaw-config-file"]}
       buildPageHref={(nextPage) => {
         const search = new URLSearchParams();

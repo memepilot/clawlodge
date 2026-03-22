@@ -25,9 +25,10 @@ export async function generateMetadata({ params }: { params: Promise<{ tag: stri
   if (!exists) return {};
   const locale = await getRequestLocale();
   const title = tagSeoTitle(decoded, locale);
-  const description = locale === "zh"
-    ? `浏览带有 ${decoded} 标签的 OpenClaw 配置、技能和工作流。`
-    : `Browse OpenClaw workspaces, skills, and workflows tagged with ${decoded}.`;
+  const description =
+    locale === "zh"
+      ? `浏览带有 ${decoded} 标签的 OpenClaw 配置、技能和工作流。`
+      : `Browse OpenClaw workspaces, skills, and workflows tagged with ${decoded}.`;
   return buildCollectionMetadata({
     title,
     description,
@@ -71,6 +72,7 @@ export default async function TagPage({
       pathname={pathname}
       result={result}
       sort={sort}
+      sectionHeading={title}
       guideSlugs={["openclaw-config-file"]}
       buildPageHref={(nextPage) => {
         const search = new URLSearchParams();
