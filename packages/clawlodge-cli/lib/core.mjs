@@ -26,7 +26,7 @@ const MAX_FILE_BYTES = 128 * 1024;
 const MAX_EXCERPT_CHARS = 1600;
 const MAX_BINARY_EMBED_BYTES = 8 * 1024 * 1024;
 const DEFAULT_ORIGIN = "https://clawlodge.com";
-const CLI_VERSION = "0.1.16";
+const CLI_VERSION = "0.1.17";
 const CONFIG_PATH = path.join(os.homedir(), ".config", "clawlodge", "config.json");
 const ANALYTICS_DIR = path.join(os.homedir(), ".clawlodge", "analytics");
 const ANALYTICS_PATH = path.join(ANALYTICS_DIR, "usage.jsonl");
@@ -1121,10 +1121,6 @@ async function promptUninstallConfirmation(agent) {
     const first = (await rl.question(`Delete agent "${agent.id}"? [y/N] `)).trim().toLowerCase();
     if (!(first === "y" || first === "yes")) {
       throw new Error("Uninstall cancelled.");
-    }
-    const second = (await rl.question(`Type the agent id to confirm (${agent.id}): `)).trim();
-    if (second !== agent.id) {
-      throw new Error("Uninstall cancelled: confirmation text did not match the agent id.");
     }
   } finally {
     rl.close();
