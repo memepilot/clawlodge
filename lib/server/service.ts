@@ -738,6 +738,10 @@ function iconStorageKey(slug: string, version: string, contentType: string) {
   return `lobsters/${slug}/${version}/icon.${iconExtensionForContentType(contentType)}`;
 }
 
+function workspaceZipStorageKey(slug: string, version: string) {
+  return `lobsters/${slug}/${version}/workspace.zip`;
+}
+
 const LOBSTER_SUMMARY_CACHE_TTL_MS = 30_000;
 
 let lobsterSummariesCache:
@@ -993,6 +997,19 @@ export async function recordLobsterDownload(slug: string) {
 }
 
 export async function buildLobsterVersionZip(slug: string, version: string) {
+  const cachedZipKey = workspaceZipStorageKey(slug, version);
+  try {
+    const cached = await getStoredObject(cachedZipKey);
+    return {
+      filename: cached.filename,
+      body: new Uint8Array(cached.body),
+    };
+  } catch (error) {
+    if (!(error instanceof ApiError) || error.status !== 404) {
+      throw error;
+    }
+  }
+
   const found = await readMirroredLobsterVersion(slug, version, true);
   if (!found) throw new ApiError(404, "Version not found");
   const lobster = found.lobster;
@@ -1077,9 +1094,12 @@ export async function buildLobsterVersionZip(slug: string, version: string) {
     ].join("\n"));
   }
 
+  const body = zipSync(entries, { level: 6 });
+  await putObject(cachedZipKey, Buffer.from(body), "application/zip");
+
   return {
     filename: `${root}.zip`,
-    body: zipSync(entries, { level: 6 }),
+    body,
   };
 }
 
