@@ -139,6 +139,9 @@ export async function generateMetadata({
       alternates: {
         canonical: absoluteUrl(`/lobsters/${slug}`),
       },
+      other: {
+        "twitter:image:alt": `${displayName} preview card`,
+      },
       openGraph: {
         title: seoTitle,
         description: lobster.summary,
@@ -146,8 +149,10 @@ export async function generateMetadata({
         type: "article",
         images: [
           {
-            url: absoluteUrl(getLobsterAvatarSrc(lobster.icon_url)),
-            alt: `${displayName} lobster icon`,
+            url: absoluteUrl(`/lobsters/${slug}/opengraph-image`),
+            width: 1200,
+            height: 630,
+            alt: `${displayName} preview card`,
           },
         ],
       },
@@ -156,7 +161,7 @@ export async function generateMetadata({
         title: seoTitle,
         description: lobster.summary,
         site: siteConfig.xHandle,
-        images: [absoluteUrl(getLobsterAvatarSrc(lobster.icon_url))],
+        images: [absoluteUrl(`/lobsters/${slug}/opengraph-image`)],
       },
     };
   } catch {
