@@ -26,7 +26,7 @@ const MAX_FILE_BYTES = 128 * 1024;
 const MAX_EXCERPT_CHARS = 1600;
 const MAX_BINARY_EMBED_BYTES = 8 * 1024 * 1024;
 const DEFAULT_ORIGIN = "https://clawlodge.com";
-const CLI_VERSION = "0.1.13";
+const CLI_VERSION = "0.1.14";
 const CONFIG_PATH = path.join(os.homedir(), ".config", "clawlodge", "config.json");
 const ANALYTICS_DIR = path.join(os.homedir(), ".clawlodge", "analytics");
 const ANALYTICS_PATH = path.join(ANALYTICS_DIR, "usage.jsonl");
@@ -181,6 +181,46 @@ Environment variables:
 
 function printVersion() {
   console.log(CLI_VERSION);
+}
+
+function prefersPrettyOutput(options = {}) {
+  return output.isTTY && options.json !== "true";
+}
+
+function formatBytes(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB"];
+  let value = bytes;
+  let unit = units[0];
+  for (let index = 0; index < units.length; index += 1) {
+    unit = units[index];
+    if (value < 1024 || index === units.length - 1) break;
+    value /= 1024;
+  }
+  return `${value >= 100 || unit === "B" ? Math.round(value) : value.toFixed(1)} ${unit}`;
+}
+
+function printStep(label, detail) {
+  if (detail) {
+    console.log(`→ ${label}: ${detail}`);
+    return;
+  }
+  console.log(`→ ${label}`);
+}
+
+function renderProgress(label, received, total) {
+  if (!output.isTTY) return;
+  const width = 24;
+  const ratio = total > 0 ? Math.min(1, received / total) : 0;
+  const filled = Math.round(width * ratio);
+  const bar = `${"=".repeat(filled)}${" ".repeat(width - filled)}`;
+  const percent = total > 0 ? `${Math.round(ratio * 100)}%` : `${formatBytes(received)}`;
+  output.write(`\r${label} [${bar}] ${percent} (${formatBytes(received)}${total > 0 ? ` / ${formatBytes(total)}` : ""})`);
+}
+
+function finishProgress() {
+  if (!output.isTTY) return;
+  output.write("\n");
 }
 
 async function resolveWorkspaceRoot(explicitWorkspace) {
@@ -695,8 +735,31 @@ async function requestBuffer(url, token, init = {}) {
     throw new Error(detail || `Request failed: ${response.status}`);
   }
 
+  if (!response.body) {
+    return {
+      body: Buffer.from(await response.arrayBuffer()),
+      headers: response.headers,
+    };
+  }
+
+  const chunks = [];
+  const reader = response.body.getReader();
+  const total = Number.parseInt(response.headers.get("content-length") || "0", 10) || 0;
+  let received = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+    received += value.byteLength;
+    chunks.push(value);
+    if (typeof init.onProgress === "function") {
+      init.onProgress({ received, total });
+    }
+  }
+
   return {
-    body: Buffer.from(await response.arrayBuffer()),
+    body: Buffer.concat(chunks.map((chunk) => Buffer.from(chunk))),
     headers: response.headers,
   };
 }
@@ -826,7 +889,15 @@ async function runShow(options, positionals) {
 async function runDownload(options, positionals) {
   const origin = resolveOrigin(options);
   const slug = options.slug?.trim() || requirePositional(positionals, "slug");
-  const { version, out, bytes } = await downloadWorkspaceArchive(origin, slug, options);
+  const pretty = prefersPrettyOutput(options);
+  if (pretty) {
+    printStep("Preparing download", slug);
+  }
+  const { version, out, bytes } = await downloadWorkspaceArchive(origin, slug, options, { pretty });
+  if (pretty) {
+    printStep("Saved archive", `${out} (${formatBytes(bytes)})`);
+    return;
+  }
   console.log(JSON.stringify({ ok: true, mode: "download", origin, slug, version, out, bytes }, null, 2));
 }
 
@@ -841,10 +912,26 @@ async function resolveDownloadVersion(origin, slug, requestedVersion) {
   return version;
 }
 
-async function downloadWorkspaceArchive(origin, slug, options = {}) {
+async function downloadWorkspaceArchive(origin, slug, options = {}, runtime = {}) {
+  const pretty = Boolean(runtime.pretty);
   const version = await resolveDownloadVersion(origin, slug, options.version);
+  if (pretty) {
+    printStep("Resolved version", `${slug}@${version}`);
+  }
   const url = `${origin.replace(/\/$/, "")}/api/v1/lobsters/${encodeURIComponent(slug)}/versions/${encodeURIComponent(version)}/download`;
-  const { body } = await requestBuffer(url, "");
+  if (pretty) {
+    printStep("Downloading archive", url);
+  }
+  const { body } = await requestBuffer(url, "", {
+    onProgress: pretty
+      ? ({ received, total }) => {
+          renderProgress("Downloading", received, total);
+        }
+      : undefined,
+  });
+  if (pretty) {
+    finishProgress();
+  }
   const out = path.resolve(options.out?.trim() || `${slug}-${version}.zip`);
   await fs.mkdir(path.dirname(out), { recursive: true });
   await fs.writeFile(out, body);
@@ -878,16 +965,28 @@ async function runInstall(options, positionals) {
   const origin = resolveOrigin(options);
   const slug = options.slug?.trim() || requirePositional(positionals, "slug");
   const agentId = (options.agent?.trim() || `${slug}-test`).trim();
+  const pretty = prefersPrettyOutput(options);
   const installRoot = options.dir?.trim()
     ? path.resolve(options.dir.trim())
     : await fs.mkdtemp(path.join(os.tmpdir(), `${slug}-install-`));
   const zipPath = path.resolve(options.out?.trim() || path.join(installRoot, `${slug}.zip`));
 
-  const { version, bytes } = await downloadWorkspaceArchive(origin, slug, { ...options, out: zipPath });
+  if (pretty) {
+    printStep("Installing lobster", slug);
+    printStep("Target agent", agentId);
+  }
+
+  const { version, bytes } = await downloadWorkspaceArchive(origin, slug, { ...options, out: zipPath }, { pretty });
   const extractDir = path.join(installRoot, "unzipped");
+  if (pretty) {
+    printStep("Extracting archive", extractDir);
+  }
   await unzipArchive(zipPath, extractDir);
   const workspacePath = await detectWorkspacePath(extractDir);
 
+  if (pretty) {
+    printStep("Creating OpenClaw agent", workspacePath);
+  }
   await ensureCommand("openclaw", "Install OpenClaw CLI and make sure it is on PATH.");
   const addArgs = ["agents", "add", agentId, "--workspace", workspacePath, "--non-interactive"];
   if (options.model?.trim()) {
@@ -897,6 +996,16 @@ async function runInstall(options, positionals) {
     addArgs.push("--agent-dir", path.resolve(options["agent-dir"].trim()));
   }
   const { stdout, stderr } = await execFileAsync("openclaw", addArgs, { maxBuffer: 1024 * 1024 * 4 });
+  if (pretty) {
+    printStep("Install complete", `${slug}@${version}`);
+    console.log(`  Agent: ${agentId}`);
+    console.log(`  ZIP: ${zipPath}`);
+    console.log(`  Workspace: ${workspacePath}`);
+    if (stdout.trim()) {
+      console.log(`  OpenClaw: ${stdout.trim()}`);
+    }
+    return;
+  }
   console.log(JSON.stringify({
     ok: true,
     mode: "install",
