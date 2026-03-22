@@ -26,7 +26,7 @@ const MAX_FILE_BYTES = 128 * 1024;
 const MAX_EXCERPT_CHARS = 1600;
 const MAX_BINARY_EMBED_BYTES = 8 * 1024 * 1024;
 const DEFAULT_ORIGIN = "https://clawlodge.com";
-const CLI_VERSION = "0.1.15";
+const CLI_VERSION = "0.1.16";
 const CONFIG_PATH = path.join(os.homedir(), ".config", "clawlodge", "config.json");
 const ANALYTICS_DIR = path.join(os.homedir(), ".clawlodge", "analytics");
 const ANALYTICS_PATH = path.join(ANALYTICS_DIR, "usage.jsonl");
@@ -1021,7 +1021,7 @@ function parseLastJsonObject(rawText) {
 async function runInstall(options, positionals) {
   const origin = resolveOrigin(options);
   const slug = options.slug?.trim() || requirePositional(positionals, "slug");
-  const agentId = (options.agent?.trim() || `${slug}-test`).trim();
+  const agentId = (options.agent?.trim() || slug).trim();
   const pretty = prefersPrettyOutput(options);
   const installRoot = options.dir?.trim()
     ? path.resolve(options.dir.trim())
@@ -1052,7 +1052,19 @@ async function runInstall(options, positionals) {
   if (options["agent-dir"]?.trim()) {
     addArgs.push("--agent-dir", path.resolve(options["agent-dir"].trim()));
   }
-  const { stdout, stderr } = await execFileAsync("openclaw", addArgs, { maxBuffer: 1024 * 1024 * 4 });
+  let stdout = "";
+  let stderr = "";
+  try {
+    const result = await execFileAsync("openclaw", addArgs, { maxBuffer: 1024 * 1024 * 4 });
+    stdout = result.stdout;
+    stderr = result.stderr;
+  } catch (error) {
+    const message = String(error?.stderr || error?.stdout || error?.message || "").trim();
+    if (/already exists|duplicate|exists/i.test(message)) {
+      throw new Error(`OpenClaw agent "${agentId}" already exists. Re-run with --agent <new-id> to choose a different name.`);
+    }
+    throw error;
+  }
   if (pretty) {
     printStep("Install complete", `${slug}@${version}`);
     console.log(`  Agent: ${agentId}`);
