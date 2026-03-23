@@ -29,7 +29,11 @@ export default async function UserPage({ params }: { params: Promise<{ handle: s
       <section className="stack-md">
         <h2 className="panel-title">{t.profile.published}</h2>
         {profile.published.length ? (
-          profile.published.map((item) => <LobsterCard key={item.slug} item={item} locale={locale} />)
+          <div className="grid home-lobster-grid">
+            {profile.published.map((item) => (
+              <LobsterCard key={item.slug} item={item} locale={locale} variant="home" />
+            ))}
+          </div>
         ) : (
           <div className="card muted">{t.profile.noPublished}</div>
         )}
@@ -38,7 +42,11 @@ export default async function UserPage({ params }: { params: Promise<{ handle: s
       <section className="stack-md">
         <h2 className="panel-title">{t.profile.favorites}</h2>
         {profile.favorites.length ? (
-          profile.favorites.map((item) => <LobsterCard key={`fav-${item.slug}`} item={item} locale={locale} />)
+          <div className="grid home-lobster-grid">
+            {profile.favorites.map((item) => (
+              <LobsterCard key={`fav-${item.slug}`} item={item} locale={locale} variant="home" />
+            ))}
+          </div>
         ) : (
           <div className="card muted">{t.profile.noFavorites}</div>
         )}
