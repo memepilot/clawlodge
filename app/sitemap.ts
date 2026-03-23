@@ -39,7 +39,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     },
   ];
-  const localizedLocales = ["zh", "ja"] as const;
+  const localizedLocales = ["zh", "ja", "fr"] as const;
   const localizedStaticRoutes: MetadataRoute.Sitemap = localizedLocales.flatMap((locale) => [
     {
       url: absoluteUrl(localizePath("/", locale)),

@@ -32,8 +32,8 @@ export function GuidePage({ slug, locale }: { slug: string; locale: Locale }) {
       <section className="shell page-panel p-5 md:p-6">
         <Breadcrumbs
           items={[
-            { label: locale === "zh" ? "首页" : locale === "ja" ? "ホーム" : "Home", href: localizePath("/", locale) },
-            { label: locale === "zh" ? "指南" : locale === "ja" ? "ガイド" : "Guides", href: localizePath("/guides", locale) },
+            { label: locale === "zh" ? "首页" : locale === "ja" ? "ホーム" : locale === "fr" ? "Accueil" : "Home", href: localizePath("/", locale) },
+            { label: locale === "zh" ? "指南" : locale === "ja" ? "ガイド" : locale === "fr" ? "Guides" : "Guides", href: localizePath("/guides", locale) },
             { label: guide.title },
           ]}
         />
@@ -48,7 +48,7 @@ export function GuidePage({ slug, locale }: { slug: string; locale: Locale }) {
       {(guide.relatedCategorySlugs?.length || guide.relatedTopicSlugs?.length || guide.relatedLobsterSlugs?.length) ? (
         <section className="shell page-panel p-5 md:p-6">
           <div className="detail-section-head">
-            <h2 className="panel-title">{locale === "zh" ? "相关路径" : locale === "ja" ? "関連リンク" : "Related paths"}</h2>
+            <h2 className="panel-title">{locale === "zh" ? "相关路径" : locale === "ja" ? "関連リンク" : locale === "fr" ? "Liens associés" : "Related paths"}</h2>
           </div>
           <div className="guide-related-links">
             {guide.relatedCategorySlugs?.map((category) => (

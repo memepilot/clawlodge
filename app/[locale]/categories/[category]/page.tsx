@@ -9,7 +9,7 @@ export const revalidate = 300;
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string; category: string }> }) {
   const { locale, category } = await params;
-  if (locale !== "zh" && locale !== "ja") return {};
+  if (locale !== "zh" && locale !== "ja" && locale !== "fr") return {};
   const match = CATEGORY_OPTIONS.find((option) => option.value === category);
   if (!match) return {};
   const title = categorySeoTitle(match.value, locale);
@@ -29,7 +29,7 @@ export default async function LocalizedCategoryPage({
   searchParams: Promise<{ page?: string; sort?: string }>;
 }) {
   const [{ locale, category }, query] = await Promise.all([params, searchParams]);
-  if (locale !== "zh" && locale !== "ja") notFound();
+  if (locale !== "zh" && locale !== "ja" && locale !== "fr") notFound();
   const match = CATEGORY_OPTIONS.find((option) => option.value === category);
   if (!match) notFound();
   const sort = query.sort === "new" ? "new" : "hot";

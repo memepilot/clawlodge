@@ -18,6 +18,7 @@ export function LocaleSwitcher() {
     { locale: "en", label: "English" },
     { locale: "zh", label: "中文" },
     { locale: "ja", label: "日本語" },
+    { locale: "fr", label: "Français" },
   ];
 
   return (
@@ -33,7 +34,11 @@ export function LocaleSwitcher() {
         }}
       >
         {options.map((option) => (
-          <option key={option.locale} value={option.locale} lang={option.locale === "zh" ? "zh-CN" : option.locale}>
+          <option
+            key={option.locale}
+            value={option.locale}
+            lang={option.locale === "zh" ? "zh-CN" : option.locale === "fr" ? "fr-FR" : option.locale}
+          >
             {option.label}
           </option>
         ))}

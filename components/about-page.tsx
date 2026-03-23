@@ -29,7 +29,7 @@ export function AboutPage({ locale }: { locale: Locale }) {
       <section className="shell page-panel p-5 md:p-6">
         <Breadcrumbs
           items={[
-            { label: locale === "zh" ? "首页" : locale === "ja" ? "ホーム" : "Home", href: localizePath("/", locale) },
+            { label: locale === "zh" ? "首页" : locale === "ja" ? "ホーム" : locale === "fr" ? "Accueil" : "Home", href: localizePath("/", locale) },
             { label: page.label },
           ]}
         />

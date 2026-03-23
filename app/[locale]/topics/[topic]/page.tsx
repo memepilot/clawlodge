@@ -12,7 +12,7 @@ export const revalidate = 300;
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string; topic: string }> }) {
   const { locale, topic } = await params;
-  if (locale !== "zh" && locale !== "ja") return {};
+  if (locale !== "zh" && locale !== "ja" && locale !== "fr") return {};
   if (!TOPICS.includes(topic as LobsterTopic)) return {};
   const title = topicSeoTitle(topic as LobsterTopic, locale);
   return buildCollectionMetadata({
@@ -31,7 +31,7 @@ export default async function LocalizedTopicPage({
   searchParams: Promise<{ page?: string; sort?: string }>;
 }) {
   const [{ locale, topic }, query] = await Promise.all([params, searchParams]);
-  if (locale !== "zh" && locale !== "ja") notFound();
+  if (locale !== "zh" && locale !== "ja" && locale !== "fr") notFound();
   if (!TOPICS.includes(topic as LobsterTopic)) notFound();
   const sort = query.sort === "new" ? "new" : "hot";
   const page = Number.isFinite(Number(query.page)) ? Math.max(1, Math.floor(Number(query.page))) : 1;

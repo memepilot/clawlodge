@@ -30,6 +30,8 @@ function readLocalizedGuideMarkdown(slug: string, locale: Locale) {
         ? "multi-agent-config-zh.md"
         : locale === "ja"
           ? "multi-agent-config-ja.md"
+          : locale === "fr"
+            ? "multi-agent-config-fr.md"
           : null
       : null;
 
@@ -305,6 +307,11 @@ const localizedGuideCopy: Record<string, LocalizedGuideCopy> = {
       description: "OpenClawで役割分担、メモリ、レビュー、連携ルールを備えたマルチエージェント構成を作るための実践ガイド。",
       intro: "OpenClawを単体アシスタントから、役割・ワークフロー・メモリ・検証を備えた協調システムへ変えるためのガイド。",
     },
+    fr: {
+      title: "Guide de configuration multi-agents OpenClaw",
+      description: "Apprenez à concevoir un workspace OpenClaw multi-agents avec rôles, mémoire, revue et règles de coordination.",
+      intro: "Transformez OpenClaw d'un assistant isolé en système coordonné avec rôles, workflows, mémoire et validation.",
+    },
   },
   "openclaw-memory-allocation-strategies": {
     zh: {
@@ -317,6 +324,11 @@ const localizedGuideCopy: Record<string, LocalizedGuideCopy> = {
       description: "意思決定ログから長期コンテキストまで、OpenClawワークスペースのメモリ設計を理解するための実践ガイド。",
       intro: "OpenClawのメモリ構造で何を記録し、どこに保存し、どう品質向上につなげるかを整理したガイド。",
     },
+    fr: {
+      title: "Stratégies d'allocation mémoire OpenClaw",
+      description: "Comprendre la structure mémoire d'un workspace OpenClaw, des journaux de décision au contexte de long terme.",
+      intro: "Un guide pratique sur ce qu'il faut mémoriser, où le stocker, et comment la mémoire améliore la qualité d'un workspace.",
+    },
   },
   "openclaw-config-file": {
     zh: {
@@ -328,6 +340,11 @@ const localizedGuideCopy: Record<string, LocalizedGuideCopy> = {
       title: "OpenClaw設定ファイルガイド",
       description: "OpenClawのconfig fileが何を担うのか、ワークスペース構造の中でどう機能するのかを整理したガイド。",
       intro: "OpenClawの設定ファイルに含まれる内容と、再利用可能な構成例を見分けるポイントをまとめました。",
+    },
+    fr: {
+      title: "Guide du fichier de configuration OpenClaw",
+      description: "Comprendre à quoi sert un config file OpenClaw, comment il s'insère dans la structure du workspace, et comment repérer de bons exemples réutilisables.",
+      intro: "Découvrez ce que contient généralement un fichier de configuration OpenClaw et comment trouver des setups de qualité sur ClawLodge.",
     },
   },
 };

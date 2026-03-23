@@ -102,7 +102,7 @@ export function LobsterCollectionPage({
           <div className="home-category-filter" aria-label="Category filter">
             <Link className={`home-category-pill ${!selectedCategory ? "is-active" : ""}`} href={buildCategoryHref()}>
               <span className="home-category-icon">◍</span>
-              <span>{locale === "zh" ? "全部" : locale === "ja" ? "すべて" : "All"}</span>
+              <span>{locale === "zh" ? "全部" : locale === "ja" ? "すべて" : locale === "fr" ? "Tout" : "All"}</span>
             </Link>
             {CATEGORY_OPTIONS.map((option) => (
               <Link
@@ -121,11 +121,11 @@ export function LobsterCollectionPage({
           {sectionHeading ? <h2 className="section-title">{sectionHeading}</h2> : null}
           <div className="home-results-meta">
             <p className="home-results-summary">
-              {t.home.showing} {result.total} {locale === "zh" ? "个" : locale === "ja" ? "件" : "items"}
+              {t.home.showing} {result.total} {locale === "zh" ? "个" : locale === "ja" ? "件" : locale === "fr" ? "éléments" : "items"}
             </p>
             {(selectedCategory || sort !== "hot") ? (
               <Link className="home-clear-link" href={rootPath}>
-                {locale === "zh" ? "清除筛选" : locale === "ja" ? "絞り込みを解除" : "clear filters"}
+                {locale === "zh" ? "清除筛选" : locale === "ja" ? "絞り込みを解除" : locale === "fr" ? "effacer les filtres" : "clear filters"}
               </Link>
             ) : null}
           </div>

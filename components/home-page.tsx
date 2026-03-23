@@ -125,7 +125,7 @@ export async function HomePage({ locale, searchParams: params }: HomePageProps) 
           <div className="home-category-filter" aria-label="Category filter">
             <Link className={`home-category-pill ${!selectedCategory ? "is-active" : ""}`} href={buildCategoryHref()}>
               <span className="home-category-icon">◍</span>
-              <span>{locale === "zh" ? "全部" : locale === "ja" ? "すべて" : "All"}</span>
+              <span>{locale === "zh" ? "全部" : locale === "ja" ? "すべて" : locale === "fr" ? "Tout" : "All"}</span>
             </Link>
             {CATEGORY_OPTIONS.map((option) => (
               <Link
@@ -143,11 +143,11 @@ export async function HomePage({ locale, searchParams: params }: HomePageProps) 
           <h2 className="section-title">{t.home.popularSetups}</h2>
           <div className="home-results-meta">
             <p className="home-results-summary">
-              {t.home.showing} {result.total} {locale === "zh" ? "个" : locale === "ja" ? "件" : "items"}
+              {t.home.showing} {result.total} {locale === "zh" ? "个" : locale === "ja" ? "件" : locale === "fr" ? "éléments" : "items"}
             </p>
             {(params.q?.trim() || params.tag?.trim() || selectedCategory || sort !== defaultSort) ? (
               <Link className="home-clear-link" href={rootPath}>
-                {locale === "zh" ? "清除筛选" : locale === "ja" ? "絞り込みを解除" : "clear filters"}
+                {locale === "zh" ? "清除筛选" : locale === "ja" ? "絞り込みを解除" : locale === "fr" ? "effacer les filtres" : "clear filters"}
               </Link>
             ) : null}
           </div>
@@ -185,7 +185,7 @@ export async function HomePage({ locale, searchParams: params }: HomePageProps) 
           locale={locale}
           rows={[
             {
-              label: locale === "zh" ? "主题" : locale === "ja" ? "トピック" : "Topics",
+              label: locale === "zh" ? "主题" : locale === "ja" ? "トピック" : locale === "fr" ? "Sujets" : "Topics",
               items: featuredTopics.map((topic) => ({
                 key: topic.value,
                 href: `/topics/${topic.value}`,
@@ -194,7 +194,7 @@ export async function HomePage({ locale, searchParams: params }: HomePageProps) 
               })),
             },
             {
-              label: locale === "zh" ? "标签" : locale === "ja" ? "タグ" : "Tags",
+              label: locale === "zh" ? "标签" : locale === "ja" ? "タグ" : locale === "fr" ? "Tags" : "Tags",
               items: featuredTags.map((tag) => ({
                 key: tag,
                 href: `/tags/${encodeURIComponent(tag)}`,

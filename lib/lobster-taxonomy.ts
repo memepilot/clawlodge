@@ -57,6 +57,22 @@ export function categoryLabel(category: LobsterCategory, locale: Locale) {
         return "メモリ";
     }
   }
+  if (locale === "fr") {
+    switch (category) {
+      case "workspace":
+        return "Workspace";
+      case "skill":
+        return "Skill";
+      case "agent":
+        return "Agent";
+      case "tooling":
+        return "Outils";
+      case "workflow":
+        return "Workflow";
+      case "memory":
+        return "Mémoire";
+    }
+  }
   switch (category) {
     case "workspace":
       return "Workspace";
@@ -110,6 +126,24 @@ export function topicLabel(topic: LobsterTopic, locale: Locale) {
         return "自動化";
     }
   }
+  if (locale === "fr") {
+    switch (topic) {
+      case "dev":
+        return "Dev";
+      case "design":
+        return "Design";
+      case "research":
+        return "Recherche";
+      case "writing":
+        return "Rédaction";
+      case "productivity":
+        return "Productivité";
+      case "multiagent":
+        return "Multi-Agent";
+      case "automation":
+        return "Automatisation";
+    }
+  }
   switch (topic) {
     case "dev":
       return "Dev";
@@ -153,8 +187,17 @@ export function categoryIntro(category: LobsterCategory, locale: Locale) {
     workflow: "リサーチ、自動化、チーム運用向けの再利用可能な OpenClaw ワークフロー。",
     memory: "OpenClaw 向けのメモリシステム、メモリ運用、再利用可能なメモリアーキテクチャ。",
   };
+  const fr: Record<LobsterCategory, string> = {
+    workspace: "Workspaces OpenClaw complets avec prompts, skills, workflows, documentation et structure installable.",
+    skill: "Skills OpenClaw ciblés et bundles de skills qui ajoutent une capacité précise à un setup existant.",
+    agent: "Agents et personas orientés rôle que vous pouvez adopter comme opérateurs autonomes dans OpenClaw.",
+    tooling: "Outils de développement, consoles, studios et utilitaires qui soutiennent les workflows OpenClaw.",
+    workflow: "Workflows OpenClaw réutilisables pour la recherche, l'automatisation et les opérations d'équipe.",
+    memory: "Systèmes mémoire, memory ops et architectures mémoire réutilisables pour OpenClaw.",
+  };
   if (locale === "zh") return zh[category];
   if (locale === "ja") return ja[category];
+  if (locale === "fr") return fr[category];
   return en[category];
 }
 
@@ -186,8 +229,18 @@ export function topicIntro(topic: LobsterTopic, locale: Locale) {
     multiagent: "マルチエージェント協調、オーケストレーション、役割分担を中心に作られた OpenClaw 構成。",
     automation: "自動化、パイプライン、運用フローに特化した OpenClaw 構成。",
   };
+  const fr: Record<LobsterTopic, string> = {
+    dev: "Setups OpenClaw pour le code, les workflows de développement, la revue de code et l'automatisation d'ingénierie.",
+    design: "Setups OpenClaw pour le design, les systèmes visuels, les miniatures, le branding et la création.",
+    research: "Setups OpenClaw pour la recherche, l'analyse, la veille concurrentielle et le travail de connaissance.",
+    writing: "Setups OpenClaw pour la rédaction, l'édition, les workflows de contenu et la publication.",
+    productivity: "Setups OpenClaw qui améliorent l'exécution quotidienne, la planification et les workflows personnels entre outils.",
+    multiagent: "Setups OpenClaw construits autour de la coordination multi-agents, de l'orchestration et de la spécialisation des rôles.",
+    automation: "Setups OpenClaw axés sur l'automatisation récurrente, les pipelines et les workflows opérateurs.",
+  };
   if (locale === "zh") return zh[topic];
   if (locale === "ja") return ja[topic];
+  if (locale === "fr") return fr[topic];
   return en[topic];
 }
 
@@ -254,6 +307,22 @@ export function categorySeoTitle(category: LobsterCategory, locale: Locale) {
         return "OpenClaw メモリ構成";
     }
   }
+  if (locale === "fr") {
+    switch (category) {
+      case "workspace":
+        return "Workspaces OpenClaw";
+      case "skill":
+        return "Skills OpenClaw";
+      case "agent":
+        return "Agents OpenClaw";
+      case "tooling":
+        return "Outils OpenClaw";
+      case "workflow":
+        return "Workflows OpenClaw";
+      case "memory":
+        return "Systèmes mémoire OpenClaw";
+    }
+  }
 
   switch (category) {
     case "workspace":
@@ -278,6 +347,9 @@ export function topicSeoTitle(topic: LobsterTopic, locale: Locale) {
   if (locale === "ja") {
     return `${topicLabel(topic, locale)} OpenClaw 構成`;
   }
+  if (locale === "fr") {
+    return `${topicLabel(topic, locale)} OpenClaw`;
+  }
 
   switch (topic) {
     case "multiagent":
@@ -301,6 +373,9 @@ export function tagSeoTitle(tag: string, locale: Locale) {
   const normalized = tag.trim().toLowerCase();
   if (locale === "zh") {
     return `#${tag} OpenClaw 配置`;
+  }
+  if (locale === "fr") {
+    return `Setups OpenClaw #${tag}`;
   }
 
   switch (normalized) {

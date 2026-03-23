@@ -18,7 +18,7 @@ function humanizeTag(tag: string) {
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string; tag: string }> }) {
   const { locale, tag } = await params;
-  if (locale !== "zh" && locale !== "ja") return {};
+  if (locale !== "zh" && locale !== "ja" && locale !== "fr") return {};
   const decoded = decodeURIComponent(tag);
   const summaries = await readMirroredLobsterSummaries();
   const normalizedTag = decoded.trim().toLowerCase();
@@ -30,6 +30,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       ? `浏览带有 ${decoded} 标签的 OpenClaw 配置、技能和工作流。`
       : locale === "ja"
         ? `${decoded} タグが付いた OpenClaw の設定、スキル、ワークフローをまとめて確認できます。`
+        : locale === "fr"
+          ? `Parcourez les setups, skills et workflows OpenClaw portant le tag ${decoded}.`
         : `Browse OpenClaw workspaces, skills, and workflows tagged with ${decoded}.`;
   return buildCollectionMetadata({
     title,
@@ -47,7 +49,7 @@ export default async function LocalizedTagPage({
   searchParams: Promise<{ page?: string; sort?: string }>;
 }) {
   const [{ locale, tag }, query] = await Promise.all([params, searchParams]);
-  if (locale !== "zh" && locale !== "ja") notFound();
+  if (locale !== "zh" && locale !== "ja" && locale !== "fr") notFound();
   const decodedTag = decodeURIComponent(tag);
   const summaries = await readMirroredLobsterSummaries();
   const normalizedTag = decodedTag.trim().toLowerCase();
@@ -68,6 +70,8 @@ export default async function LocalizedTagPage({
       ? `浏览所有带有 #${decodedTag} 标签的 OpenClaw 配置、技能和工作流。`
       : locale === "ja"
         ? `#${decodedTag} タグが付いた OpenClaw の設定、スキル、ワークフローをまとめて確認できます。`
+        : locale === "fr"
+          ? `Parcourez tous les workspaces, skills et workflows OpenClaw marqués avec #${decodedTag}.`
         : `Browse every OpenClaw workspace, skill, and workflow tagged with #${decodedTag}.`;
 
   return (

@@ -21,7 +21,7 @@ export function ExploreLinks({
   rows: ExploreRow[];
 }) {
   const accessibleLabel =
-    locale === "zh" ? "更多浏览入口" : locale === "ja" ? "追加の閲覧リンク" : "More browsing links";
+    locale === "zh" ? "更多浏览入口" : locale === "ja" ? "追加の閲覧リンク" : locale === "fr" ? "Plus de chemins de navigation" : "More browsing links";
 
   const visibleRows = rows.filter((row) => row.items.length);
   if (!visibleRows.length) return null;

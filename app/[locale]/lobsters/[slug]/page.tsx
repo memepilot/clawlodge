@@ -11,7 +11,7 @@ export async function generateMetadata({
   params: Promise<{ locale: string; slug: string }>;
 }): Promise<Metadata> {
   const { locale, slug } = await params;
-  if (locale !== "zh" && locale !== "ja") return {};
+  if (locale !== "zh" && locale !== "ja" && locale !== "fr") return {};
   return generateBaseMetadata({ params: Promise.resolve({ slug }) });
 }
 
@@ -21,6 +21,6 @@ export default async function LocalizedLobsterDetailPage({
   params: Promise<{ locale: string; slug: string }>;
 }) {
   const { locale, slug } = await params;
-  if (locale !== "zh" && locale !== "ja") notFound();
+  if (locale !== "zh" && locale !== "ja" && locale !== "fr") notFound();
   return <LobsterDetailPage params={Promise.resolve({ slug })} />;
 }

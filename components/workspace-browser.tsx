@@ -53,7 +53,7 @@ function formatWorkspaceSize(size: number) {
 function formatPublishedAt(value: string, locale: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en-CA", {
+  return new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : locale === "fr" ? "fr-FR" : "en-CA", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",

@@ -8,7 +8,7 @@ import { addComment, addFavorite, addShare, apiOrigin, removeFavorite, reportLob
 import { CommentItem } from "@/lib/types";
 
 function formatCommentTime(value: string, locale: string) {
-  return new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en", {
+  return new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : locale === "fr" ? "fr-FR" : "en", {
     month: "short",
     day: "numeric",
     year: "numeric",

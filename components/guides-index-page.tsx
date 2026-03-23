@@ -14,12 +14,14 @@ export function GuidesIndexPage({ locale }: { locale: Locale }) {
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: locale === "zh" ? "OpenClaw 指南" : locale === "ja" ? "OpenClawガイド" : "OpenClaw Guides",
+    name: locale === "zh" ? "OpenClaw 指南" : locale === "ja" ? "OpenClawガイド" : locale === "fr" ? "Guides OpenClaw" : "OpenClaw Guides",
     description:
       locale === "zh"
         ? "关于 OpenClaw 配置文件、记忆策略和多智能体工作区设计的实用指南。"
         : locale === "ja"
           ? "OpenClawの設定、メモリ戦略、マルチエージェント設計に関する実践ガイド。"
+          : locale === "fr"
+            ? "Guides pratiques sur les configs OpenClaw, la mémoire et la conception multi-agents."
           : "Practical ClawLodge guides for OpenClaw config files, memory strategy, and multi-agent workspace design.",
     url: absoluteUrl(pathname),
   };
@@ -33,14 +35,16 @@ export function GuidesIndexPage({ locale }: { locale: Locale }) {
       />
       <section className="shell page-panel p-5 md:p-6">
         <div className="detail-kickers">
-          <span className="tag tag-topic">{locale === "zh" ? "指南" : locale === "ja" ? "ガイド" : "Guides"}</span>
+          <span className="tag tag-topic">{locale === "zh" ? "指南" : locale === "ja" ? "ガイド" : locale === "fr" ? "Guides" : "Guides"}</span>
         </div>
-        <h1 className="page-title">{locale === "zh" ? "OpenClaw 指南" : locale === "ja" ? "OpenClawガイド" : "OpenClaw Guides"}</h1>
+        <h1 className="page-title">{locale === "zh" ? "OpenClaw 指南" : locale === "ja" ? "OpenClawガイド" : locale === "fr" ? "Guides OpenClaw" : "OpenClaw Guides"}</h1>
         <p className="page-subtitle">
           {locale === "zh"
             ? `在 ${siteConfig.name} 上查看关于 OpenClaw 配置、安装和多智能体协作的实用指南。`
             : locale === "ja"
               ? `${siteConfig.name}でOpenClawの設定、導入、マルチエージェント運用を学ぶための実践ガイド。`
+              : locale === "fr"
+                ? `Des guides pratiques sur la configuration, l'installation et la coordination multi-agents OpenClaw sur ${siteConfig.name}.`
               : `Practical guides for inspecting, installing, and understanding OpenClaw setups on ${siteConfig.name}.`}
         </p>
       </section>

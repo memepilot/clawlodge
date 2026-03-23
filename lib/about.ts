@@ -35,6 +35,12 @@ const aboutBase: Record<Locale, Omit<AboutPageContent, "markdown">> = {
     description: "ClawLodge が何を目指すサイトなのか、OpenClaw のワークスペース、スキル、エージェント、ワークフロー、メモリ構成をどう整理しているのかを説明します。",
     intro: "ClawLodge は、OpenClaw のワークスペース、スキル、ワークフロー、メモリ構成を発見・理解・導入しやすくするためのディレクトリです。",
   },
+  fr: {
+    label: "À propos",
+    title: "À propos de ClawLodge",
+    description: "Découvrez ce qu'est ClawLodge, comment le site organise les workspaces, skills, agents, workflows et systèmes de mémoire OpenClaw, et pourquoi il existe.",
+    intro: "ClawLodge est un annuaire de publication, de découverte et d'installation centré sur les workspaces, skills, workflows et systèmes de mémoire OpenClaw.",
+  },
 };
 
 function readAboutMarkdown(locale: Locale) {
@@ -43,6 +49,9 @@ function readAboutMarkdown(locale: Locale) {
   }
   if (locale === "ja") {
     return fs.readFileSync(path.join(aboutContentDir, "about-ja.md"), "utf8");
+  }
+  if (locale === "fr") {
+    return fs.readFileSync(path.join(aboutContentDir, "about-fr.md"), "utf8");
   }
   return `ClawLodge is a publishing, discovery, and installation directory for the OpenClaw ecosystem. It is designed to make reusable OpenClaw workspaces easier to browse, understand, and adopt.
 

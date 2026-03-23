@@ -1,7 +1,7 @@
 import type { Locale } from "@/lib/i18n";
 import { absoluteUrl } from "@/lib/site";
 
-export const localePathPrefixes = ["zh", "ja"] as const;
+export const localePathPrefixes = ["zh", "ja", "fr"] as const;
 
 export type PathLocale = (typeof localePathPrefixes)[number];
 
@@ -33,6 +33,8 @@ export function localeHtmlLang(locale: Locale) {
       return "zh-CN";
     case "ja":
       return "ja";
+    case "fr":
+      return "fr-FR";
     default:
       return "en";
   }
@@ -45,6 +47,7 @@ export function buildLocaleAlternates(pathname: string, currentLocale: Locale) {
       en: absoluteUrl(localizePath(pathname, "en")),
       "zh-CN": absoluteUrl(localizePath(pathname, "zh")),
       ja: absoluteUrl(localizePath(pathname, "ja")),
+      fr: absoluteUrl(localizePath(pathname, "fr")),
       "x-default": absoluteUrl(localizePath(pathname, "en")),
     },
   };
