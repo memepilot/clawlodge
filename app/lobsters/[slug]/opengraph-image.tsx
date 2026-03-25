@@ -1,9 +1,8 @@
 import { ImageResponse } from "next/og";
 
-import { getLobsterAvatarSrc } from "@/components/lobster-avatar";
 import { getDetailDisplayLobsterName } from "@/lib/lobster-display";
 import { getLobsterBySlug } from "@/lib/server/service";
-import { absoluteUrl, siteConfig } from "@/lib/site";
+import { siteConfig } from "@/lib/site";
 
 export const runtime = "nodejs";
 export const size = {
@@ -34,7 +33,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   const { slug } = await params;
   const lobster = await getLobsterBySlug(slug);
   const displayName = getDetailDisplayLobsterName(lobster);
-  const iconUrl = absoluteUrl(getLobsterAvatarSrc(lobster.icon_url));
+  const badgeText = displayName.slice(0, 1).toUpperCase();
 
   return new ImageResponse(
     (
@@ -157,19 +156,25 @@ export default async function Image({ params }: { params: Promise<{ slug: string
               width: 240,
             }}
           >
-            <img
-              src={iconUrl}
-              alt={`${displayName} icon`}
+            <div
               style={{
+                display: "flex",
                 width: 168,
                 height: 168,
-                objectFit: "contain",
                 borderRadius: 32,
-                background: "rgba(255,255,255,0.88)",
-                padding: 18,
+                background: "linear-gradient(145deg, #ff8238 0%, #ffb54d 100%)",
                 border: "2px solid rgba(23,32,51,0.08)",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#172033",
+                fontSize: 88,
+                fontWeight: 800,
+                letterSpacing: -4,
+                boxShadow: "0 18px 36px rgba(255,107,44,0.18)",
               }}
-            />
+            >
+              {badgeText}
+            </div>
             <div
               style={{
                 display: "flex",

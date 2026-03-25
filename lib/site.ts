@@ -4,6 +4,7 @@ export const siteConfig = {
   description:
     "Discover OpenClaw setups, reusable skills, agent workflows, memory systems, and automation examples you can inspect, download, and install.",
   origin: process.env.APP_ORIGIN?.trim() || "https://clawlodge.com",
+  internalOrigin: process.env.INTERNAL_APP_ORIGIN?.trim() || process.env.APP_ORIGIN?.trim() || "https://clawlodge.com",
   githubUrl: "https://github.com/memepilot/clawlodge",
   xUrl: "https://x.com/realclawlodge",
   xHandle: "@realclawlodge",
@@ -12,6 +13,10 @@ export const siteConfig = {
 
 export function absoluteUrl(pathname = "/") {
   return new URL(pathname, siteConfig.origin).toString();
+}
+
+export function internalAbsoluteUrl(pathname = "/") {
+  return new URL(pathname, siteConfig.internalOrigin).toString();
 }
 
 export function getDefaultSocialImage() {

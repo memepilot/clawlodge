@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { after } from "next/server";
 import { cache } from "react";
 
 import { LobsterActions } from "@/components/lobster-actions";
@@ -17,7 +16,7 @@ import { localizePath } from "@/lib/locale-routing";
 import { getRequestLocale } from "@/lib/server/locale";
 import { getDetailDisplayLobsterName, getDisplayAuthor } from "@/lib/lobster-display";
 import { ApiError } from "@/lib/server/errors";
-import { getComments, getLobsterBySlug, getRelatedLobsters, recordLobsterView } from "@/lib/server/service";
+import { getComments, getLobsterBySlug, getRelatedLobsters } from "@/lib/server/service";
 import { absoluteUrl, siteConfig } from "@/lib/site";
 
 export const revalidate = 60;
@@ -191,9 +190,6 @@ export default async function LobsterDetailPage({
     }
     throw error;
   }
-  after(async () => {
-    await recordLobsterView(slug);
-  });
   const commentsPromise = getComments(slug);
   const relatedPromise = getRelatedLobsters(slug, 6, lobster);
   const [comments, related, locale] = await Promise.all([commentsPromise, relatedPromise, localePromise]);

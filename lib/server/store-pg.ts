@@ -171,7 +171,9 @@ function getPool() {
     pool = new Pool({
       connectionString,
       application_name: "clawlodge-web",
-      idle_in_transaction_session_timeout: 10_000,
+    });
+    pool.on("error", (error) => {
+      console.error("PostgreSQL pool error", error);
     });
   }
   return pool;
