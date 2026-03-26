@@ -1,3 +1,6 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+
 import { ImageResponse } from "next/og";
 
 import { getDetailDisplayLobsterName } from "@/lib/lobster-display";
@@ -10,6 +13,33 @@ export const size = {
   height: 630,
 };
 export const contentType = "image/png";
+
+function sanitizeOgText(value: string | null | undefined, fallback: string) {
+  const normalized = (value || "")
+    .replace(/[^\x20-\x7E]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return normalized || fallback;
+}
+
+async function loadIconDataUrl(iconUrl: string | null | undefined) {
+  const dataDir = process.env.CLAWLODGE_DATA_DIR?.trim() || "/var/lib/clawlodge";
+  const storagePrefix = "/api/v1/storage/";
+  const iconKey = iconUrl?.startsWith(storagePrefix) ? iconUrl.slice(storagePrefix.length) : null;
+  const candidates = [
+    iconKey ? path.join(dataDir, "storage", iconKey) : null,
+    path.join(process.cwd(), "public", "icon.png"),
+  ].filter(Boolean) as string[];
+
+  for (const candidate of candidates) {
+    try {
+      const bytes = await readFile(candidate);
+      return `data:image/png;base64,${bytes.toString("base64")}`;
+    } catch {}
+  }
+
+  return null;
+}
 
 function categoryLabel(category: string | null | undefined) {
   switch (category) {
@@ -32,8 +62,10 @@ function categoryLabel(category: string | null | undefined) {
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const lobster = await getLobsterBySlug(slug);
-  const displayName = getDetailDisplayLobsterName(lobster);
+  const displayName = sanitizeOgText(getDetailDisplayLobsterName(lobster), slug);
+  const summary = sanitizeOgText(lobster.summary, "Inspect this OpenClaw setup on ClawLodge.");
   const badgeText = displayName.slice(0, 1).toUpperCase();
+  const iconDataUrl = await loadIconDataUrl(lobster.icon_url);
 
   return new ImageResponse(
     (
@@ -119,7 +151,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
                 maxWidth: 740,
               }}
             >
-              {lobster.summary}
+              {summary}
             </div>
             <div
               style={{
@@ -171,9 +203,25 @@ export default async function Image({ params }: { params: Promise<{ slug: string
                 fontWeight: 800,
                 letterSpacing: -4,
                 boxShadow: "0 18px 36px rgba(255,107,44,0.18)",
+                overflow: "hidden",
               }}
             >
-              {badgeText}
+              {iconDataUrl ? (
+                <img
+                  src={iconDataUrl}
+                  alt=""
+                  width={168}
+                  height={168}
+                  style={{
+                    display: "flex",
+                    width: 168,
+                    height: 168,
+                    objectFit: "cover",
+                  }}
+                />
+              ) : (
+                badgeText
+              )}
             </div>
             <div
               style={{
