@@ -8,18 +8,13 @@ import { siteConfig } from "@/lib/site";
 
 export const revalidate = 300;
 
-function hasHomeQuery(params: { sort?: string; tag?: string; q?: string; category?: string; page?: string }) {
-  return Boolean(params.sort || params.tag || params.q || params.category || params.page);
-}
-
 export async function generateMetadata({
   params,
-  searchParams,
 }: {
   params: Promise<{ locale: string }>;
   searchParams: Promise<{ sort?: string; tag?: string; q?: string; category?: string; page?: string }>;
 }): Promise<Metadata> {
-  const [{ locale }, query] = await Promise.all([params, searchParams]);
+  const { locale } = await params;
   if (locale !== "zh" && locale !== "ja" && locale !== "fr") return {};
   const metadata: Metadata = {
     title:
@@ -36,17 +31,6 @@ export async function generateMetadata({
           : "Inspect reusable OpenClaw setups, skills, workflows, and memory systems in Japanese-friendly navigation.",
     alternates: buildLocaleAlternates("/", locale as Locale),
   };
-
-  if (hasHomeQuery(query)) {
-    metadata.robots = {
-      index: false,
-      follow: true,
-      googleBot: {
-        index: false,
-        follow: true,
-      },
-    };
-  }
 
   return metadata;
 }
