@@ -2,13 +2,10 @@
 
 import { useMemo } from "react";
 
-import { trackDownloadConversion } from "@/components/google-analytics";
-
 type DownloadLinkProps = {
   href: string;
   className?: string;
   children: React.ReactNode;
-  conversionSlug?: string;
 };
 
 function isSafariBrowser() {
@@ -35,7 +32,7 @@ function ensureDownloadFrame() {
   return frame;
 }
 
-export function DownloadLink({ href, className, children, conversionSlug }: DownloadLinkProps) {
+export function DownloadLink({ href, className, children }: DownloadLinkProps) {
   const safari = useMemo(() => isSafariBrowser(), []);
 
   return (
@@ -44,9 +41,6 @@ export function DownloadLink({ href, className, children, conversionSlug }: Down
       href={href}
       download
       onClick={(event) => {
-        if (conversionSlug) {
-          trackDownloadConversion(conversionSlug, href);
-        }
         if (!safari) return;
         event.preventDefault();
         const frame = ensureDownloadFrame();

@@ -282,7 +282,6 @@ export default async function LobsterDetailPage({
                 <DownloadLink
                   className="btn btn-primary"
                   href={`/api/v1/lobsters/${encodeURIComponent(slug)}/versions/${encodeURIComponent(latest.version)}/download`}
-                  conversionSlug={slug}
                 >
                   {t.detail.downloadZip}
                 </DownloadLink>
@@ -317,7 +316,6 @@ export default async function LobsterDetailPage({
             maskedSecretsCount={latest.masked_secrets_count}
             blockedFilesCount={latest.blocked_files_count}
             downloadHref={`/api/v1/lobsters/${encodeURIComponent(slug)}/versions/${encodeURIComponent(latest.version)}/download`}
-            conversionSlug={slug}
           />
         </section>
       ) : null}
