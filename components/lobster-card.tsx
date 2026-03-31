@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { LobsterAvatar, getLobsterCardAvatarSrc } from "@/components/lobster-avatar";
+import { TrackedLobsterLink } from "@/components/tracked-lobster-link";
 import { Locale, getTranslations } from "@/lib/i18n";
 import { categoryLabel as localizedCategoryLabel, topicLabel as localizedTopicLabel } from "@/lib/lobster-taxonomy";
 import { localizePath } from "@/lib/locale-routing";
@@ -36,6 +37,7 @@ export function LobsterCard({
   const isHomeCard = variant === "home";
   const cardClassName = ["card", "lobster-card", isHomeCard ? "lobster-card-home" : ""].filter(Boolean).join(" ");
   const category = categoryLabel(item.category, locale);
+  const lobsterHref = localizePath(`/lobsters/${item.slug}`, pathLocale);
   return (
     <article className={cardClassName}>
       {item.recommended && !isHomeCard ? (
@@ -46,16 +48,18 @@ export function LobsterCard({
       {isHomeCard ? (
         <>
           <div className="lobster-card-header lobster-card-home-header">
-            <LobsterAvatar
-              iconUrl={getLobsterCardAvatarSrc(item.icon_url)}
-              alt={`${item.name} icon`}
-              size={52}
-              className="lobster-card-avatar lobster-card-home-avatar"
-              eager={eagerIcon}
-            />
+            <TrackedLobsterLink href={lobsterHref} slug={item.slug} ariaLabel={`Open ${displayName}`}>
+              <LobsterAvatar
+                iconUrl={getLobsterCardAvatarSrc(item.icon_url)}
+                alt={`${item.name} icon`}
+                size={52}
+                className="lobster-card-avatar lobster-card-home-avatar"
+                eager={eagerIcon}
+              />
+            </TrackedLobsterLink>
             <div className="lobster-card-heading">
               <h3 className="lobster-card-title lobster-card-home-title">
-                <Link href={localizePath(`/lobsters/${item.slug}`, pathLocale)}>{displayName}</Link>
+                <TrackedLobsterLink href={lobsterHref} slug={item.slug}>{displayName}</TrackedLobsterLink>
               </h3>
             </div>
           </div>
@@ -118,10 +122,12 @@ export function LobsterCard({
                 {item.verified ? <span className="tag tag-verified">{t.detail.verified}</span> : null}
               </div>
               <div className="lobster-card-header">
-                <LobsterAvatar iconUrl={item.icon_url} alt={`${item.name} icon`} size={56} className="lobster-card-avatar" eager={eagerIcon} />
+                <TrackedLobsterLink href={lobsterHref} slug={item.slug} ariaLabel={`Open ${displayName}`}>
+                  <LobsterAvatar iconUrl={item.icon_url} alt={`${item.name} icon`} size={56} className="lobster-card-avatar" eager={eagerIcon} />
+                </TrackedLobsterLink>
                 <div className="lobster-card-heading">
                   <h3 className="lobster-card-title">
-                    <Link href={localizePath(`/lobsters/${item.slug}`, pathLocale)}>{displayName}</Link>
+                    <TrackedLobsterLink href={lobsterHref} slug={item.slug}>{displayName}</TrackedLobsterLink>
                   </h3>
                   <p className="muted text-sm">
                     {t.card.by}{" "}

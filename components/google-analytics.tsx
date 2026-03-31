@@ -12,6 +12,42 @@ declare global {
 }
 
 const measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim();
+const googleAdsId = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID?.trim();
+const lobsterClickConversionLabel = process.env.NEXT_PUBLIC_GOOGLE_ADS_LOBSTER_CLICK_LABEL?.trim();
+const downloadConversionLabel = process.env.NEXT_PUBLIC_GOOGLE_ADS_DOWNLOAD_LABEL?.trim();
+
+function sendToValue(label?: string | null) {
+  if (!googleAdsId || !label) return null;
+  return `${googleAdsId}/${label}`;
+}
+
+export function trackLobsterClickConversion(slug: string) {
+  const sendTo = sendToValue(lobsterClickConversionLabel);
+  if (!sendTo || typeof window === "undefined" || typeof window.gtag !== "function") {
+    return;
+  }
+
+  window.gtag("event", "conversion", {
+    send_to: sendTo,
+    event_category: "lobster",
+    event_label: slug,
+  });
+}
+
+export function trackDownloadConversion(slug: string, href: string) {
+  const sendTo = sendToValue(downloadConversionLabel);
+  if (!sendTo || typeof window === "undefined" || typeof window.gtag !== "function") {
+    return;
+  }
+
+  window.gtag("event", "conversion", {
+    send_to: sendTo,
+    event_category: "download",
+    event_label: slug,
+    value: 1,
+    link_url: href,
+  });
+}
 
 export function GoogleAnalytics() {
   const pathname = usePathname();
@@ -29,22 +65,29 @@ export function GoogleAnalytics() {
       page_location: window.location.href,
       page_title: document.title,
     });
+    if (googleAdsId) {
+      window.gtag("config", googleAdsId);
+    }
   }, [pathname, searchParams]);
 
-  if (!measurementId) {
+  if (!measurementId && !googleAdsId) {
     return null;
   }
 
+  const ids = [measurementId, googleAdsId].filter(Boolean) as string[];
+  const primaryScriptId = ids[0];
+
   return (
     <>
-      <Script src={`https://www.googletagmanager.com/gtag/js?id=${measurementId}`} strategy="afterInteractive" />
+      <Script src={`https://www.googletagmanager.com/gtag/js?id=${primaryScriptId}`} strategy="afterInteractive" />
       <Script id="google-analytics" strategy="afterInteractive">
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
           window.gtag = gtag;
           gtag('js', new Date());
-          gtag('config', '${measurementId}', { send_page_view: false });
+          ${measurementId ? `gtag('config', '${measurementId}', { send_page_view: false });` : ""}
+          ${googleAdsId ? `gtag('config', '${googleAdsId}');` : ""}
         `}
       </Script>
     </>

@@ -77,6 +77,7 @@ export function WorkspaceBrowser({
   maskedSecretsCount,
   blockedFilesCount,
   downloadHref,
+  conversionSlug,
 }: {
   files: WorkspaceFile[];
   publishedAt: string;
@@ -84,6 +85,7 @@ export function WorkspaceBrowser({
   maskedSecretsCount?: number;
   blockedFilesCount?: number;
   downloadHref: string;
+  conversionSlug?: string;
 }) {
   const locale = useLocale();
   const t = useTranslations();
@@ -148,7 +150,7 @@ export function WorkspaceBrowser({
           </div>
         </div>
         <div className="workspace-browser-aside">
-          <DownloadLink className="btn" href={downloadHref}>
+          <DownloadLink className="btn" href={downloadHref} conversionSlug={conversionSlug}>
             {t.workspace.downloadZip}
           </DownloadLink>
         </div>
